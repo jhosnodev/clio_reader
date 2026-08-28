@@ -1,0 +1,26 @@
+{
+  "name": "echo_reader",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Biblioteca local multiplataforma para leer EPUB, PDF, CBZ y futuros formatos.",
+  "packageManager": "pnpm@10.15.1",
+  "scripts": {
+    "build": "pnpm --recursive --if-present run build",
+    "check": "pnpm --recursive run check",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "validate": "pnpm format:check && pnpm check && pnpm lint && pnpm test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.13.0",
+    "eslint": "^10.9.1",
+    "prettier": "^3.6.2",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.68.0",
+    "vitest": "^2.1.4"
+  }
+}

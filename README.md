@@ -25,8 +25,9 @@ La documentación del proyecto se encuentra en [`documentation/`](./documentatio
 - [Arquitectura de data y metadata](./documentation/03-arquitectura-data-y-metadata.md)
 - [Features futuros](./documentation/04-features-futuros.md)
 - [Plan de implementación por fases](./documentation/05-plan-implementacion.md)
+- [Guía de desarrollo local](./documentation/06-desarrollo-local.md)
 - [Documentos de features futuras](./documentation/features/)
 
 ## Estado
 
-El proyecto se encuentra en fase de planificación y definición técnica.
+El proyecto se encuentra en fase de implementación inicial. La Fase 0 ya cuenta con monorepo, TypeScript estricto, Prettier, ESLint, Vitest, scripts de validación y CI. Las aplicaciones de plataforma todavía son esqueletos para continuar con el spike de Windows y Android.
