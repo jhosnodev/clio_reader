@@ -6,7 +6,7 @@
   "packageManager": "pnpm@10.15.1",
   "scripts": {
     "build": "pnpm --recursive --if-present run build",
-    "check": "pnpm --recursive run check",
+    "check": "pnpm build && pnpm --recursive run check",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",

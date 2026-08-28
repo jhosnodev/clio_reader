@@ -26,8 +26,9 @@ La documentación del proyecto se encuentra en [`documentation/`](./documentatio
 - [Features futuros](./documentation/04-features-futuros.md)
 - [Plan de implementación por fases](./documentation/05-plan-implementacion.md)
 - [Guía de desarrollo local](./documentation/06-desarrollo-local.md)
+- [ADR: dominio y persistencia local](./documentation/adr/0001-dominio-y-persistencia-local.md)
 - [Documentos de features futuras](./documentation/features/)
 
 ## Estado
 
-El proyecto se encuentra en fase de implementación inicial. La Fase 0 ya cuenta con monorepo, TypeScript estricto, Prettier, ESLint, Vitest, scripts de validación y CI. Las aplicaciones de plataforma todavía son esqueletos para continuar con el spike de Windows y Android.
+El proyecto se encuentra en fase de implementación inicial. La Fase 0 cuenta con monorepo, TypeScript estricto, Prettier, ESLint, Vitest, scripts de validación y CI. La fase de dominio y persistencia local ya incluye entidades, locators, progreso, preferencias, marcadores, notas y repositorios testeados. Las aplicaciones de plataforma todavía son esqueletos para continuar con el spike de Windows y Android.
