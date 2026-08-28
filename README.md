@@ -24,6 +24,7 @@ La documentación del proyecto se encuentra en [`documentation/`](./documentatio
 - [Arquitectura técnica](./documentation/02-arquitectura-tecnica.md)
 - [Arquitectura de data y metadata](./documentation/03-arquitectura-data-y-metadata.md)
 - [Features futuros](./documentation/04-features-futuros.md)
+- [Plan de implementación por fases](./documentation/05-plan-implementacion.md)
 - [Documentos de features futuras](./documentation/features/)
 
 ## Estado
