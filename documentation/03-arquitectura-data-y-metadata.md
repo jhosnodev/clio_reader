@@ -1,13 +1,13 @@
 # Arquitectura de data y metadata local
 
-| Campo | Valor |
-|---|---|
-| **Nombre** | echo_reader — Data, metadata y estado de lectura |
-| **Autor** | Manus AI |
-| **Fecha de creación** | 28 de agosto de 2026 |
-| **Fecha de última actualización** | 28 de agosto de 2026 |
-| **Estado** | Propuesta inicial |
-| **Versión del documento** | 1.0.0 |
+| Campo                             | Valor                                            |
+| --------------------------------- | ------------------------------------------------ |
+| **Nombre**                        | echo_reader — Data, metadata y estado de lectura |
+| **Autor**                         | Manus AI                                         |
+| **Fecha de creación**             | 28 de agosto de 2026                             |
+| **Fecha de última actualización** | 28 de agosto de 2026                             |
+| **Estado**                        | Propuesta inicial                                |
+| **Versión del documento**         | 1.0.0                                            |
 
 ## 1. Principio local-first
 
@@ -15,14 +15,14 @@ El MVP no tendrá backend, cuentas, perfiles ni sincronización. Los libros, met
 
 ## 2. Separación de datos
 
-| Grupo | Ejemplos | Persistencia |
-|---|---|---|
-| Metadata del libro | Título, autor, portada, idioma, formato, tamaño y hash | Tabla `books` |
-| Data de lectura | Última posición, porcentaje, zoom y desplazamiento | Tabla `reading_progress` |
-| Preferencias | Tema, colores, fuente, escala, márgenes y dirección | Tabla `preferences` o almacenamiento clave-valor |
-| Anotaciones | Marcadores, notas y texto seleccionado | Tablas `bookmarks` y `notes` |
-| Estado técnico | Versión de esquema y migraciones | Tabla `app_state` |
-| Archivo físico | EPUB, PDF o CBZ importado | Directorio gestionado por la aplicación |
+| Grupo              | Ejemplos                                               | Persistencia                                     |
+| ------------------ | ------------------------------------------------------ | ------------------------------------------------ |
+| Metadata del libro | Título, autor, portada, idioma, formato, tamaño y hash | Tabla `books`                                    |
+| Data de lectura    | Última posición, porcentaje, zoom y desplazamiento     | Tabla `reading_progress`                         |
+| Preferencias       | Tema, colores, fuente, escala, márgenes y dirección    | Tabla `preferences` o almacenamiento clave-valor |
+| Anotaciones        | Marcadores, notas y texto seleccionado                 | Tablas `bookmarks` y `notes`                     |
+| Estado técnico     | Versión de esquema y migraciones                       | Tabla `app_state`                                |
+| Archivo físico     | EPUB, PDF o CBZ importado                              | Directorio gestionado por la aplicación          |
 
 ## 3. Modelo mínimo
 
@@ -32,7 +32,7 @@ interface Book {
   uri: string;
   title: string;
   author?: string;
-  format: "epub" | "pdf" | "cbz";
+  format: 'epub' | 'pdf' | 'cbz';
   fileHash?: string;
   addedAt: number;
   lastOpenedAt?: number;
@@ -50,14 +50,14 @@ interface ReadingProgress {
 }
 
 interface ReaderPreferences {
-  theme: "light" | "dark" | "sepia" | "custom";
+  theme: 'light' | 'dark' | 'sepia' | 'custom';
   backgroundColor?: string;
   foregroundColor?: string;
-  fontFamily: "system" | "serif" | "sans" | "dyslexic";
+  fontFamily: 'system' | 'serif' | 'sans' | 'dyslexic';
   fontScale: number;
   lineHeight: number;
-  margin: "compact" | "comfortable" | "wide";
-  readingDirection: "ltr" | "rtl";
+  margin: 'compact' | 'comfortable' | 'wide';
+  readingDirection: 'ltr' | 'rtl';
 }
 
 interface Bookmark {

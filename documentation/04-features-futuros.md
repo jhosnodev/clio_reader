@@ -1,13 +1,13 @@
 # Features futuros
 
-| Campo | Valor |
-|---|---|
-| **Nombre** | echo_reader — Índice de features futuros |
-| **Autor** | Manus AI |
-| **Fecha de creación** | 28 de agosto de 2026 |
-| **Fecha de última actualización** | 28 de agosto de 2026 |
-| **Estado** | Backlog arquitectónico |
-| **Versión del documento** | 1.0.0 |
+| Campo                             | Valor                                    |
+| --------------------------------- | ---------------------------------------- |
+| **Nombre**                        | echo_reader — Índice de features futuros |
+| **Autor**                         | Manus AI                                 |
+| **Fecha de creación**             | 28 de agosto de 2026                     |
+| **Fecha de última actualización** | 28 de agosto de 2026                     |
+| **Estado**                        | Backlog arquitectónico                   |
+| **Versión del documento**         | 1.0.0                                    |
 
 ## Propósito
 
@@ -15,13 +15,13 @@ Este documento indexa las capacidades que están fuera del MVP de biblioteca loc
 
 ## Índice de features fuera del MVP
 
-| ID | Feature | Documento | Dependencias |
-|---|---|---|---|
-| F-001 | Compartir y exportar metadata/data con otros elementos | [`features/01-compartir-metadata-data.md`](./features/01-compartir-metadata-data.md) | Modelo de anotaciones, locators y exportación local |
-| F-002 | Sincronización con la nube | [`features/02-sincronizacion-nube.md`](./features/02-sincronizacion-nube.md) | Identidad, API, conflictos y almacenamiento remoto |
-| F-003 | Arquitectura SaaS | [`features/03-arquitectura-saas.md`](./features/03-arquitectura-saas.md) | Nube, usuarios, billing, observabilidad y seguridad |
-| F-004 | Soporte para otras plataformas | [`features/04-otras-plataformas.md`](./features/04-otras-plataformas.md) | Estabilidad del núcleo y matriz de compatibilidad |
-| F-005 | Lectura de archivos Markdown (`.md`) | [`features/05-lectura-markdown.md`](./features/05-lectura-markdown.md) | Renderer refluible, sanitización y locators textuales |
+| ID    | Feature                                                | Documento                                                                            | Dependencias                                          |
+| ----- | ------------------------------------------------------ | ------------------------------------------------------------------------------------ | ----------------------------------------------------- |
+| F-001 | Compartir y exportar metadata/data con otros elementos | [`features/01-compartir-metadata-data.md`](./features/01-compartir-metadata-data.md) | Modelo de anotaciones, locators y exportación local   |
+| F-002 | Sincronización con la nube                             | [`features/02-sincronizacion-nube.md`](./features/02-sincronizacion-nube.md)         | Identidad, API, conflictos y almacenamiento remoto    |
+| F-003 | Arquitectura SaaS                                      | [`features/03-arquitectura-saas.md`](./features/03-arquitectura-saas.md)             | Nube, usuarios, billing, observabilidad y seguridad   |
+| F-004 | Soporte para otras plataformas                         | [`features/04-otras-plataformas.md`](./features/04-otras-plataformas.md)             | Estabilidad del núcleo y matriz de compatibilidad     |
+| F-005 | Lectura de archivos Markdown (`.md`)                   | [`features/05-lectura-markdown.md`](./features/05-lectura-markdown.md)               | Renderer refluible, sanitización y locators textuales |
 
 ## Priorización inicial
 

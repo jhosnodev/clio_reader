@@ -1,13 +1,13 @@
 # F-003: Arquitectura SaaS
 
-| Campo | Valor |
-|---|---|
-| **Nombre** | Arquitectura SaaS de echo_reader |
-| **Autor** | Manus AI |
-| **Fecha de creación** | 28 de agosto de 2026 |
-| **Fecha de última actualización** | 28 de agosto de 2026 |
-| **Estado** | Feature futura — fuera del MVP |
-| **Versión del documento** | 1.0.0 |
+| Campo                             | Valor                            |
+| --------------------------------- | -------------------------------- |
+| **Nombre**                        | Arquitectura SaaS de echo_reader |
+| **Autor**                         | Manus AI                         |
+| **Fecha de creación**             | 28 de agosto de 2026             |
+| **Fecha de última actualización** | 28 de agosto de 2026             |
+| **Estado**                        | Feature futura — fuera del MVP   |
+| **Versión del documento**         | 1.0.0                            |
 
 ## Objetivo
 

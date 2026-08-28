@@ -1,13 +1,13 @@
 # F-005: Lectura de archivos Markdown
 
-| Campo | Valor |
-|---|---|
-| **Nombre** | Lectura de archivos Markdown |
-| **Autor** | Manus AI |
-| **Fecha de creación** | 28 de agosto de 2026 |
-| **Fecha de última actualización** | 28 de agosto de 2026 |
-| **Estado** | Feature futura — fuera del MVP |
-| **Versión del documento** | 1.0.0 |
+| Campo                             | Valor                          |
+| --------------------------------- | ------------------------------ |
+| **Nombre**                        | Lectura de archivos Markdown   |
+| **Autor**                         | Manus AI                       |
+| **Fecha de creación**             | 28 de agosto de 2026           |
+| **Fecha de última actualización** | 28 de agosto de 2026           |
+| **Estado**                        | Feature futura — fuera del MVP |
+| **Versión del documento**         | 1.0.0                          |
 
 ## Objetivo
 
@@ -17,18 +17,18 @@ Permitir importar y leer archivos `.md` desde la biblioteca local de echo_reader
 
 El lector Markdown debe interpretar el contenido de forma segura y mostrar títulos, subtítulos, párrafos, listas, enlaces, tablas, bloques de código, citas, imágenes locales y separadores. El contenido se presentará como documento refluible, por lo que tamaño de letra, fuente, interlineado, márgenes y tema deben comportarse de forma similar al lector EPUB.
 
-| Capacidad | Prioridad |
-|---|---|
-| Importar y detectar `.md` | Alta |
-| Renderizar Markdown común | Alta |
-| Tabla de contenidos a partir de headings | Alta |
-| Guardar última posición | Alta |
-| Marcadores y notas | Alta |
-| Tema y tamaño de letra | Alta |
-| Syntax highlighting | Media |
-| Mermaid, KaTeX y extensiones avanzadas | Media, con sanitización |
-| Edición del Markdown | Fuera del alcance inicial |
-| Sincronización cloud | Feature separada |
+| Capacidad                                | Prioridad                 |
+| ---------------------------------------- | ------------------------- |
+| Importar y detectar `.md`                | Alta                      |
+| Renderizar Markdown común                | Alta                      |
+| Tabla de contenidos a partir de headings | Alta                      |
+| Guardar última posición                  | Alta                      |
+| Marcadores y notas                       | Alta                      |
+| Tema y tamaño de letra                   | Alta                      |
+| Syntax highlighting                      | Media                     |
+| Mermaid, KaTeX y extensiones avanzadas   | Media, con sanitización   |
+| Edición del Markdown                     | Fuera del alcance inicial |
+| Sincronización cloud                     | Feature separada          |
 
 ## Seguridad
 

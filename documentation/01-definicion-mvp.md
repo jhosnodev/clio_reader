@@ -1,13 +1,13 @@
 # Definición del proyecto como MVP
 
-| Campo | Valor |
-|---|---|
-| **Nombre** | echo_reader — MVP de biblioteca local |
-| **Autor** | Manus AI |
-| **Fecha de creación** | 28 de agosto de 2026 |
-| **Fecha de última actualización** | 28 de agosto de 2026 |
-| **Estado** | Propuesta aprobada para planificación |
-| **Versión del documento** | 1.0.0 |
+| Campo                             | Valor                                 |
+| --------------------------------- | ------------------------------------- |
+| **Nombre**                        | echo_reader — MVP de biblioteca local |
+| **Autor**                         | Manus AI                              |
+| **Fecha de creación**             | 28 de agosto de 2026                  |
+| **Fecha de última actualización** | 28 de agosto de 2026                  |
+| **Estado**                        | Propuesta aprobada para planificación |
+| **Versión del documento**         | 1.0.0                                 |
 
 ## 1. Propósito
 
@@ -17,16 +17,16 @@ La aplicación no tendrá perfiles, autenticación, backend, sincronización ni 
 
 ## 2. Alcance funcional
 
-| Capacidad | Alcance del MVP |
-|---|---|
-| Biblioteca | Importar, listar, abrir y eliminar libros locales |
-| Formatos | EPUB, PDF y CBZ |
-| Lectura | Navegación, progreso y reanudación |
-| Preferencias | Tema, colores, tamaño de letra y controles aplicables al formato |
-| Anotaciones | Marcadores y notas locales asociados a una posición |
-| Plataformas | Windows y Android como prioridad; iOS posterior |
-| Operación | Funcionalidad offline y datos almacenados localmente |
-| Exportación | No es requisito del primer corte; se documenta como feature futura |
+| Capacidad    | Alcance del MVP                                                    |
+| ------------ | ------------------------------------------------------------------ |
+| Biblioteca   | Importar, listar, abrir y eliminar libros locales                  |
+| Formatos     | EPUB, PDF y CBZ                                                    |
+| Lectura      | Navegación, progreso y reanudación                                 |
+| Preferencias | Tema, colores, tamaño de letra y controles aplicables al formato   |
+| Anotaciones  | Marcadores y notas locales asociados a una posición                |
+| Plataformas  | Windows y Android como prioridad; iOS posterior                    |
+| Operación    | Funcionalidad offline y datos almacenados localmente               |
+| Exportación  | No es requisito del primer corte; se documenta como feature futura |
 
 ## 3. Fuera del MVP
 

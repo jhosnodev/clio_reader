@@ -1,13 +1,13 @@
 # F-002: Sincronización con la nube
 
-| Campo | Valor |
-|---|---|
-| **Nombre** | Sincronización con la nube |
-| **Autor** | Manus AI |
-| **Fecha de creación** | 28 de agosto de 2026 |
-| **Fecha de última actualización** | 28 de agosto de 2026 |
-| **Estado** | Feature futura — fuera del MVP |
-| **Versión del documento** | 1.0.0 |
+| Campo                             | Valor                          |
+| --------------------------------- | ------------------------------ |
+| **Nombre**                        | Sincronización con la nube     |
+| **Autor**                         | Manus AI                       |
+| **Fecha de creación**             | 28 de agosto de 2026           |
+| **Fecha de última actualización** | 28 de agosto de 2026           |
+| **Estado**                        | Feature futura — fuera del MVP |
+| **Versión del documento**         | 1.0.0                          |
 
 ## Objetivo
 

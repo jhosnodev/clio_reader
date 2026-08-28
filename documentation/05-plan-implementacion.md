@@ -1,13 +1,13 @@
 # Plan de implementación por fases
 
-| Campo | Valor |
-|---|---|
-| **Nombre** | echo_reader — Plan de implementación |
-| **Autor** | Manus AI |
-| **Fecha de creación** | 28 de agosto de 2026 |
-| **Fecha de última actualización** | 28 de agosto de 2026 |
-| **Estado** | Plan aprobado para ejecución incremental |
-| **Versión del documento** | 1.0.0 |
+| Campo                             | Valor                                    |
+| --------------------------------- | ---------------------------------------- |
+| **Nombre**                        | echo_reader — Plan de implementación     |
+| **Autor**                         | Manus AI                                 |
+| **Fecha de creación**             | 28 de agosto de 2026                     |
+| **Fecha de última actualización** | 28 de agosto de 2026                     |
+| **Estado**                        | Plan aprobado para ejecución incremental |
+| **Versión del documento**         | 1.0.0                                    |
 
 ## 1. Propósito
 
@@ -19,15 +19,15 @@ El plan prioriza un código limpio, modular, testeable y documentado. Cada featu
 
 Al terminar las fases obligatorias, el usuario podrá importar una cantidad de libros limitada únicamente por el almacenamiento y las capacidades del dispositivo, organizarlos en una biblioteca local, abrir EPUB/PDF/CBZ, navegar, cambiar las preferencias aplicables, reanudar desde la última posición y administrar marcadores y notas.
 
-| Área | Resultado esperado |
-|---|---|
-| Plataforma | Aplicación funcional en Windows y Android |
-| Datos | Persistencia local sin cuentas ni servicios remotos |
-| Formatos | EPUB, PDF y CBZ |
-| Lectura | Apertura, navegación, progreso y reanudación |
-| Preferencias | Tema, colores, tamaño de letra y opciones aplicables |
-| Anotaciones | Marcadores y notas locales |
-| Calidad | Unit tests, integración, pruebas manuales y validación de rendimiento |
+| Área         | Resultado esperado                                                    |
+| ------------ | --------------------------------------------------------------------- |
+| Plataforma   | Aplicación funcional en Windows y Android                             |
+| Datos        | Persistencia local sin cuentas ni servicios remotos                   |
+| Formatos     | EPUB, PDF y CBZ                                                       |
+| Lectura      | Apertura, navegación, progreso y reanudación                          |
+| Preferencias | Tema, colores, tamaño de letra y opciones aplicables                  |
+| Anotaciones  | Marcadores y notas locales                                            |
+| Calidad      | Unit tests, integración, pruebas manuales y validación de rendimiento |
 
 ## 3. Principios de implementación
 
@@ -197,16 +197,16 @@ Se crearán builds de Windows y Android, configuración de nombre/icono, permiso
 
 Una feature no se considerará terminada solo porque funcione en el caso feliz. Debe cumplir lo siguiente:
 
-| Requisito | Evidencia |
-|---|---|
-| Código | Tipado estricto, responsabilidades separadas y sin duplicación evitable |
-| Pruebas | Unitarias y de integración relevantes; prueba manual multiplataforma cuando aplique |
-| Errores | Estados de carga, vacío, error y recuperación definidos |
-| Documentación | README o especificación en `documentation/features` si la complejidad lo amerita |
-| Datos | Migración y compatibilidad documentadas si cambia el esquema |
-| Accesibilidad | Labels, foco, teclado o targets táctiles según plataforma |
-| Rendimiento | Métrica o límite definido para operaciones costosas |
-| Revisión | Pull request revisado y CI verde |
+| Requisito     | Evidencia                                                                           |
+| ------------- | ----------------------------------------------------------------------------------- |
+| Código        | Tipado estricto, responsabilidades separadas y sin duplicación evitable             |
+| Pruebas       | Unitarias y de integración relevantes; prueba manual multiplataforma cuando aplique |
+| Errores       | Estados de carga, vacío, error y recuperación definidos                             |
+| Documentación | README o especificación en `documentation/features` si la complejidad lo amerita    |
+| Datos         | Migración y compatibilidad documentadas si cambia el esquema                        |
+| Accesibilidad | Labels, foco, teclado o targets táctiles según plataforma                           |
+| Rendimiento   | Métrica o límite definido para operaciones costosas                                 |
+| Revisión      | Pull request revisado y CI verde                                                    |
 
 ## 7. Estrategia de pruebas
 
@@ -222,15 +222,15 @@ La documentación de usuario debe explicar importar, abrir, eliminar, localizar 
 
 ## 9. Riesgos y decisiones de control
 
-| Riesgo | Control |
-|---|---|
-| WebView consume demasiada memoria | Renderizado bajo demanda, límites y medición desde CBZ/PDF |
-| Locator EPUB cambia con el reflujo | Guardar CFI/contexto/posición y estrategia de recuperación |
-| Archivos movidos o eliminados | Hash opcional, estado `missing` y acción “localizar archivo” |
-| Módulo no compatible con Windows | Adaptadores y spike temprano; no acoplar el dominio |
-| Datos corruptos por cierre abrupto | Transacciones, debounce y recuperación de migraciones |
-| Crecimiento de alcance por nube | Mantener nube, perfiles y SaaS en `documentation/features` |
-| Regresiones entre plataformas | CI más matriz manual Windows/Android por release |
+| Riesgo                             | Control                                                      |
+| ---------------------------------- | ------------------------------------------------------------ |
+| WebView consume demasiada memoria  | Renderizado bajo demanda, límites y medición desde CBZ/PDF   |
+| Locator EPUB cambia con el reflujo | Guardar CFI/contexto/posición y estrategia de recuperación   |
+| Archivos movidos o eliminados      | Hash opcional, estado `missing` y acción “localizar archivo” |
+| Módulo no compatible con Windows   | Adaptadores y spike temprano; no acoplar el dominio          |
+| Datos corruptos por cierre abrupto | Transacciones, debounce y recuperación de migraciones        |
+| Crecimiento de alcance por nube    | Mantener nube, perfiles y SaaS en `documentation/features`   |
+| Regresiones entre plataformas      | CI más matriz manual Windows/Android por release             |
 
 ## 10. Orden de ejecución resumido
 

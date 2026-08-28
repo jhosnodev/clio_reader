@@ -1,13 +1,13 @@
 # Arquitectura técnica
 
-| Campo | Valor |
-|---|---|
-| **Nombre** | echo_reader — Arquitectura técnica |
-| **Autor** | Manus AI |
-| **Fecha de creación** | 28 de agosto de 2026 |
-| **Fecha de última actualización** | 28 de agosto de 2026 |
-| **Estado** | Propuesta inicial |
-| **Versión del documento** | 1.0.0 |
+| Campo                             | Valor                              |
+| --------------------------------- | ---------------------------------- |
+| **Nombre**                        | echo_reader — Arquitectura técnica |
+| **Autor**                         | Manus AI                           |
+| **Fecha de creación**             | 28 de agosto de 2026               |
+| **Fecha de última actualización** | 28 de agosto de 2026               |
+| **Estado**                        | Propuesta inicial                  |
+| **Versión del documento**         | 1.0.0                              |
 
 ## 1. Decisión arquitectónica
 
@@ -49,12 +49,12 @@ documentation/               # Decisiones y especificaciones
 
 ## 4. Patrones principales
 
-| Patrón | Uso |
-|---|---|
-| Adapter | Convierte la API específica de cada renderer en el contrato común |
-| Factory | Construye el adaptador adecuado a partir del formato detectado |
-| Strategy | Permite que EPUB, PDF y CBZ resuelvan navegación de manera distinta |
-| Repository | Aísla SQLite, JSON, AsyncStorage u otro mecanismo local |
+| Patrón        | Uso                                                                   |
+| ------------- | --------------------------------------------------------------------- |
+| Adapter       | Convierte la API específica de cada renderer en el contrato común     |
+| Factory       | Construye el adaptador adecuado a partir del formato detectado        |
+| Strategy      | Permite que EPUB, PDF y CBZ resuelvan navegación de manera distinta   |
+| Repository    | Aísla SQLite, JSON, AsyncStorage u otro mecanismo local               |
 | State machine | Controla `idle`, `opening`, `ready`, `navigating`, `error` y `closed` |
 
 ## 5. Renderizado
