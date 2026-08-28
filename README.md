@@ -16,7 +16,7 @@ La documentación del proyecto se encuentra en [`documentation/`](./documentatio
 
 ```powershell
 cd C:\Users\dell\Documents\GitHub
-git clone <URL_DEL_REPOSITORIO_PRIVADO> echo_reader
+git clone https://github.com/jhosnodev/echo_reader.git echo_reader
 cd echo_reader
 ```
 
