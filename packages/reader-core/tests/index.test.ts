@@ -44,3 +44,48 @@ describe('ReaderFactory', () => {
     expect(() => factory.create(source, 'pdf')).toThrow(UnsupportedFormatError);
   });
 });
+
+describe('detectBookFormat', () => {
+  it('detects supported formats case-insensitively', async () => {
+    const { detectBookFormat } = await import('../src/index.js');
+
+    expect(detectBookFormat('Novel.EPUB')).toBe('epub');
+    expect(detectBookFormat('manual.pdf')).toBe('pdf');
+    expect(detectBookFormat('comic.cbz')).toBe('cbz');
+    expect(detectBookFormat('notes.md')).toBe('md');
+  });
+
+  it('falls back to a supported MIME type', async () => {
+    const { detectBookFormat } = await import('../src/index.js');
+
+    expect(detectBookFormat('book', 'application/pdf')).toBe('pdf');
+  });
+});
+
+describe('transitionReaderSession', () => {
+  it('moves from opening to ready and then closed', async () => {
+    const { INITIAL_READER_SESSION, transitionReaderSession } = await import('../src/index.js');
+    const opening = transitionReaderSession(INITIAL_READER_SESSION, {
+      type: 'openRequested',
+      source,
+      format: 'epub',
+    });
+    const ready = transitionReaderSession(opening, {
+      type: 'opened',
+      locator: { format: 'epub', href: 'chapter.xhtml' },
+    });
+    const closed = transitionReaderSession(ready, { type: 'closeRequested' });
+
+    expect(opening.status).toBe('opening');
+    expect(ready.status).toBe('ready');
+    expect(closed).toEqual({ status: 'closed' });
+  });
+
+  it('rejects navigation before a document is ready', async () => {
+    const { INITIAL_READER_SESSION, transitionReaderSession } = await import('../src/index.js');
+
+    expect(() =>
+      transitionReaderSession(INITIAL_READER_SESSION, { type: 'navigationStarted' }),
+    ).toThrow('Cannot apply navigationStarted while reader session is idle');
+  });
+});
