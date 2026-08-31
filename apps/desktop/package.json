@@ -1,6 +1,8 @@
 {
   "name": "@echo-reader/desktop",
   "version": "0.1.0",
+  "description": "Local-first digital book library manager and reader",
+  "author": "Echo Reader Team",
   "private": true,
   "type": "module",
   "main": "dist-electron/main.js",

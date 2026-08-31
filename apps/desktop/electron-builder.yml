@@ -1,5 +1,7 @@
 appId: com.echo-reader.desktop
 productName: Echo Reader
+description: Local-first digital book library manager and reader
+author: Echo Reader Team
 directories:
   output: release
   buildResources: resources
@@ -12,6 +14,7 @@ win:
       arch:
         - x64
   icon: resources/icon.ico
+  sign: false
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
