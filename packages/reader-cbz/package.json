@@ -1,0 +1,16 @@
+{
+  "name": "@echo-reader/reader-cbz",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "tsc -p tsconfig.json",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "@echo-reader/domain": "workspace:*",
+    "@echo-reader/reader-core": "workspace:*",
+    "jszip": "^3.10.1"
+  }
+}
