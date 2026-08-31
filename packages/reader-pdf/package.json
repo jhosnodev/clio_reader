@@ -1,0 +1,16 @@
+{
+  "name": "@echo-reader/reader-pdf",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "tsc -p tsconfig.json",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "@echo-reader/domain": "workspace:*",
+    "@echo-reader/reader-core": "workspace:*",
+    "pdfjs-dist": "^4.0.379"
+  }
+}
