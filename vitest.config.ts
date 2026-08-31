@@ -11,6 +11,7 @@ export default defineConfig({
       '@echo-reader/domain': resolve(repositoryRoot, 'packages/domain/src/index.ts'),
       '@echo-reader/reader-core': resolve(repositoryRoot, 'packages/reader-core/src/index.ts'),
       '@echo-reader/storage': resolve(repositoryRoot, 'packages/storage/src/index.ts'),
+      '@echo-reader/library': resolve(repositoryRoot, 'packages/library/src/index.ts'),
     },
   },
   test: {

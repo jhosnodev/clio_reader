@@ -7,5 +7,9 @@
     "check": "tsc -p tsconfig.json",
     "lint": "tsc -p tsconfig.json --noEmit",
     "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "@echo-reader/domain": "workspace:*",
+    "@echo-reader/storage": "workspace:*"
   }
 }
