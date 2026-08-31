@@ -87,6 +87,18 @@ importers:
         specifier: ^4.0.379
         version: 4.10.38
 
+  packages/reader-session:
+    dependencies:
+      '@echo-reader/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@echo-reader/reader-core':
+        specifier: workspace:*
+        version: link:../reader-core
+      '@echo-reader/storage':
+        specifier: workspace:*
+        version: link:../storage
+
   packages/storage:
     dependencies:
       '@echo-reader/domain':

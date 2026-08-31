@@ -15,6 +15,7 @@ export default defineConfig({
       '@echo-reader/reader-cbz': resolve(repositoryRoot, 'packages/reader-cbz/src/index.ts'),
       '@echo-reader/reader-pdf': resolve(repositoryRoot, 'packages/reader-pdf/src/index.ts'),
       '@echo-reader/reader-epub': resolve(repositoryRoot, 'packages/reader-epub/src/index.ts'),
+      '@echo-reader/reader-session': resolve(repositoryRoot, 'packages/reader-session/src/index.ts'),
     },
   },
   test: {
