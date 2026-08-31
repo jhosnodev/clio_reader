@@ -34,6 +34,15 @@ importers:
 
   apps/mobile: {}
 
+  packages/annotations:
+    dependencies:
+      '@echo-reader/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@echo-reader/library':
+        specifier: workspace:*
+        version: link:../library
+
   packages/domain: {}
 
   packages/library:
