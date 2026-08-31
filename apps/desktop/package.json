@@ -6,9 +6,13 @@
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build && electron-builder",
+    "build": "tsc && vite build",
+    "build:win": "tsc && vite build && electron-builder --win",
+    "build:win:portable": "tsc && vite build && electron-builder --win --portable",
+    "preview": "vite preview",
     "check": "tsc -p tsconfig.json",
-    "lint": "tsc -p tsconfig.json --noEmit"
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "generate-icons": "node scripts/generate-icons.js"
   },
   "dependencies": {
     "@echo-reader/reader-core": "workspace:*",
