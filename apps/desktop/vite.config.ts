@@ -1,0 +1,34 @@
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import electron from 'vite-plugin-electron';
+import electronRenderer from 'vite-plugin-electron-renderer';
+import { resolve } from 'path';
+
+export default defineConfig({
+  plugins: [
+    react(),
+    electron([
+      {
+        entry: 'electron/main.ts',
+      },
+      {
+        entry: 'electron/preload.ts',
+        onstart(options) {
+          options.reload();
+        },
+      },
+    ]),
+    electronRenderer(),
+  ],
+  resolve: {
+    alias: {
+      '@echo-reader/domain': resolve(__dirname, '../../packages/domain/src'),
+      '@echo-reader/reader-core': resolve(__dirname, '../../packages/reader-core/src'),
+      '@echo-reader/reader-epub': resolve(__dirname, '../../packages/reader-epub/src'),
+      '@echo-reader/reader-pdf': resolve(__dirname, '../../packages/reader-pdf/src'),
+      '@echo-reader/reader-cbz': resolve(__dirname, '../../packages/reader-cbz/src'),
+      '@echo-reader/reader-session': resolve(__dirname, '../../packages/reader-session/src'),
+      '@echo-reader/storage': resolve(__dirname, '../../packages/storage/src'),
+    },
+  },
+});

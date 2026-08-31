@@ -1,5 +1,26 @@
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": { "rootDir": "src" },
-  "include": ["src/**/*.ts"]
+  "compilerOptions": {
+    "outDir": "dist",
+    "jsx": "react-jsx",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": ["node"],
+    "noEmit": true,
+    "skipLibCheck": true,
+    "composite": false,
+    "baseUrl": ".",
+    "paths": {
+      "@echo-reader/domain": ["../../packages/domain/src"],
+      "@echo-reader/reader-core": ["../../packages/reader-core/src"],
+      "@echo-reader/reader-epub": ["../../packages/reader-epub/src"],
+      "@echo-reader/reader-pdf": ["../../packages/reader-pdf/src"],
+      "@echo-reader/reader-cbz": ["../../packages/reader-cbz/src"],
+      "@echo-reader/reader-session": ["../../packages/reader-session/src"],
+      "@echo-reader/storage": ["../../packages/storage/src"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "App.tsx"],
+  "exclude": ["node_modules"]
 }
