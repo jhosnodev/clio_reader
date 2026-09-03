@@ -14,7 +14,7 @@ import { useAppLifecycle } from './bridges/lifecycle';
 import { bridge } from './bridges/bridge-singleton';
 import { LocalRepository } from '@echo-reader/storage';
 import { createElectronKVStore } from './bridges/storage';
-import { importBook, listBooks, removeBook } from '@echo-reader/library';
+import { importBook, listBooks, removeBook, generateId } from '@echo-reader/library';
 import type { Book, BookFormat } from '@echo-reader/domain';
 import { detectBookFormat } from '@echo-reader/reader-core';
 
@@ -79,7 +79,7 @@ export function App(): JSX.Element {
         return;
       }
 
-      const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      const id = generateId();
       const title = fileSource.name.replace(/\.[^.]+$/, '');
 
       await importBook(repository, {

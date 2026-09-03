@@ -110,36 +110,48 @@ class ReaderError extends Error {
 }
 
 /* ==========================================================================
-   Gestión de estado de UI (SRP: cada función controla un solo estado)
+   Gestión de estado de UI (SRP: un solo punto de control)
    ========================================================================== */
 
-function showLoading(): void {
-  setVisible('reader-loading', true);
-  setVisible('reader-error', false);
-  setVisible('reader-content', false);
-  setVisible('reader-controls', false);
-}
+type UIState =
+  | { readonly type: 'loading' }
+  | { readonly type: 'error'; readonly message: string }
+  | { readonly type: 'content' };
 
-function showError(message: string): void {
-  setVisible('reader-loading', false);
-  setVisible('reader-error', true);
-  setVisible('reader-content', false);
-  setVisible('reader-controls', false);
+const ELEMENT_IDS = ['reader-loading', 'reader-error', 'reader-content', 'reader-controls'] as const;
 
-  const errorMessage = document.getElementById('reader-error-message');
-  if (errorMessage) errorMessage.textContent = message;
-}
+function setUIState(state: UIState): void {
+  const visibility: Record<string, boolean> = {
+    'reader-loading': false,
+    'reader-error': false,
+    'reader-content': false,
+    'reader-controls': false,
+  };
 
-function showContent(): void {
-  setVisible('reader-loading', false);
-  setVisible('reader-error', false);
-  setVisible('reader-content', true);
-  setVisible('reader-controls', true);
-}
+  switch (state.type) {
+    case 'loading':
+      visibility['reader-loading'] = true;
+      break;
+    case 'error':
+      visibility['reader-error'] = true;
+      break;
+    case 'content':
+      visibility['reader-content'] = true;
+      visibility['reader-controls'] = true;
+      break;
+  }
 
-function setVisible(id: string, visible: boolean): void {
-  const el = document.getElementById(id);
-  if (el) el.style.display = visible ? (id === 'reader-controls' ? 'flex' : 'block') : 'none';
+  for (const id of ELEMENT_IDS) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.style.display = visibility[id] ? (id === 'reader-controls' ? 'flex' : 'block') : 'none';
+    }
+  }
+
+  if (state.type === 'error') {
+    const errorMessage = document.getElementById('reader-error-message');
+    if (errorMessage) errorMessage.textContent = state.message;
+  }
 }
 
 /* ==========================================================================
@@ -272,7 +284,7 @@ function setupRetry(): void {
    ========================================================================== */
 
 async function main(): Promise<void> {
-  showLoading();
+  setUIState({ type: 'loading' });
 
   try {
     const { uri, format } = parseQueryParams();
@@ -283,12 +295,12 @@ async function main(): Promise<void> {
     await renderChapter(readerDoc, preferences);
     setupNavigation(readerDoc, preferences);
 
-    showContent();
+    setUIState({ type: 'content' });
     communicateToHost({ type: 'ready' });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'Error desconocido al abrir el libro';
-    showError(message);
+    setUIState({ type: 'error', message });
     communicateToHost({ type: 'error', message });
   }
 }
