@@ -25,14 +25,20 @@ export function App(): JSX.Element {
   );
 
   const handleImportBook = useCallback(async () => {
-    const fileSource = await bridge.pickFile();
-    if (fileSource) {
-      const ext = fileSource.name.split('.').pop()?.toLowerCase() ?? '';
-      setOpenBook({
-        uri: fileSource.uri,
-        name: fileSource.name,
-        format: ext,
-      });
+    console.log('[App] handleImportBook called');
+    try {
+      const fileSource = await bridge.pickFile();
+      console.log('[App] fileSource:', fileSource);
+      if (fileSource) {
+        const ext = fileSource.name.split('.').pop()?.toLowerCase() ?? '';
+        setOpenBook({
+          uri: fileSource.uri,
+          name: fileSource.name,
+          format: ext,
+        });
+      }
+    } catch (err) {
+      console.error('[App] import error:', err);
     }
   }, []);
 

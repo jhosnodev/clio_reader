@@ -1,140 +1,169 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
-import { join } from 'path';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 const isDev = !app.isPackaged;
 
-let mainWindow: BrowserWindow | null = null;
+const gotTheLock = app.requestSingleInstanceLock();
 
-function getDataPath(): string {
-  const userDataPath = app.getPath('userData');
-  return join(userDataPath, 'echo-reader');
-}
+if (!gotTheLock) {
+  app.quit();
+} else {
+  let mainWindow: BrowserWindow | null = null;
 
-function getStoragePath(): string {
-  return getDataPath();
-}
-
-async function ensureDataDir(): Promise<void> {
-  const dataPath = getDataPath();
-  if (!existsSync(dataPath)) {
-    await mkdir(dataPath, { recursive: true });
-  }
-}
-
-function createWindow(): void {
-  mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    minWidth: 800,
-    minHeight: 600,
-    title: 'Echo Reader',
-    webPreferences: {
-      preload: join(__dirname, 'preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: false,
-    },
-  });
-
-  if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
-    mainWindow.webContents.openDevTools();
-  } else {
-    mainWindow.loadFile(join(__dirname, '../dist/index.html'));
+  function getDataPath(): string {
+    const userDataPath = app.getPath('userData');
+    return join(userDataPath, 'echo-reader');
   }
 
-  mainWindow.on('closed', () => {
-    mainWindow = null;
-  });
-}
+  function getStoragePath(): string {
+    return getDataPath();
+  }
 
-function setupIpcHandlers(): void {
-  ipcMain.handle('pick-file', async () => {
-    const result = await dialog.showOpenDialog(mainWindow!, {
-      title: 'Select a book',
-      filters: [
-        { name: 'Books', extensions: ['epub', 'pdf', 'cbz'] },
-        { name: 'EPUB', extensions: ['epub'] },
-        { name: 'PDF', extensions: ['pdf'] },
-        { name: 'CBZ', extensions: ['cbz'] },
-      ],
-      properties: ['openFile', 'multiSelections'],
+  async function ensureDataDir(): Promise<void> {
+    const dataPath = getDataPath();
+    if (!existsSync(dataPath)) {
+      await mkdir(dataPath, { recursive: true });
+    }
+  }
+
+  function createWindow(): void {
+    mainWindow = new BrowserWindow({
+      width: 1200,
+      height: 800,
+      minWidth: 800,
+      minHeight: 600,
+      title: 'Echo Reader',
+      show: false,
+      webPreferences: {
+        preload: join(__dirname, 'preload.js'),
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: false,
+      },
     });
 
-    if (result.canceled || result.filePaths.length === 0) {
-      return null;
+    if (isDev) {
+      mainWindow.loadURL('http://localhost:5173');
+      mainWindow.webContents.openDevTools();
+    } else {
+      mainWindow.loadFile(join(__dirname, '../dist/index.html'));
     }
 
-    return result.filePaths.map((filePath) => ({
-      uri: `file://${filePath}`,
-      name: filePath.split(/[\\/]/).pop() ?? 'unknown',
-      filePath,
-    }));
-  });
+    mainWindow.once('ready-to-show', () => {
+      mainWindow?.show();
+    });
 
-  ipcMain.handle('read-file', async (_event, uri: string) => {
-    const filePath = uri.startsWith('file://') ? uri.slice(7) : uri;
-    const buffer = await readFile(filePath);
-    return buffer;
-  });
+    mainWindow.on('closed', () => {
+      mainWindow = null;
+    });
+  }
 
-  ipcMain.handle('read-storage', async (_event, key: string) => {
-    await ensureDataDir();
-    const filePath = join(getDataPath(), `${key}.json`);
-    if (!existsSync(filePath)) {
-      return undefined;
+  function setupIpcHandlers(): void {
+    ipcMain.handle('pick-file', async () => {
+      console.log('[main] pick-file handler invoked');
+      try {
+        if (!mainWindow) {
+          console.error('[main] mainWindow is null');
+          return null;
+        }
+        const result = await dialog.showOpenDialog(mainWindow, {
+          title: 'Select a book',
+          filters: [
+            { name: 'Books', extensions: ['epub', 'pdf', 'cbz'] },
+            { name: 'EPUB', extensions: ['epub'] },
+            { name: 'PDF', extensions: ['pdf'] },
+            { name: 'CBZ', extensions: ['cbz'] },
+          ],
+          properties: ['openFile', 'multiSelections'],
+        });
+
+        console.log('[main] dialog result:', result);
+
+        if (result.canceled || result.filePaths.length === 0) {
+          return null;
+        }
+
+        return result.filePaths.map((filePath) => ({
+          uri: `file://${filePath}`,
+          name: filePath.split(/[\\/]/).pop() ?? 'unknown',
+          filePath,
+        }));
+      } catch (err) {
+        console.error('[main] pick-file error:', err);
+        return null;
+      }
+    });
+
+    ipcMain.handle('read-file', async (_event, uri: string) => {
+      const filePath = uri.startsWith('file://') ? uri.slice(7) : uri;
+      const buffer = await readFile(filePath);
+      return buffer;
+    });
+
+    ipcMain.handle('read-storage', async (_event, key: string) => {
+      await ensureDataDir();
+      const filePath = join(getDataPath(), `${key}.json`);
+      if (!existsSync(filePath)) {
+        return undefined;
+      }
+      const content = await readFile(filePath, 'utf-8');
+      return content;
+    });
+
+    ipcMain.handle('write-storage', async (_event, key: string, value: string) => {
+      await ensureDataDir();
+      const filePath = join(getDataPath(), `${key}.json`);
+      await writeFile(filePath, value, 'utf-8');
+    });
+
+    ipcMain.handle('delete-storage', async (_event, key: string) => {
+      await ensureDataDir();
+      const filePath = join(getDataPath(), `${key}.json`);
+      if (existsSync(filePath)) {
+        const { unlink } = await import('fs/promises');
+        await unlink(filePath);
+      }
+    });
+
+    ipcMain.handle('get-storage-path', () => {
+      return getStoragePath();
+    });
+  }
+
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
     }
-    const content = await readFile(filePath, 'utf-8');
-    return content;
   });
 
-  ipcMain.handle('write-storage', async (_event, key: string, value: string) => {
-    await ensureDataDir();
-    const filePath = join(getDataPath(), `${key}.json`);
-    await writeFile(filePath, value, 'utf-8');
+  app.whenReady().then(() => {
+    setupIpcHandlers();
+    createWindow();
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        createWindow();
+      } else if (mainWindow) {
+        mainWindow.webContents.send('app-resume');
+      }
+    });
   });
 
-  ipcMain.handle('delete-storage', async (_event, key: string) => {
-    await ensureDataDir();
-    const filePath = join(getDataPath(), `${key}.json`);
-    if (existsSync(filePath)) {
-      const { unlink } = await import('fs/promises');
-      await unlink(filePath);
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') {
+      app.quit();
     }
   });
 
-  ipcMain.handle('get-storage-path', () => {
-    return getStoragePath();
+  app.on('before-quit', () => {
+    if (mainWindow) {
+      mainWindow.webContents.send('app-suspend');
+    }
   });
 }
-
-app.whenReady().then(() => {
-  setupIpcHandlers();
-  createWindow();
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
-});
-
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
-
-app.on('before-quit', () => {
-  if (mainWindow) {
-    mainWindow.webContents.send('app-suspend');
-  }
-});
-
-app.on('activate', () => {
-  if (mainWindow) {
-    mainWindow.webContents.send('app-resume');
-  }
-});

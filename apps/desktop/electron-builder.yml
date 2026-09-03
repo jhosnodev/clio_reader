@@ -12,7 +12,7 @@ win:
       arch:
         - x64
   icon: resources/icon.ico
-  sign: false
+  signAndEditExecutable: false
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true

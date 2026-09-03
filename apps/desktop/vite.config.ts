@@ -1,12 +1,27 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import electron from 'vite-plugin-electron';
 import electronRenderer from 'vite-plugin-electron-renderer';
 import { resolve } from 'path';
 
+function removeCrossorigin(): Plugin {
+  return {
+    name: 'remove-crossorigin',
+    enforce: 'post',
+    transformIndexHtml(html) {
+      return html.replace(/ crossorigin/g, '');
+    },
+  };
+}
+
 export default defineConfig({
+  base: './',
+  build: {
+    modulePreload: { polyfill: false },
+  },
   plugins: [
     react(),
+    removeCrossorigin(),
     electron([
       {
         entry: 'electron/main.ts',
