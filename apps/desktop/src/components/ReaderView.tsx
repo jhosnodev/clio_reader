@@ -2,8 +2,8 @@
  * ReaderView.tsx — Vista del lector de libros
  *
  * Principios aplicados:
- * - SRP: Solo gestiona el webview y la verificación de archivos
- * - DIP: Recibe datos via props, no conoce el repository
+ * - SRP: Gestiona webview, verificación de archivos, progreso y preferencias
+ * - DIP: Recibe repository via props, no lo crea
  * - Fallback: Verifica existencia del archivo antes de cargar
  * - UI en español
  * - Accesibilidad
@@ -11,35 +11,49 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { bridge } from '../bridges/bridge-singleton';
+import type { LibraryRepository } from '@echo-reader/library';
+import type { ReaderPreferences } from '@echo-reader/domain';
+import { createDefaultPreferences } from '@echo-reader/domain';
 
 /* ==========================================================================
    Props
    ========================================================================== */
 
 interface ReaderViewProps {
+  readonly bookId: string;
   readonly fileUri: string;
   readonly format: string;
+  readonly repository: LibraryRepository;
   readonly onClose: () => void;
 }
 
 /* ==========================================================================
-   Estados internos (SRP: cada estado representa algo específico)
+   Estados internos
    ========================================================================== */
 
 type FileStatus = 'checking' | 'found' | 'not-found';
+
+/* ==========================================================================
+   Debounce para guardado de progreso
+   ========================================================================== */
+
+const PROGRESS_DEBOUNCE_MS = 800;
 
 /* ==========================================================================
    Componente
    ========================================================================== */
 
 export function ReaderView({
+  bookId,
   fileUri,
   format,
+  repository,
   onClose,
 }: ReaderViewProps): JSX.Element {
   const [fileStatus, setFileStatus] = useState<FileStatus>('checking');
   const [isRelocating, setIsRelocating] = useState(false);
   const webviewRef = useRef<HTMLElement>(null);
+  const progressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* ----- Verificar existencia del archivo ----- */
   const checkFile = useCallback(async () => {
@@ -56,24 +70,110 @@ export function ReaderView({
     checkFile();
   }, [checkFile]);
 
-  /* ----- Comunicación con el webview ----- */
+  /* ----- Cargar preferencias y progreso ----- */
+  const loadPreferences = useCallback(async (): Promise<ReaderPreferences> => {
+    try {
+      const [globalPrefs, bookPrefs] = await Promise.all([
+        repository.getGlobalPreferences(),
+        repository.getBookPreferences(bookId),
+      ]);
+      return { ...globalPrefs, ...bookPrefs };
+    } catch {
+      return createDefaultPreferences();
+    }
+  }, [repository, bookId]);
+
+  const loadProgress = useCallback(async () => {
+    try {
+      return await repository.getProgress(bookId);
+    } catch {
+      return undefined;
+    }
+  }, [repository, bookId]);
+
+  /* ----- Guardar progreso con debounce ----- */
+  const saveProgress = useCallback(
+    (locator: unknown, percent: number) => {
+      if (progressTimerRef.current) {
+        clearTimeout(progressTimerRef.current);
+      }
+
+      progressTimerRef.current = setTimeout(async () => {
+        try {
+          const { createReadingProgress } = await import('@echo-reader/domain');
+          const progress = createReadingProgress({
+            bookId,
+            locator: locator as import('@echo-reader/domain').ReaderLocator,
+            percent,
+          });
+          await repository.saveProgress(progress);
+        } catch (err) {
+          console.error('Error al guardar progreso:', err);
+        }
+      }, PROGRESS_DEBOUNCE_MS);
+    },
+    [repository, bookId],
+  );
+
+  /* ----- Guardar progreso al cerrar (flush) ----- */
+  const flushProgress = useCallback(async () => {
+    if (progressTimerRef.current) {
+      clearTimeout(progressTimerRef.current);
+      progressTimerRef.current = null;
+    }
+  }, []);
+
+  /* ----- Enviar preferencias al webview cuando esté listo ----- */
   useEffect(() => {
-    const webview = webviewRef.current;
+    const webview = webviewRef.current as (HTMLElement & { postMessage: (msg: unknown, origin: string) => void }) | null;
     if (!webview) return;
 
-    const handleMessage = (event: MessageEvent): void => {
-      const data = event.data as { type?: string };
-      if (data?.type === 'close') {
-        onClose();
+    const handleMessage = async (event: MessageEvent): Promise<void> => {
+      const data = event.data as { type?: string; locator?: unknown; percent?: number };
+
+      switch (data.type) {
+        case 'ready': {
+          const preferences = await loadPreferences();
+          const progress = await loadProgress();
+          webview.postMessage(
+            {
+              type: 'init',
+              preferences,
+              savedLocator: progress?.locator ?? null,
+            },
+            '*',
+          );
+          break;
+        }
+        case 'progress':
+          if (data.locator !== undefined) {
+            saveProgress(data.locator, data.percent ?? 0);
+          }
+          break;
+        case 'close':
+          await flushProgress();
+          onClose();
+          break;
       }
     };
 
-    const handler = handleMessage as EventListener;
-    webview.addEventListener('message', handler);
+    webview.addEventListener('message', handleMessage as unknown as EventListener);
     return () => {
-      webview.removeEventListener('message', handler);
+      webview.removeEventListener('message', handleMessage as unknown as EventListener);
     };
-  }, [onClose]);
+  }, [onClose, loadPreferences, loadProgress, saveProgress, flushProgress]);
+
+  /* ----- Guardar progreso al cerrar la ventana ----- */
+  useEffect(() => {
+    const handleBeforeUnload = (): void => {
+      if (progressTimerRef.current) {
+        clearTimeout(progressTimerRef.current);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
 
   /* ----- Relocalizar archivo ----- */
   const handleRelocate = useCallback(async () => {
@@ -81,9 +181,6 @@ export function ReaderView({
     try {
       const fileSource = await bridge.pickFile();
       if (fileSource) {
-        // Nota: en una implementación completa, aquí se actualizaría
-        // la URI del libro en el repository. Por ahora, recargamos
-        // con la nueva URI.
         window.location.href = `/reader.html?uri=${encodeURIComponent(fileSource.uri)}&format=${encodeURIComponent(format)}`;
       }
     } finally {
@@ -132,7 +229,7 @@ export function ReaderView({
 }
 
 /* ==========================================================================
-   Subcomponentes (SRP: cada uno una responsabilidad)
+   Subcomponentes
    ========================================================================== */
 
 function LoadingState(): JSX.Element {

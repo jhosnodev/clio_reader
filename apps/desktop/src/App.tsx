@@ -134,8 +134,10 @@ export function App(): JSX.Element {
   if (openBook) {
     return (
       <ReaderView
+        bookId={openBook.id}
         fileUri={openBook.uri}
         format={openBook.format}
+        repository={repository}
         onClose={handleCloseBook}
       />
     );

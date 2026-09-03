@@ -242,6 +242,13 @@ async function navigateChapter(
       await readerDoc.goPrevious();
     }
     await renderChapter(readerDoc, preferences);
+
+    // Enviar progreso al shell
+    const locator = await readerDoc.getLocator();
+    const chapters = readerDoc.getChapterCount ? await readerDoc.getChapterCount() : 1;
+    const index = readerDoc.getCurrentChapterIndex ? await readerDoc.getCurrentChapterIndex() : 0;
+    const percent = chapters > 1 ? index / (chapters - 1) : 0;
+    communicateToHost({ type: 'progress', locator, percent });
   } catch (error) {
     if (error instanceof Error && error.name === 'EpubNavigationError') {
       return;
@@ -283,17 +290,33 @@ function setupRetry(): void {
    Punto de entrada principal (Orquestador)
    ========================================================================== */
 
+let currentReaderDoc: ReaderDocument | null = null;
+let currentPreferences: ReaderPreferences = DEFAULT_PREFERENCES;
+
+function setupHostMessageListener(): void {
+  window.addEventListener('message', (event: MessageEvent) => {
+    const data = event.data as { type?: string; preferences?: ReaderPreferences };
+
+    if (data.type === 'init' && data.preferences) {
+      currentPreferences = data.preferences;
+      if (currentReaderDoc) {
+        renderChapter(currentReaderDoc, currentPreferences)
+          .then(() => setupNavigation(currentReaderDoc!, currentPreferences))
+          .catch(console.error);
+      }
+    }
+  });
+}
+
 async function main(): Promise<void> {
   setUIState({ type: 'loading' });
 
   try {
     const { uri, format } = parseQueryParams();
     const readerDoc = await loadDocument(uri, format);
+    currentReaderDoc = readerDoc;
 
-    const preferences = DEFAULT_PREFERENCES;
-
-    await renderChapter(readerDoc, preferences);
-    setupNavigation(readerDoc, preferences);
+    setupHostMessageListener();
 
     setUIState({ type: 'content' });
     communicateToHost({ type: 'ready' });
