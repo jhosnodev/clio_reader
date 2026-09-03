@@ -1,5 +1,5 @@
-import type { EpubLocator, ReaderPreferences, ReaderLocator } from '@echo-reader/domain';
-import type { FileSource, ReaderCapabilities, ReaderDocument } from '@echo-reader/reader-core';
+import type { EpubLocator, ReaderPreferences, ReaderLocator } from '@clio-reader/domain';
+import type { FileSource, ReaderCapabilities, ReaderDocument } from '@clio-reader/reader-core';
 
 import {
   parseEpub,
@@ -57,12 +57,16 @@ export class EpubReaderDocument implements ReaderDocument {
     return this.rawData !== null && !this.closed;
   }
 
-  async open(): Promise<void> {
+  async open(preloadedData?: Uint8Array): Promise<void> {
     if (this.closed) throw new EpubDocumentClosedError();
     if (this.rawData !== null) return;
 
-    const arrayBuffer = await fetch(this.source.uri).then((res) => res.arrayBuffer());
-    this.rawData = new Uint8Array(arrayBuffer);
+    if (preloadedData) {
+      this.rawData = preloadedData;
+    } else {
+      const arrayBuffer = await fetch(this.source.uri).then((res) => res.arrayBuffer());
+      this.rawData = new Uint8Array(arrayBuffer);
+    }
 
     this.parsedEpub = await parseEpub(this.rawData);
     this.toc = await extractToc(this.rawData, this.parsedEpub.opf);

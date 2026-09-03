@@ -1,4 +1,4 @@
-import type { BookFormat, ReaderLocator, ReaderPreferences } from '@echo-reader/domain';
+import type { BookFormat, ReaderLocator, ReaderPreferences } from '@clio-reader/domain';
 
 export interface FileSource {
   readonly uri: string;
@@ -16,7 +16,7 @@ export interface ReaderCapabilities {
 export interface ReaderDocument {
   readonly format: BookFormat;
   readonly capabilities: ReaderCapabilities;
-  open(): Promise<void>;
+  open(preloadedData?: Uint8Array): Promise<void>;
   close(): Promise<void>;
   getLocator(): Promise<ReaderLocator>;
   goNext(): Promise<ReaderLocator>;

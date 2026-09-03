@@ -11,9 +11,9 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { bridge } from '../bridges/bridge-singleton';
-import type { LibraryRepository } from '@echo-reader/library';
-import type { ReaderPreferences } from '@echo-reader/domain';
-import { createDefaultPreferences } from '@echo-reader/domain';
+import type { LibraryRepository } from '@clio-reader/library';
+import type { ReaderPreferences } from '@clio-reader/domain';
+import { createDefaultPreferences } from '@clio-reader/domain';
 
 /* ==========================================================================
    Props
@@ -100,10 +100,10 @@ export function ReaderView({
 
       progressTimerRef.current = setTimeout(async () => {
         try {
-          const { createReadingProgress } = await import('@echo-reader/domain');
+          const { createReadingProgress } = await import('@clio-reader/domain');
           const progress = createReadingProgress({
             bookId,
-            locator: locator as import('@echo-reader/domain').ReaderLocator,
+            locator: locator as import('@clio-reader/domain').ReaderLocator,
             percent,
           });
           await repository.saveProgress(progress);
@@ -123,9 +123,10 @@ export function ReaderView({
     }
   }, []);
 
-  /* ----- Enviar preferencias al webview cuando esté listo ----- */
+  /* ----- Enviar preferencias y datos del archivo al webview cuando esté listo ----- */
   useEffect(() => {
-    const webview = webviewRef.current as (HTMLElement & { postMessage: (msg: unknown, origin: string) => void }) | null;
+    const webview = webviewRef.current as
+      (HTMLElement & { postMessage: (msg: unknown, origin: string) => void }) | null;
     if (!webview) return;
 
     const handleMessage = async (event: MessageEvent): Promise<void> => {
@@ -133,13 +134,17 @@ export function ReaderView({
 
       switch (data.type) {
         case 'ready': {
-          const preferences = await loadPreferences();
-          const progress = await loadProgress();
+          const [preferences, progress, fileData] = await Promise.all([
+            loadPreferences(),
+            loadProgress(),
+            bridge.readFile(fileUri),
+          ]);
           webview.postMessage(
             {
               type: 'init',
               preferences,
               savedLocator: progress?.locator ?? null,
+              fileData,
             },
             '*',
           );
@@ -161,7 +166,7 @@ export function ReaderView({
     return () => {
       webview.removeEventListener('message', handleMessage as unknown as EventListener);
     };
-  }, [onClose, loadPreferences, loadProgress, saveProgress, flushProgress]);
+  }, [onClose, loadPreferences, loadProgress, saveProgress, flushProgress, fileUri]);
 
   /* ----- Guardar progreso al cerrar la ventana ----- */
   useEffect(() => {
@@ -195,11 +200,7 @@ export function ReaderView({
   return (
     <div style={styles.container}>
       <header style={styles.header}>
-        <button
-          style={styles.backButton}
-          onClick={onClose}
-          aria-label="Volver a la biblioteca"
-        >
+        <button style={styles.backButton} onClick={onClose} aria-label="Volver a la biblioteca">
           ← Volver
         </button>
         <span style={styles.title}>Leyendo</span>
@@ -255,13 +256,9 @@ function FileNotFoundState({
   return (
     <div style={styles.stateContainer}>
       <p style={styles.errorTitle}>Archivo no encontrado</p>
-      <p style={styles.errorDetail}>
-        El archivo no se encuentra en la ubicación original:
-      </p>
+      <p style={styles.errorDetail}>El archivo no se encuentra en la ubicación original:</p>
       <p style={styles.errorPath}>{fileUri}</p>
-      <p style={styles.errorHint}>
-        Es posible que el archivo haya sido movido o eliminado.
-      </p>
+      <p style={styles.errorHint}>Es posible que el archivo haya sido movido o eliminado.</p>
       <button
         style={styles.relocateButton}
         onClick={onRelocate}

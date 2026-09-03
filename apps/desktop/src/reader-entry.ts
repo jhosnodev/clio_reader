@@ -10,9 +10,9 @@
  * - Seguridad: Sanitización de HTML, targetOrigin en postMessage
  */
 
-import type { ReaderDocument } from '@echo-reader/reader-core';
-import type { ReaderPreferences } from '@echo-reader/domain';
-import { EpubReaderDocument } from '@echo-reader/reader-epub';
+import type { ReaderDocument } from '@clio-reader/reader-core';
+import type { ReaderPreferences } from '@clio-reader/domain';
+import { EpubReaderDocument } from '@clio-reader/reader-epub';
 
 /* ==========================================================================
    Constantes
@@ -21,7 +21,7 @@ import { EpubReaderDocument } from '@echo-reader/reader-epub';
 const SUPPORTED_FORMATS = ['epub'] as const;
 type SupportedFormat = (typeof SUPPORTED_FORMATS)[number];
 
-const READER_TARGET_ORIGIN = 'file://';
+const READER_TARGET_ORIGIN = '*';
 
 const DEFAULT_PREFERENCES: ReaderPreferences = {
   theme: 'light',
@@ -39,7 +39,17 @@ const DEFAULT_PREFERENCES: ReaderPreferences = {
    Sanitización de HTML (Seguridad: previene XSS desde contenido EPUB)
    ========================================================================== */
 
-const BLOCKED_TAGS = ['script', 'iframe', 'object', 'embed', 'form', 'input', 'textarea', 'button', 'link'];
+const BLOCKED_TAGS = [
+  'script',
+  'iframe',
+  'object',
+  'embed',
+  'form',
+  'input',
+  'textarea',
+  'button',
+  'link',
+];
 const EVENT_HANDLER_REGEX = /\bon\w+\s*=/gi;
 const DANGEROUS_ATTRS = ['srcdoc', 'data', 'codebase', 'formaction'];
 
@@ -118,7 +128,12 @@ type UIState =
   | { readonly type: 'error'; readonly message: string }
   | { readonly type: 'content' };
 
-const ELEMENT_IDS = ['reader-loading', 'reader-error', 'reader-content', 'reader-controls'] as const;
+const ELEMENT_IDS = [
+  'reader-loading',
+  'reader-error',
+  'reader-content',
+  'reader-controls',
+] as const;
 
 function setUIState(state: UIState): void {
   const visibility: Record<string, boolean> = {
@@ -261,11 +276,15 @@ async function navigateChapter(
    Carga de documento (SRP: solo crea y abre el documento)
    ========================================================================== */
 
-async function loadDocument(uri: string, format: SupportedFormat): Promise<ReaderDocument> {
+async function loadDocument(
+  uri: string,
+  format: SupportedFormat,
+  preloadedData?: Uint8Array,
+): Promise<ReaderDocument> {
   switch (format) {
     case 'epub': {
       const doc = new EpubReaderDocument({ uri, name: '' });
-      await doc.open();
+      await doc.open(preloadedData);
       return doc;
     }
     default:
@@ -292,14 +311,35 @@ function setupRetry(): void {
 
 let currentReaderDoc: ReaderDocument | null = null;
 let currentPreferences: ReaderPreferences = DEFAULT_PREFERENCES;
+let pendingQueryParams: QueryParams | null = null;
 
 function setupHostMessageListener(): void {
-  window.addEventListener('message', (event: MessageEvent) => {
-    const data = event.data as { type?: string; preferences?: ReaderPreferences };
+  window.addEventListener('message', async (event: MessageEvent) => {
+    const data = event.data as {
+      type?: string;
+      preferences?: ReaderPreferences;
+      fileData?: Uint8Array;
+    };
 
     if (data.type === 'init' && data.preferences) {
       currentPreferences = data.preferences;
-      if (currentReaderDoc) {
+
+      if (!currentReaderDoc && pendingQueryParams && data.fileData) {
+        try {
+          currentReaderDoc = await loadDocument(
+            pendingQueryParams.uri,
+            pendingQueryParams.format,
+            data.fileData,
+          );
+          setUIState({ type: 'content' });
+          await renderChapter(currentReaderDoc, currentPreferences);
+          setupNavigation(currentReaderDoc, currentPreferences);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Error al abrir el libro';
+          setUIState({ type: 'error', message });
+          communicateToHost({ type: 'error', message });
+        }
+      } else if (currentReaderDoc) {
         renderChapter(currentReaderDoc, currentPreferences)
           .then(() => setupNavigation(currentReaderDoc!, currentPreferences))
           .catch(console.error);
@@ -312,17 +352,14 @@ async function main(): Promise<void> {
   setUIState({ type: 'loading' });
 
   try {
-    const { uri, format } = parseQueryParams();
-    const readerDoc = await loadDocument(uri, format);
-    currentReaderDoc = readerDoc;
+    const queryParams = parseQueryParams();
+    pendingQueryParams = queryParams;
 
     setupHostMessageListener();
 
-    setUIState({ type: 'content' });
     communicateToHost({ type: 'ready' });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Error desconocido al abrir el libro';
+    const message = error instanceof Error ? error.message : 'Error desconocido al abrir el libro';
     setUIState({ type: 'error', message });
     communicateToHost({ type: 'error', message });
   }
