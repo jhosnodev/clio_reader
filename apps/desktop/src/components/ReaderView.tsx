@@ -52,16 +52,22 @@ export function ReaderView({
 }: ReaderViewProps): JSX.Element {
   const [fileStatus, setFileStatus] = useState<FileStatus>('checking');
   const [isRelocating, setIsRelocating] = useState(false);
-  const webviewRef = useRef<HTMLElement>(null);
+  const webviewRef = useRef<HTMLElement | null>(null);
   const progressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /* ----- Handler estable para did-finish-load (ref para evitar stale closures) ----- */
+  const handleFinishLoadRef = useRef<(() => Promise<void>) | null>(null);
 
   /* ----- Verificar existencia del archivo ----- */
   const checkFile = useCallback(async () => {
     setFileStatus('checking');
+    console.log('[reader] verificando archivo:', fileUri);
     try {
       const exists = await bridge.checkFileExists(fileUri);
+      console.log('[reader] archivo', exists ? 'encontrado' : 'no encontrado');
       setFileStatus(exists ? 'found' : 'not-found');
-    } catch {
+    } catch (err) {
+      console.error('[reader] error verificando archivo:', err);
       setFileStatus('not-found');
     }
   }, [fileUri]);
@@ -123,46 +129,70 @@ export function ReaderView({
     }
   }, []);
 
-  /* ----- Cargar archivo e inyectar datos en el webview cuando termina de cargar ----- */
+  /* ----- Actualizar el handler del webview cuando cambian las dependencias ----- */
   useEffect(() => {
-    const webview = webviewRef.current as
-      (HTMLElement & {
-        executeJavaScript: (code: string) => Promise<unknown>;
-        addEventListener: (event: string, handler: (e: unknown) => void) => void;
-        removeEventListener: (event: string, handler: (e: unknown) => void) => void;
-      }) | null;
-    if (!webview) return;
-
-    let cancelled = false;
-
-    const handleFinishLoad = async (): Promise<void> => {
-      if (cancelled) return;
+    handleFinishLoadRef.current = async (): Promise<void> => {
+      console.log('[reader] did-finish-load disparado, inyectando datos...');
       try {
         const [preferences, fileData] = await Promise.all([
           loadPreferences(),
           bridge.readFile(fileUri),
         ]);
-        if (cancelled) return;
 
-        // Serializar Uint8Array como Array para executeJavaScript
+        console.log('[reader] datos cargados:', {
+          archivoTamanio: fileData.byteLength,
+          esUint8Array: fileData instanceof Uint8Array,
+          preferenciasTema: preferences.theme,
+        });
+
+        if (!fileData || fileData.byteLength === 0) {
+          console.error('[reader] ERROR: archivo leído está vacío o es inválido');
+          return;
+        }
+
         const fileArray = Array.from(fileData);
-        const initCode = `window.__initFromHost(${JSON.stringify({
-          preferences,
-          fileData: fileArray,
-        })})`;
-        await webview.executeJavaScript(initCode);
+        console.log('[reader] array serializado, longitud:', fileArray.length);
+
+        const initData = { preferences, fileData: fileArray };
+        const initCode = `window.__initFromHost(${JSON.stringify(initData)})`;
+        console.log('[reader] ejecutando __initFromHost, tamaño del código:', initCode.length);
+
+        await (webviewRef.current as unknown as { executeJavaScript: (code: string) => Promise<unknown> })?.executeJavaScript(initCode);
+        console.log('[reader] datos inyectados en webview exitosamente');
       } catch (err) {
-        console.error('Error inyectando datos en webview:', err);
+        console.error('[reader] ERROR inyectando datos en webview:', err);
       }
     };
-
-    webview.addEventListener('did-finish-load', handleFinishLoad as (e: unknown) => void);
-
-    return () => {
-      cancelled = true;
-      webview.removeEventListener('did-finish-load', handleFinishLoad as (e: unknown) => void);
-    };
   }, [loadPreferences, fileUri]);
+
+  /* ----- Cleanup del listener en unmount ----- */
+  useEffect(() => {
+    return () => {
+      const webview = webviewRef.current as (HTMLElement & { removeEventListener: (event: string, handler: () => void) => void }) | null;
+      if (webview && handleFinishLoadRef.current) {
+        webview.removeEventListener('did-finish-load', handleFinishLoadRef.current);
+      }
+    };
+  }, []);
+
+  /* ----- Callback ref: adjunta el listener inmediatamente al crear el elemento ----- */
+  const webviewCallbackRef = useCallback((el: HTMLElement | null) => {
+    const prevEl = webviewRef.current;
+
+    // Limpiar listener del elemento anterior si existe
+    if (prevEl && handleFinishLoadRef.current) {
+      (prevEl as HTMLElement & { removeEventListener: (event: string, handler: () => void) => void })
+        .removeEventListener('did-finish-load', handleFinishLoadRef.current);
+    }
+
+    webviewRef.current = el;
+
+    if (el) {
+      console.log('[reader] webview elemento creado, adjuntando listener did-finish-load');
+      (el as HTMLElement & { addEventListener: (event: string, handler: () => void) => void })
+        .addEventListener('did-finish-load', handleFinishLoadRef.current!);
+    }
+  }, []);
 
   /* ----- Guardar progreso al cerrar la ventana ----- */
   useEffect(() => {
@@ -214,7 +244,7 @@ export function ReaderView({
         )}
         {fileStatus === 'found' && (
           <webview
-            ref={webviewRef}
+            ref={webviewCallbackRef}
             src={readerUrl}
             style={styles.webview}
             partition="persist:reader"

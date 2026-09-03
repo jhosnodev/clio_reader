@@ -81,9 +81,11 @@ interface QueryParams {
 }
 
 function parseQueryParams(): QueryParams {
+  log('parseQueryParams()');
   const params = new URLSearchParams(window.location.search);
   const uri = params.get('uri');
   const format = params.get('format')?.toLowerCase();
+  log('params extraídos:', { uri, format });
 
   if (!uri) {
     throw new ReaderError('Falta el parámetro "uri" en la URL');
@@ -95,6 +97,7 @@ function parseQueryParams(): QueryParams {
     );
   }
 
+  log('parseQueryParams() OK:', { uri, format });
   return { uri, format };
 }
 
@@ -171,33 +174,46 @@ async function renderChapter(
   readerDoc: ReaderDocument,
   preferences: ReaderPreferences,
 ): Promise<void> {
+  log('renderChapter()');
   const contentEl = document.getElementById('reader-content');
   const chapterInfo = document.getElementById('chapter-info');
   const btnPrev = document.getElementById('btn-prev') as HTMLButtonElement | null;
   const btnNext = document.getElementById('btn-next') as HTMLButtonElement | null;
 
-  if (!contentEl) return;
+  if (!contentEl) {
+    log('ERROR: reader-content element no encontrado');
+    return;
+  }
 
   if (!readerDoc.getCurrentChapterContent) {
     throw new ReaderError('El formato no soporta renderizado de contenido');
   }
 
+  log('obteniendo contenido del capítulo...');
   const htmlContent = await readerDoc.getCurrentChapterContent();
+  log('contenido obtenido, tamaño:', htmlContent.length, 'caracteres');
+
+  log('sanitizando HTML...');
   contentEl.innerHTML = sanitizeHtml(htmlContent);
+  log('HTML sanitizado e inyectado');
 
   if (readerDoc.applyPreferences) {
     const existingStyle = contentEl.querySelector('style');
     if (existingStyle) existingStyle.remove();
 
     const styleEl = document.createElement('style');
+    log('aplicando preferencias/tema...');
     const css = await readerDoc.applyPreferences(preferences);
     styleEl.textContent = css;
     contentEl.prepend(styleEl);
+    log('tema aplicado');
   }
 
   if (readerDoc.getCurrentChapterIndex && readerDoc.getChapterCount) {
     const currentIndex = await readerDoc.getCurrentChapterIndex();
     const totalChapters = await readerDoc.getChapterCount();
+    log('capítulo:', currentIndex + 1, 'de', totalChapters);
+
     if (chapterInfo) {
       chapterInfo.textContent = `Capítulo ${currentIndex + 1} de ${totalChapters}`;
     }
@@ -207,6 +223,7 @@ async function renderChapter(
   }
 
   contentEl.scrollTop = 0;
+  log('renderChapter() completado');
 }
 
 /* ==========================================================================
@@ -255,10 +272,14 @@ async function loadDocument(
   format: SupportedFormat,
   preloadedData?: Uint8Array,
 ): Promise<ReaderDocument> {
+  log('loadDocument() format:', format, 'preloadedData:', preloadedData ? `${preloadedData.byteLength} bytes` : 'undefined');
   switch (format) {
     case 'epub': {
+      log('creando EpubReaderDocument...');
       const doc = new EpubReaderDocument({ uri, name: '' });
+      log('abriendo documento EPUB...');
       await doc.open(preloadedData);
+      log('documento EPUB abierto exitosamente');
       return doc;
     }
     default:
@@ -273,38 +294,69 @@ async function loadDocument(
 let currentReaderDoc: ReaderDocument | null = null;
 let currentPreferences: ReaderPreferences = DEFAULT_PREFERENCES;
 
+function log(...args: unknown[]): void {
+  console.log('[reader-entry]', ...args);
+}
+
 async function main(): Promise<void> {
+  log('main() iniciado');
   setUIState({ type: 'loading' });
 
   try {
     const { uri, format } = parseQueryParams();
+    log('query params parseados:', { uri, format });
 
     // Exponer función global para que el host pueda enviar datos
-    (window as Record<string, unknown>).__initFromHost = async (data: {
+    (window as unknown as Record<string, unknown>).__initFromHost = async (data: {
       preferences: ReaderPreferences;
-      fileData: Uint8Array;
+      fileData: Array<number> | Uint8Array;
     }) => {
+      log('__initFromHost() llamado');
       try {
+        // Convertir Array a Uint8Array si es necesario
+        const fileData = data.fileData instanceof Uint8Array
+          ? data.fileData
+          : new Uint8Array(data.fileData);
+        log('fileData convertido, tamaño:', fileData.byteLength);
+
         currentPreferences = data.preferences;
-        currentReaderDoc = await loadDocument(uri, format, data.fileData);
+        log('preferences cargadas, tema:', currentPreferences.theme);
+
+        log('iniciando loadDocument()...');
+        currentReaderDoc = await loadDocument(uri, format, fileData);
+        log('loadDocument() completado');
+
         setUIState({ type: 'content' });
+        log('estado UI cambiado a content');
+
+        log('iniciando renderChapter()...');
         await renderChapter(currentReaderDoc, currentPreferences);
+        log('renderChapter() completado');
+
         setupNavigation(currentReaderDoc, currentPreferences);
+        log('navegación configurada');
+
+        log('=== LIBRO CARGADO EXITOSAMENTE ===');
       } catch (error) {
+        log('ERROR en __initFromHost:', error);
         const message = error instanceof Error ? error.message : 'Error al abrir el libro';
         setUIState({ type: 'error', message });
       }
     };
 
+    log('__initFromHost expuesto en window, esperando datos del host...');
+
     // Retry
     const retryBtn = document.getElementById('reader-error-retry');
     if (retryBtn) {
       retryBtn.addEventListener('click', () => {
+        log('botón reintentar presionado');
         currentReaderDoc = null;
         main();
       });
     }
   } catch (error) {
+    log('ERROR en main():', error);
     const message =
       error instanceof Error ? error.message : 'Error desconocido al abrir el libro';
     setUIState({ type: 'error', message });
