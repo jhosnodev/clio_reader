@@ -102,6 +102,28 @@ start "apps/desktop/release/Echo Reader Setup 0.1.0.exe"
 
 ## Troubleshooting
 
+### Error: "Electron failed to install correctly"
+
+Este es el error más común. Ocurre porque pnpm 10+ bloquea los scripts de instalación de dependencias por defecto (medida de seguridad).
+
+**Solución:** Verifica que `pnpm-workspace.yaml` tenga esta configuración:
+
+```yaml
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+onlyBuiltDependencies:
+  - electron
+  - esbuild
+```
+
+Luego reinstala:
+
+```bash
+pnpm install --force
+```
+
 ### Error: "pnpm: command not found"
 
 Asegúrate de que pnpm está en tu PATH:
@@ -126,16 +148,6 @@ Si necesitas cambiar de versión, usa [nvm-windows](https://github.com/coreybutl
 nvm install 22
 nvm use 22
 ```
-
-### Error: "Electronic module not found"
-
-Ejecuta la instalación completa desde la raíz:
-
-```bash
-pnpm install
-```
-
-No instales dependencias individualmente dentro de `apps/desktop/`.
 
 ### Error de TypeScript durante el build
 

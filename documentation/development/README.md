@@ -63,6 +63,10 @@ pnpm test
 pnpm validate
 ```
 
+## Solución a problemas comunes
+
+Si Electron no se instala correctamente, consulta la [guía de troubleshooting](./windows-setup.md#troubleshooting).
+
 ## Scripts disponibles
 
 | Script | Descripción |
