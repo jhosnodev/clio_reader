@@ -44,6 +44,7 @@ if (!gotTheLock) {
         contextIsolation: true,
         nodeIntegration: false,
         sandbox: false,
+        webviewTag: true,
       },
     });
 
