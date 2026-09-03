@@ -54,13 +54,15 @@ export function App(): JSX.Element {
   /* ----- Cargar libros ----- */
   const loadBooks = useCallback(async () => {
     try {
+      console.log('[loadBooks] cargando libros...');
       const loadedBooks = await listBooks(repository, {
         sortBy: 'addedAt',
         sortDirection: 'desc',
       });
+      console.log('[loadBooks] libros cargados:', loadedBooks.length);
       setBooks(loadedBooks);
     } catch (err) {
-      console.error('Error al cargar libros:', err);
+      console.error('[loadBooks] error:', err);
     }
   }, []);
 
@@ -70,28 +72,33 @@ export function App(): JSX.Element {
     isLoadingRef.current = true;
 
     try {
+      console.log('[import] picker abierto');
       const fileSource = await bridge.pickFile();
-      if (!fileSource) return;
-
-      const format = detectBookFormat(fileSource.name);
-      if (!format) {
-        console.error('Formato no reconocido:', fileSource.name);
+      console.log('[import] archivo seleccionado:', fileSource);
+      if (!fileSource) {
+        console.log('[import] cancelado por el usuario');
         return;
       }
+
+      const format = detectBookFormat(fileSource.name);
+      console.log('[import] archivo:', fileSource.name, 'formato detectado:', format);
 
       const id = generateId();
       const title = fileSource.name.replace(/\.[^.]+$/, '');
 
+      console.log('[import] guardando libro:', { id, title, uri: fileSource.uri });
       await importBook(repository, {
         id,
         title,
-        format: format as BookFormat,
+        format,
         uri: fileSource.uri,
       });
+      console.log('[import] libro guardado');
 
       await loadBooks();
+      console.log('[import] lista de libros recargada');
     } catch (err) {
-      console.error('Error al importar libro:', err);
+      console.error('[import] error:', err);
     } finally {
       isLoadingRef.current = false;
     }
@@ -99,6 +106,7 @@ export function App(): JSX.Element {
 
   /* ----- Abrir libro ----- */
   const handleOpenBook = useCallback((book: Book) => {
+    console.log('[openBook]', book.id, book.title);
     setOpenBook({
       id: book.id,
       uri: book.uri,
@@ -109,6 +117,7 @@ export function App(): JSX.Element {
 
   /* ----- Cerrar libro ----- */
   const handleCloseBook = useCallback(() => {
+    console.log('[closeBook]');
     setOpenBook(null);
   }, []);
 
@@ -119,10 +128,12 @@ export function App(): JSX.Element {
       if (!confirmed) return;
 
       try {
+        console.log('[removeBook]', bookId, bookTitle);
         await removeBook(repository, bookId);
         await loadBooks();
+        console.log('[removeBook] eliminado');
       } catch (err) {
-        console.error('Error al eliminar libro:', err);
+        console.error('[removeBook] error:', err);
       }
     },
     [loadBooks],

@@ -36,6 +36,7 @@ export function LibraryView({
   onLoadBooks,
 }: LibraryViewProps): JSX.Element {
   useEffect(() => {
+    console.log('[library] componente montado, cargando libros');
     onLoadBooks();
   }, [onLoadBooks]);
 

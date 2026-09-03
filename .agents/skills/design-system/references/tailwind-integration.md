@@ -15,7 +15,7 @@ Map design system tokens to Tailwind CSS configuration.
 @layer base {
   :root {
     /* Primitives */
-    --color-blue-600: 37 99 235;  /* HSL: 217 91% 60% */
+    --color-blue-600: 37 99 235; /* HSL: 217 91% 60% */
 
     /* Semantic */
     --background: 0 0% 100%;
@@ -61,7 +61,7 @@ Map design system tokens to Tailwind CSS configuration.
 ### tailwind.config.ts
 
 ```typescript
-import type { Config } from 'tailwindcss'
+import type { Config } from 'tailwindcss';
 
 const config: Config = {
   darkMode: ['class'],
@@ -107,9 +107,9 @@ const config: Config = {
     },
   },
   plugins: [],
-}
+};
 
-export default config
+export default config;
 ```
 
 ## HSL Format Benefits
@@ -165,9 +165,15 @@ background-color: hsl(217 91% 60% / 0.5);
   }
 
   /* Sizes */
-  .btn-sm { @apply h-8 px-3 text-xs; }
-  .btn-md { @apply h-10 px-4 text-sm; }
-  .btn-lg { @apply h-12 px-6 text-base; }
+  .btn-sm {
+    @apply h-8 px-3 text-xs;
+  }
+  .btn-md {
+    @apply h-10 px-4 text-sm;
+  }
+  .btn-lg {
+    @apply h-12 px-6 text-base;
+  }
 }
 ```
 
@@ -220,12 +226,12 @@ theme: {
 ```typescript
 // Toggle dark mode
 function toggleDarkMode() {
-  document.documentElement.classList.toggle('dark')
+  document.documentElement.classList.toggle('dark');
 }
 
 // System preference
 if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-  document.documentElement.classList.add('dark')
+  document.documentElement.classList.add('dark');
 }
 ```
 

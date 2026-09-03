@@ -1,4 +1,3 @@
-
 import React from 'react';
 // Note for Agent: The '@' alias refers to the target project's src directory.
 // Ensure src/data/mockData.ts is created before generating this component.
@@ -40,8 +39,11 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
             {username}
           </a>
 
-          <span className={`inline-block px-2 py-0.5 text-xs font-semibold rounded-full ${isMerged ? 'bg-purple-500/30 text-purple-300' : 'bg-primary/30 text-primary'
-            }`}>
+          <span
+            className={`inline-block px-2 py-0.5 text-xs font-semibold rounded-full ${
+              isMerged ? 'bg-purple-500/30 text-purple-300' : 'bg-primary/30 text-primary'
+            }`}
+          >
             {action}
           </span>
 
@@ -54,9 +56,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
       </div>
 
       <div className="shrink-0">
-        <p className="text-sm font-normal leading-normal text-white/50">
-          {timestamp}
-        </p>
+        <p className="text-sm font-normal leading-normal text-white/50">{timestamp}</p>
       </div>
     </div>
   );
