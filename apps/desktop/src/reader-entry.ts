@@ -1,13 +1,9 @@
 /**
  * reader-entry.ts — Entry point del lector de libros (webview)
  *
- * Principios aplicados:
- * - SRP: Cada función tiene una única responsabilidad
- * - OCP: Abierto a extensión (nuevos formatos) sin modificar este archivo
- * - DIP: Depende de abstractions (ReaderDocument), no de implementaciones concretas
- * - Funciones puras donde es posible
- * - Manejo de errores en los límites
- * - Seguridad: Sanitización de HTML, targetOrigin en postMessage
+ * Comunicación con el host: el host usa webview.executeJavaScript() para
+ * llamar a window.__initFromHost(data) una vez que lee el archivo.
+ * No se usa postMessage porque <webview> no es un iframe.
  */
 
 import type { ReaderDocument } from '@clio-reader/reader-core';
@@ -20,8 +16,6 @@ import { EpubReaderDocument } from '@clio-reader/reader-epub';
 
 const SUPPORTED_FORMATS = ['epub'] as const;
 type SupportedFormat = (typeof SUPPORTED_FORMATS)[number];
-
-const READER_TARGET_ORIGIN = '*';
 
 const DEFAULT_PREFERENCES: ReaderPreferences = {
   theme: 'light',
@@ -120,7 +114,7 @@ class ReaderError extends Error {
 }
 
 /* ==========================================================================
-   Gestión de estado de UI (SRP: un solo punto de control)
+   Gestión de estado de UI
    ========================================================================== */
 
 type UIState =
@@ -170,7 +164,7 @@ function setUIState(state: UIState): void {
 }
 
 /* ==========================================================================
-   Renderizado de capítulo (SRP: solo renderiza contenido)
+   Renderizado de capítulo
    ========================================================================== */
 
 async function renderChapter(
@@ -184,7 +178,6 @@ async function renderChapter(
 
   if (!contentEl) return;
 
-  // Obtener contenido del capítulo actual (usa métodos opcionales de la interfaz)
   if (!readerDoc.getCurrentChapterContent) {
     throw new ReaderError('El formato no soporta renderizado de contenido');
   }
@@ -192,7 +185,6 @@ async function renderChapter(
   const htmlContent = await readerDoc.getCurrentChapterContent();
   contentEl.innerHTML = sanitizeHtml(htmlContent);
 
-  // Aplicar estilos del tema
   if (readerDoc.applyPreferences) {
     const existingStyle = contentEl.querySelector('style');
     if (existingStyle) existingStyle.remove();
@@ -203,7 +195,6 @@ async function renderChapter(
     contentEl.prepend(styleEl);
   }
 
-  // Actualizar información del capítulo
   if (readerDoc.getCurrentChapterIndex && readerDoc.getChapterCount) {
     const currentIndex = await readerDoc.getCurrentChapterIndex();
     const totalChapters = await readerDoc.getChapterCount();
@@ -211,25 +202,15 @@ async function renderChapter(
       chapterInfo.textContent = `Capítulo ${currentIndex + 1} de ${totalChapters}`;
     }
 
-    // Actualizar estado de botones de navegación
     if (btnPrev) btnPrev.disabled = currentIndex <= 0;
     if (btnNext) btnNext.disabled = currentIndex >= totalChapters - 1;
   }
 
-  communicateToHost({ type: 'chapter-changed' });
   contentEl.scrollTop = 0;
 }
 
 /* ==========================================================================
-   Comunicación con el host (SRP: solo maneja mensajes postMessage)
-   ========================================================================== */
-
-function communicateToHost(message: unknown): void {
-  window.parent.postMessage(message, READER_TARGET_ORIGIN);
-}
-
-/* ==========================================================================
-   Navegación (SRP: solo maneja prev/next)
+   Navegación
    ========================================================================== */
 
 function setupNavigation(readerDoc: ReaderDocument, preferences: ReaderPreferences): void {
@@ -257,13 +238,6 @@ async function navigateChapter(
       await readerDoc.goPrevious();
     }
     await renderChapter(readerDoc, preferences);
-
-    // Enviar progreso al shell
-    const locator = await readerDoc.getLocator();
-    const chapters = readerDoc.getChapterCount ? await readerDoc.getChapterCount() : 1;
-    const index = readerDoc.getCurrentChapterIndex ? await readerDoc.getCurrentChapterIndex() : 0;
-    const percent = chapters > 1 ? index / (chapters - 1) : 0;
-    communicateToHost({ type: 'progress', locator, percent });
   } catch (error) {
     if (error instanceof Error && error.name === 'EpubNavigationError') {
       return;
@@ -273,7 +247,7 @@ async function navigateChapter(
 }
 
 /* ==========================================================================
-   Carga de documento (SRP: solo crea y abre el documento)
+   Carga de documento
    ========================================================================== */
 
 async function loadDocument(
@@ -293,77 +267,48 @@ async function loadDocument(
 }
 
 /* ==========================================================================
-   Retry (SRP: solo maneja reintento)
-   ========================================================================== */
-
-function setupRetry(): void {
-  const retryBtn = document.getElementById('reader-error-retry');
-  if (retryBtn) {
-    retryBtn.addEventListener('click', () => {
-      main();
-    });
-  }
-}
-
-/* ==========================================================================
-   Punto de entrada principal (Orquestador)
+   Punto de entrada principal
    ========================================================================== */
 
 let currentReaderDoc: ReaderDocument | null = null;
 let currentPreferences: ReaderPreferences = DEFAULT_PREFERENCES;
-let pendingQueryParams: QueryParams | null = null;
-
-function setupHostMessageListener(): void {
-  window.addEventListener('message', async (event: MessageEvent) => {
-    const data = event.data as {
-      type?: string;
-      preferences?: ReaderPreferences;
-      fileData?: Uint8Array;
-    };
-
-    if (data.type === 'init' && data.preferences) {
-      currentPreferences = data.preferences;
-
-      if (!currentReaderDoc && pendingQueryParams && data.fileData) {
-        try {
-          currentReaderDoc = await loadDocument(
-            pendingQueryParams.uri,
-            pendingQueryParams.format,
-            data.fileData,
-          );
-          setUIState({ type: 'content' });
-          await renderChapter(currentReaderDoc, currentPreferences);
-          setupNavigation(currentReaderDoc, currentPreferences);
-        } catch (error) {
-          const message = error instanceof Error ? error.message : 'Error al abrir el libro';
-          setUIState({ type: 'error', message });
-          communicateToHost({ type: 'error', message });
-        }
-      } else if (currentReaderDoc) {
-        renderChapter(currentReaderDoc, currentPreferences)
-          .then(() => setupNavigation(currentReaderDoc!, currentPreferences))
-          .catch(console.error);
-      }
-    }
-  });
-}
 
 async function main(): Promise<void> {
   setUIState({ type: 'loading' });
 
   try {
-    const queryParams = parseQueryParams();
-    pendingQueryParams = queryParams;
+    const { uri, format } = parseQueryParams();
 
-    setupHostMessageListener();
+    // Exponer función global para que el host pueda enviar datos
+    (window as Record<string, unknown>).__initFromHost = async (data: {
+      preferences: ReaderPreferences;
+      fileData: Uint8Array;
+    }) => {
+      try {
+        currentPreferences = data.preferences;
+        currentReaderDoc = await loadDocument(uri, format, data.fileData);
+        setUIState({ type: 'content' });
+        await renderChapter(currentReaderDoc, currentPreferences);
+        setupNavigation(currentReaderDoc, currentPreferences);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Error al abrir el libro';
+        setUIState({ type: 'error', message });
+      }
+    };
 
-    communicateToHost({ type: 'ready' });
+    // Retry
+    const retryBtn = document.getElementById('reader-error-retry');
+    if (retryBtn) {
+      retryBtn.addEventListener('click', () => {
+        currentReaderDoc = null;
+        main();
+      });
+    }
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Error desconocido al abrir el libro';
+    const message =
+      error instanceof Error ? error.message : 'Error desconocido al abrir el libro';
     setUIState({ type: 'error', message });
-    communicateToHost({ type: 'error', message });
   }
 }
 
-setupRetry();
 main();

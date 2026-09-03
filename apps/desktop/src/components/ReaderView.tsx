@@ -123,50 +123,46 @@ export function ReaderView({
     }
   }, []);
 
-  /* ----- Enviar preferencias y datos del archivo al webview cuando esté listo ----- */
+  /* ----- Cargar archivo e inyectar datos en el webview cuando termina de cargar ----- */
   useEffect(() => {
     const webview = webviewRef.current as
-      (HTMLElement & { postMessage: (msg: unknown, origin: string) => void }) | null;
+      (HTMLElement & {
+        executeJavaScript: (code: string) => Promise<unknown>;
+        addEventListener: (event: string, handler: (e: unknown) => void) => void;
+        removeEventListener: (event: string, handler: (e: unknown) => void) => void;
+      }) | null;
     if (!webview) return;
 
-    const handleMessage = async (event: MessageEvent): Promise<void> => {
-      const data = event.data as { type?: string; locator?: unknown; percent?: number };
+    let cancelled = false;
 
-      switch (data.type) {
-        case 'ready': {
-          const [preferences, progress, fileData] = await Promise.all([
-            loadPreferences(),
-            loadProgress(),
-            bridge.readFile(fileUri),
-          ]);
-          webview.postMessage(
-            {
-              type: 'init',
-              preferences,
-              savedLocator: progress?.locator ?? null,
-              fileData,
-            },
-            '*',
-          );
-          break;
-        }
-        case 'progress':
-          if (data.locator !== undefined) {
-            saveProgress(data.locator, data.percent ?? 0);
-          }
-          break;
-        case 'close':
-          await flushProgress();
-          onClose();
-          break;
+    const handleFinishLoad = async (): Promise<void> => {
+      if (cancelled) return;
+      try {
+        const [preferences, fileData] = await Promise.all([
+          loadPreferences(),
+          bridge.readFile(fileUri),
+        ]);
+        if (cancelled) return;
+
+        // Serializar Uint8Array como Array para executeJavaScript
+        const fileArray = Array.from(fileData);
+        const initCode = `window.__initFromHost(${JSON.stringify({
+          preferences,
+          fileData: fileArray,
+        })})`;
+        await webview.executeJavaScript(initCode);
+      } catch (err) {
+        console.error('Error inyectando datos en webview:', err);
       }
     };
 
-    webview.addEventListener('message', handleMessage as unknown as EventListener);
+    webview.addEventListener('did-finish-load', handleFinishLoad as (e: unknown) => void);
+
     return () => {
-      webview.removeEventListener('message', handleMessage as unknown as EventListener);
+      cancelled = true;
+      webview.removeEventListener('did-finish-load', handleFinishLoad as (e: unknown) => void);
     };
-  }, [onClose, loadPreferences, loadProgress, saveProgress, flushProgress, fileUri]);
+  }, [loadPreferences, fileUri]);
 
   /* ----- Guardar progreso al cerrar la ventana ----- */
   useEffect(() => {
