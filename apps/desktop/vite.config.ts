@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import electron from 'vite-plugin-electron';
 import electronRenderer from 'vite-plugin-electron-renderer';
 import { resolve } from 'path';
+import { copyFileSync, mkdirSync } from 'fs';
 
 function removeCrossorigin(): Plugin {
   return {
@@ -10,6 +11,16 @@ function removeCrossorigin(): Plugin {
     enforce: 'post',
     transformIndexHtml(html) {
       return html.replace(/ crossorigin/g, '');
+    },
+  };
+}
+
+function copyPreloadScript(): Plugin {
+  return {
+    name: 'copy-preload',
+    configResolved() {
+      mkdirSync('dist-electron', { recursive: true });
+      copyFileSync('electron/preload.cjs', 'dist-electron/preload.cjs');
     },
   };
 }
@@ -22,15 +33,10 @@ export default defineConfig({
   plugins: [
     react(),
     removeCrossorigin(),
+    copyPreloadScript(),
     electron([
       {
         entry: 'electron/main.ts',
-      },
-      {
-        entry: 'electron/preload.ts',
-        onstart(options) {
-          options.reload();
-        },
       },
     ]),
     electronRenderer(),
