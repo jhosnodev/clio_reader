@@ -1,61 +1,163 @@
-import { useState } from 'react';
+/**
+ * LibraryView.tsx — Vista de la biblioteca de libros
+ *
+ * Principios aplicados:
+ * - SRP: Solo muestra libros y maneja interacciones del usuario
+ * - DIP: Recibe datos via props, no conoce el repository
+ * - ISP: Solo recibe las props que necesita
+ * - UI en español
+ * - Accesibilidad: roles ARIA, navegación por teclado, contraste
+ */
 
-interface Book {
-  id: string;
-  title: string;
-  format: string;
-  uri: string;
-}
+import { useEffect } from 'react';
+import type { Book } from '@echo-reader/domain';
+
+/* ==========================================================================
+   Props
+   ========================================================================== */
 
 interface LibraryViewProps {
-  onOpenBook: (book: Book) => void;
-  onImportBook: () => void;
+  readonly books: readonly Book[];
+  readonly onOpenBook: (book: Book) => void;
+  readonly onImportBook: () => void;
+  readonly onRemoveBook: (bookId: string) => void;
+  readonly onLoadBooks: () => void;
 }
 
-export function LibraryView({ onOpenBook, onImportBook }: LibraryViewProps): JSX.Element {
-  const [books] = useState<Book[]>([]);
+/* ==========================================================================
+   Componente
+   ========================================================================== */
+
+export function LibraryView({
+  books,
+  onOpenBook,
+  onImportBook,
+  onRemoveBook,
+  onLoadBooks,
+}: LibraryViewProps): JSX.Element {
+  useEffect(() => {
+    onLoadBooks();
+  }, [onLoadBooks]);
 
   return (
     <div style={styles.container}>
       <header style={styles.header}>
         <h1 style={styles.title}>Echo Reader</h1>
-        <button style={styles.importButton} onClick={onImportBook}>
-          Import Book
+        <button
+          style={styles.importButton}
+          onClick={onImportBook}
+          aria-label="Importar libro"
+        >
+          Importar libro
         </button>
       </header>
+
       <main style={styles.content}>
         {books.length === 0 ? (
-          <div style={styles.emptyState}>
-            <p style={styles.emptyText}>No books imported yet.</p>
-            <p style={styles.emptyHint}>Click "Import Book" to add your first book.</p>
-          </div>
+          <EmptyState />
         ) : (
-          <div style={styles.bookGrid}>
-            {books.map((book) => (
-              <div
-                key={book.id}
-                style={styles.bookCard}
-                onClick={() => onOpenBook(book)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') onOpenBook(book);
-                }}
-              >
-                <div style={styles.bookCover}>
-                  <span style={styles.formatBadge}>{book.format.toUpperCase()}</span>
-                </div>
-                <div style={styles.bookInfo}>
-                  <h3 style={styles.bookTitle}>{book.title}</h3>
-                </div>
-              </div>
-            ))}
-          </div>
+          <BookGrid
+            books={books}
+            onOpenBook={onOpenBook}
+            onRemoveBook={onRemoveBook}
+          />
         )}
       </main>
     </div>
   );
 }
+
+/* ==========================================================================
+   Subcomponentes (SRP: cada uno una responsabilidad)
+   ========================================================================== */
+
+function EmptyState(): JSX.Element {
+  return (
+    <div style={styles.emptyState}>
+      <p style={styles.emptyText}>No hay libros importados</p>
+      <p style={styles.emptyHint}>Haz clic en &quot;Importar libro&quot; para agregar tu primer libro.</p>
+    </div>
+  );
+}
+
+interface BookGridProps {
+  readonly books: readonly Book[];
+  readonly onOpenBook: (book: Book) => void;
+  readonly onRemoveBook: (bookId: string) => void;
+}
+
+function BookGrid({ books, onOpenBook, onRemoveBook }: BookGridProps): JSX.Element {
+  return (
+    <div style={styles.bookGrid}>
+      {books.map((book) => (
+        <BookCard
+          key={book.id}
+          book={book}
+          onOpen={onOpenBook}
+          onRemove={onRemoveBook}
+        />
+      ))}
+    </div>
+  );
+}
+
+interface BookCardProps {
+  readonly book: Book;
+  readonly onOpen: (book: Book) => void;
+  readonly onRemove: (bookId: string) => void;
+}
+
+function BookCard({ book, onOpen, onRemove }: BookCardProps): JSX.Element {
+  const handleKeyDown = (e: React.KeyboardEvent): void => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onOpen(book);
+    }
+  };
+
+  const handleRemove = (e: React.MouseEvent): void => {
+    e.stopPropagation();
+    onRemove(book.id);
+  };
+
+  const isMissing = book.status === 'missing';
+
+  return (
+    <div
+      style={{
+        ...styles.bookCard,
+        ...(isMissing ? styles['bookCard--missing'] : {}),
+      }}
+      onClick={() => onOpen(book)}
+      onKeyDown={handleKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-label={`Abrir ${book.title}`}
+    >
+      <div style={styles.bookCover}>
+        <span style={styles.formatBadge}>{book.format.toUpperCase()}</span>
+        {isMissing && <span style={styles.missingBadge}>Archivo perdido</span>}
+      </div>
+      <div style={styles.bookInfo}>
+        <h3 style={styles.bookTitle}>{book.title}</h3>
+        {book.author && (
+          <p style={styles.bookAuthor}>{book.author}</p>
+        )}
+        <button
+          style={styles.removeButton}
+          onClick={handleRemove}
+          aria-label={`Eliminar ${book.title}`}
+        >
+          Eliminar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ==========================================================================
+   Estilos (constante estática, no se recalcula)
+   ========================================================================== */
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
@@ -112,7 +214,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   bookGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
     gap: '16px',
   },
   bookCard: {
@@ -123,12 +225,18 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: '#ffffff',
     transition: 'box-shadow 0.2s',
   },
+  'bookCard--missing': {
+    opacity: 0.6,
+    borderColor: '#fca5a5',
+  },
   bookCover: {
     height: '200px',
     backgroundColor: '#f3f4f6',
     display: 'flex',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: '8px',
   },
   formatBadge: {
     padding: '4px 8px',
@@ -138,16 +246,41 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     color: '#374151',
   },
+  missingBadge: {
+    padding: '2px 6px',
+    backgroundColor: '#fee2e2',
+    borderRadius: '4px',
+    fontSize: '11px',
+    fontWeight: 500,
+    color: '#dc2626',
+  },
   bookInfo: {
     padding: '12px',
   },
   bookTitle: {
-    margin: 0,
+    margin: '0 0 4px 0',
     fontSize: '14px',
     fontWeight: 500,
     color: '#1f2937',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+  },
+  bookAuthor: {
+    margin: '0 0 8px 0',
+    fontSize: '12px',
+    color: '#6b7280',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  removeButton: {
+    padding: '4px 8px',
+    backgroundColor: 'transparent',
+    border: '1px solid #e5e7eb',
+    borderRadius: '4px',
+    fontSize: '12px',
+    color: '#6b7280',
+    cursor: 'pointer',
   },
 };

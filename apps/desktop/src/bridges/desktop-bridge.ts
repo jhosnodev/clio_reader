@@ -4,6 +4,7 @@ export interface DesktopBridge {
   readonly platform: 'desktop';
   pickFile(): Promise<FileSource | null>;
   readFile(uri: string): Promise<Uint8Array>;
+  checkFileExists(uri: string): Promise<boolean>;
   getStoragePath(): string;
   onSuspend(callback: () => void): void;
   onResume(callback: () => void): void;
@@ -30,6 +31,11 @@ export function createDesktopBridge(): DesktopBridge {
     async readFile(uri: string): Promise<Uint8Array> {
       const buffer = await api.readFile(uri);
       return new Uint8Array(buffer);
+    },
+
+    async checkFileExists(uri: string): Promise<boolean> {
+      const result = await api.checkFileExists(uri);
+      return result.exists;
     },
 
     getStoragePath(): string {

@@ -29,6 +29,12 @@ export default defineConfig({
   base: './',
   build: {
     modulePreload: { polyfill: false },
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        reader: resolve(__dirname, 'reader.html'),
+      },
+    },
   },
   plugins: [
     react(),
@@ -50,6 +56,7 @@ export default defineConfig({
       '@echo-reader/reader-cbz': resolve(__dirname, '../../packages/reader-cbz/src'),
       '@echo-reader/reader-session': resolve(__dirname, '../../packages/reader-session/src'),
       '@echo-reader/storage': resolve(__dirname, '../../packages/storage/src'),
+      '@echo-reader/library': resolve(__dirname, '../../packages/library/src'),
     },
   },
 });

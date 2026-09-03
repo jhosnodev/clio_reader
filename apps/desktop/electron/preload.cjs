@@ -27,6 +27,10 @@ const electronAPI = {
     return ipcRenderer.invoke('get-storage-path');
   },
 
+  checkFileExists: (uri) => {
+    return ipcRenderer.invoke('check-file-exists', uri);
+  },
+
   onSuspend: (callback) => {
     ipcRenderer.on('app-suspend', () => callback());
   },

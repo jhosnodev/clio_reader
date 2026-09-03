@@ -7,6 +7,7 @@ interface ElectronAPI {
   writeStorage(key: string, value: string): Promise<void>;
   deleteStorage(key: string): Promise<void>;
   getStoragePath(): Promise<string>;
+  checkFileExists(uri: string): Promise<{ exists: boolean }>;
   onSuspend(callback: () => void): void;
   onResume(callback: () => void): void;
   removeAllListeners(channel: string): void;

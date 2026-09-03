@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lector — Echo Reader</title>
+    <link rel="stylesheet" href="/src/reader.css" />
+  </head>
+  <body>
+    <div id="reader-loading" class="reader-state" role="status" aria-live="polite">
+      <div class="spinner" aria-hidden="true"></div>
+      <p>Cargando libro...</p>
+    </div>
+
+    <div id="reader-error" class="reader-state" style="display: none" role="alert">
+      <p id="reader-error-message"></p>
+      <button id="reader-error-retry" class="reader-button reader-button--primary">
+        Reintentar
+      </button>
+    </div>
+
+    <div id="reader-content" class="epub-content" style="display: none" role="document"></div>
+
+    <nav id="reader-controls" class="reader-controls" aria-label="Navegación del libro" style="display: none">
+      <button
+        id="btn-prev"
+        class="reader-controls__button"
+        aria-label="Capítulo anterior"
+      >
+        ← Anterior
+      </button>
+      <span id="chapter-info" class="reader-controls__info" aria-live="polite"></span>
+      <button
+        id="btn-next"
+        class="reader-controls__button"
+        aria-label="Capítulo siguiente"
+      >
+        Siguiente →
+      </button>
+    </nav>
+
+    <script type="module" src="/src/reader-entry.ts"></script>
+  </body>
+</html>

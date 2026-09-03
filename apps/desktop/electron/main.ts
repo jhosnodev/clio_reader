@@ -1,7 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { readFile, writeFile, mkdir } from 'fs/promises';
+import { readFile, writeFile, mkdir, access, constants } from 'fs/promises';
 import { existsSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -132,6 +132,20 @@ if (!gotTheLock) {
 
     ipcMain.handle('get-storage-path', () => {
       return getStoragePath();
+    });
+
+    ipcMain.handle('check-file-exists', async (_event, uri: string) => {
+      try {
+        const filePath = uri.startsWith('file://') ? uri.slice(7) : uri;
+        const normalizedPath =
+          process.platform === 'win32' && filePath.startsWith('/')
+            ? filePath.slice(1)
+            : filePath;
+        await access(normalizedPath, constants.F_OK);
+        return { exists: true };
+      } catch {
+        return { exists: false };
+      }
     });
   }
 

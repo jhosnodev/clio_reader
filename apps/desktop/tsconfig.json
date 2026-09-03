@@ -18,7 +18,8 @@
       "@echo-reader/reader-pdf": ["../../packages/reader-pdf/src"],
       "@echo-reader/reader-cbz": ["../../packages/reader-cbz/src"],
       "@echo-reader/reader-session": ["../../packages/reader-session/src"],
-      "@echo-reader/storage": ["../../packages/storage/src"]
+      "@echo-reader/storage": ["../../packages/storage/src"],
+      "@echo-reader/library": ["../../packages/library/src"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
