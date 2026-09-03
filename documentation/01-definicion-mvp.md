@@ -2,7 +2,7 @@
 
 | Campo                             | Valor                                 |
 | --------------------------------- | ------------------------------------- |
-| **Nombre**                        | echo_reader — MVP de biblioteca local |
+| **Nombre**                        | clio_reader — MVP de biblioteca local |
 | **Autor**                         | Manus AI                              |
 | **Fecha de creación**             | 28 de agosto de 2026                  |
 | **Fecha de última actualización** | 28 de agosto de 2026                  |
@@ -11,7 +11,7 @@
 
 ## 1. Propósito
 
-echo_reader será una aplicación multiplataforma para organizar y leer localmente libros y cómics en formatos EPUB, PDF y CBZ. El MVP se orienta primero a **Windows y Android**. iOS se mantiene como objetivo posterior, pero no condiciona el primer lanzamiento.
+clio_reader será una aplicación multiplataforma para organizar y leer localmente libros y cómics en formatos EPUB, PDF y CBZ. El MVP se orienta primero a **Windows y Android**. iOS se mantiene como objetivo posterior, pero no condiciona el primer lanzamiento.
 
 La aplicación no tendrá perfiles, autenticación, backend, sincronización ni dependencia de red. El usuario podrá agregar tantos documentos como permita el almacenamiento disponible del dispositivo, administrarlos en una biblioteca local y reanudar la lectura desde la última posición guardada.
 

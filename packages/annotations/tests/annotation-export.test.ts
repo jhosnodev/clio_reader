@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { InMemoryKeyValueStore, LocalRepository } from '@echo-reader/storage';
-import { importBook } from '@echo-reader/library';
+import { InMemoryKeyValueStore, LocalRepository } from '@clio-reader/storage';
+import { importBook } from '@clio-reader/library';
 
 import { exportAnnotations, importAnnotations } from '../src/annotation-export.js';
 import { createBookmarkManaged } from '../src/bookmark-manager.js';
@@ -141,7 +141,14 @@ describe('AnnotationExport', () => {
       const importData = {
         version: 1,
         bookId: 'book-1',
-        bookmarks: [{ id: '', bookId: 'book-1', locator: { format: 'epub', href: 'ch1' }, createdAt: Date.now() }],
+        bookmarks: [
+          {
+            id: '',
+            bookId: 'book-1',
+            locator: { format: 'epub', href: 'ch1' },
+            createdAt: Date.now(),
+          },
+        ],
         notes: [],
         exportedAt: Date.now(),
       };

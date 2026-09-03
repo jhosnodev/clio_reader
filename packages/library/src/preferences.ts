@@ -1,4 +1,4 @@
-import type { ReaderPreferences } from '@echo-reader/domain';
+import type { ReaderPreferences } from '@clio-reader/domain';
 
 import type { LibraryRepository } from './repository.js';
 

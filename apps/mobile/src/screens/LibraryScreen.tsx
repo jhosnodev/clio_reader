@@ -42,7 +42,7 @@ export function LibraryScreen({ bridge, onOpenBook }: LibraryScreenProps): JSX.E
     <View style={styles.container}>
       <StatusBar style="dark" />
       <View style={styles.header}>
-        <Text style={styles.title}>Echo Reader</Text>
+        <Text style={styles.title}>Clio Reader</Text>
         <TouchableOpacity style={styles.importButton} onPress={handleImportBook}>
           <Text style={styles.importButtonText}>Import</Text>
         </TouchableOpacity>
@@ -61,11 +61,7 @@ export function LibraryScreen({ bridge, onOpenBook }: LibraryScreenProps): JSX.E
             columnWrapperStyle={styles.row}
             contentContainerStyle={styles.bookList}
             renderItem={({ item }) => (
-              <BookCard
-                title={item.title}
-                format={item.format}
-                onPress={() => onOpenBook(item)}
-              />
+              <BookCard title={item.title} format={item.format} onPress={() => onOpenBook(item)} />
             )}
           />
         )}

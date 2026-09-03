@@ -1,5 +1,5 @@
-import type { PdfLocator, ReaderLocator } from '@echo-reader/domain';
-import type { FileSource, ReaderCapabilities, ReaderDocument } from '@echo-reader/reader-core';
+import type { PdfLocator, ReaderLocator } from '@clio-reader/domain';
+import type { FileSource, ReaderCapabilities, ReaderDocument } from '@clio-reader/reader-core';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 
 import { renderPageToCanvas } from './pdf-renderer.js';

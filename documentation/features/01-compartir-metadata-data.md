@@ -15,12 +15,12 @@ Permitir exportar e importar metadata bibliográfica y data generada por el usua
 
 ## Formatos
 
-Se recomiendan dos salidas. Markdown, HTML o TXT servirán para compartir un extracto legible con otras herramientas. Un paquete `.echo.json` conservará una representación reimportable por echo_reader. Como evolución, las anotaciones pueden mapearse al modelo W3C Web Annotation y las posiciones al modelo Readium Locator.
+Se recomiendan dos salidas. Markdown, HTML o TXT servirán para compartir un extracto legible con otras herramientas. Un paquete `.echo.json` conservará una representación reimportable por clio_reader. Como evolución, las anotaciones pueden mapearse al modelo W3C Web Annotation y las posiciones al modelo Readium Locator.
 
 ## Paquete canónico
 
 ```text
-echo-reader-export/
+clio-reader-export/
   manifest.json
   metadata.json
   progress.json

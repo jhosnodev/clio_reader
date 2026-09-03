@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { InMemoryKeyValueStore, LocalRepository } from '@echo-reader/storage';
-import { importBook } from '@echo-reader/library';
+import { InMemoryKeyValueStore, LocalRepository } from '@clio-reader/storage';
+import { importBook } from '@clio-reader/library';
 
 import {
   createNoteManaged,
@@ -31,10 +31,15 @@ describe('NoteManager', () => {
       const repo = createRepo();
       await setupBook(repo);
 
-      const note = await createNoteManaged(repo, 'book-1', {
-        format: 'epub',
-        href: 'chapter1.xhtml',
-      }, 'This is a note');
+      const note = await createNoteManaged(
+        repo,
+        'book-1',
+        {
+          format: 'epub',
+          href: 'chapter1.xhtml',
+        },
+        'This is a note',
+      );
 
       expect(note.id).toBeTypeOf('string');
       expect(note.bookId).toBe('book-1');
@@ -46,10 +51,16 @@ describe('NoteManager', () => {
       const repo = createRepo();
       await setupBook(repo);
 
-      const note = await createNoteManaged(repo, 'book-1', {
-        format: 'epub',
-        href: 'chapter1.xhtml',
-      }, 'My note', { selectedText: 'Selected text' });
+      const note = await createNoteManaged(
+        repo,
+        'book-1',
+        {
+          format: 'epub',
+          href: 'chapter1.xhtml',
+        },
+        'My note',
+        { selectedText: 'Selected text' },
+      );
 
       expect(note.selectedText).toBe('Selected text');
     });
@@ -59,10 +70,15 @@ describe('NoteManager', () => {
       await setupBook(repo);
 
       await expect(
-        createNoteManaged(repo, 'book-1', {
-          format: 'epub',
-          href: 'chapter1.xhtml',
-        }, ''),
+        createNoteManaged(
+          repo,
+          'book-1',
+          {
+            format: 'epub',
+            href: 'chapter1.xhtml',
+          },
+          '',
+        ),
       ).rejects.toThrow();
     });
 
@@ -70,10 +86,15 @@ describe('NoteManager', () => {
       const repo = createRepo();
 
       await expect(
-        createNoteManaged(repo, '', {
-          format: 'epub',
-          href: 'chapter1.xhtml',
-        }, 'Note text'),
+        createNoteManaged(
+          repo,
+          '',
+          {
+            format: 'epub',
+            href: 'chapter1.xhtml',
+          },
+          'Note text',
+        ),
       ).rejects.toThrow();
     });
   });
@@ -118,10 +139,15 @@ describe('NoteManager', () => {
       const repo = createRepo();
       await setupBook(repo);
 
-      const note = await createNoteManaged(repo, 'book-1', {
-        format: 'epub',
-        href: 'ch1',
-      }, 'Original');
+      const note = await createNoteManaged(
+        repo,
+        'book-1',
+        {
+          format: 'epub',
+          href: 'ch1',
+        },
+        'Original',
+      );
 
       const updated = await updateNoteManaged(repo, note.id, 'book-1', 'Updated');
       expect(updated.body).toBe('Updated');
@@ -132,23 +158,24 @@ describe('NoteManager', () => {
       const repo = createRepo();
       await setupBook(repo);
 
-      await expect(
-        updateNoteManaged(repo, 'nonexistent', 'book-1', 'Updated'),
-      ).rejects.toThrow();
+      await expect(updateNoteManaged(repo, 'nonexistent', 'book-1', 'Updated')).rejects.toThrow();
     });
 
     it('rejects empty body', async () => {
       const repo = createRepo();
       await setupBook(repo);
 
-      const note = await createNoteManaged(repo, 'book-1', {
-        format: 'epub',
-        href: 'ch1',
-      }, 'Original');
+      const note = await createNoteManaged(
+        repo,
+        'book-1',
+        {
+          format: 'epub',
+          href: 'ch1',
+        },
+        'Original',
+      );
 
-      await expect(
-        updateNoteManaged(repo, note.id, 'book-1', ''),
-      ).rejects.toThrow();
+      await expect(updateNoteManaged(repo, note.id, 'book-1', '')).rejects.toThrow();
     });
   });
 
@@ -157,10 +184,15 @@ describe('NoteManager', () => {
       const repo = createRepo();
       await setupBook(repo);
 
-      const note = await createNoteManaged(repo, 'book-1', {
-        format: 'epub',
-        href: 'ch1',
-      }, 'Note to remove');
+      const note = await createNoteManaged(
+        repo,
+        'book-1',
+        {
+          format: 'epub',
+          href: 'ch1',
+        },
+        'Note to remove',
+      );
       await removeNoteManaged(repo, note.id, 'book-1');
 
       const notes = await listNotesManaged(repo, 'book-1');

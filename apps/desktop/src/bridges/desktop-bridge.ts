@@ -1,4 +1,4 @@
-import type { FileSource } from '@echo-reader/reader-core';
+import type { FileSource } from '@clio-reader/reader-core';
 
 export interface DesktopBridge {
   readonly platform: 'desktop';

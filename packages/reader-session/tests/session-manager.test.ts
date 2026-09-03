@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { Book, ReaderLocator } from '@echo-reader/domain';
-import type { ReaderAdapter, ReaderDocument } from '@echo-reader/reader-core';
-import { InMemoryKeyValueStore, LocalRepository } from '@echo-reader/storage';
+import type { Book, ReaderLocator } from '@clio-reader/domain';
+import type { ReaderAdapter, ReaderDocument } from '@clio-reader/reader-core';
+import { InMemoryKeyValueStore, LocalRepository } from '@clio-reader/storage';
 
 import {
   SessionAlreadyOpenError,

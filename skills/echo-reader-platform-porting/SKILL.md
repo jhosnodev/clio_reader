@@ -1,11 +1,11 @@
 ---
-name: echo-reader-platform-porting
-description: Portar echo_reader a una nueva plataforma manteniendo el dominio y los contratos compartidos, diseñando el shell específico, adaptando almacenamiento y renderers, y validando formatos, offline, accesibilidad y ciclo de vida. Usar cuando se solicite añadir iOS, macOS, Linux, web u otra plataforma al lector.
+name: clio-reader-platform-porting
+description: Portar clio_reader a una nueva plataforma manteniendo el dominio y los contratos compartidos, diseñando el shell específico, adaptando almacenamiento y renderers, y validando formatos, offline, accesibilidad y ciclo de vida. Usar cuando se solicite añadir iOS, macOS, Linux, web u otra plataforma al lector.
 ---
 
-# Porting de echo_reader a nuevas plataformas
+# Porting de clio_reader a nuevas plataformas
 
-Usar este skill para convertir la arquitectura local-first de `echo_reader` en una implementación para una plataforma adicional. La regla principal es **compartir comportamiento, no forzar integraciones nativas**: el dominio, los casos de uso, los locators y los contratos deben permanecer independientes del sistema operativo; el shell, el selector de archivos, el almacenamiento, el ciclo de vida y los bridges de renderizado deben ser adaptadores explícitos.
+Usar este skill para convertir la arquitectura local-first de `clio_reader` en una implementación para una plataforma adicional. La regla principal es **compartir comportamiento, no forzar integraciones nativas**: el dominio, los casos de uso, los locators y los contratos deben permanecer independientes del sistema operativo; el shell, el selector de archivos, el almacenamiento, el ciclo de vida y los bridges de renderizado deben ser adaptadores explícitos.
 
 ## Flujo obligatorio
 

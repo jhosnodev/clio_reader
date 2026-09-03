@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import JSZip from 'jszip';
 
-import type { FileSource } from '@echo-reader/reader-core';
+import type { FileSource } from '@clio-reader/reader-core';
 
 import {
   EpubReaderDocument,
@@ -9,7 +9,7 @@ import {
   EpubDocumentNotOpenError,
   EpubNavigationError,
 } from '../src/epub-document.js';
-import type { EpubLocator } from '@echo-reader/domain';
+import type { EpubLocator } from '@clio-reader/domain';
 
 async function createMinimalEpub(
   files: Record<string, string>,

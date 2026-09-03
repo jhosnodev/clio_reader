@@ -1,4 +1,4 @@
-import type { Bookmark, Note, ReaderLocator } from '@echo-reader/domain';
+import type { Bookmark, Note, ReaderLocator } from '@clio-reader/domain';
 
 type Annotation = Bookmark | Note;
 

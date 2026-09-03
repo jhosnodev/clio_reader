@@ -1,4 +1,4 @@
-import type { Bookmark, ReaderLocator } from '@echo-reader/domain';
+import type { Bookmark, ReaderLocator } from '@clio-reader/domain';
 
 import { BookmarkNotFoundError, BookNotFoundError } from './errors.js';
 import { generateId } from './id.js';

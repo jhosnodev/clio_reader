@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { ReaderPreferences } from '@echo-reader/domain';
+import type { ReaderPreferences } from '@clio-reader/domain';
 
 import {
   generateReaderStyle,

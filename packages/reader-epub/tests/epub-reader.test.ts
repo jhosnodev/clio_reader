@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { FileSource } from '@echo-reader/reader-core';
+import type { FileSource } from '@clio-reader/reader-core';
 
 import { EpubReaderAdapter } from '../src/epub-reader.js';
 import { EpubReaderDocument } from '../src/epub-document.js';

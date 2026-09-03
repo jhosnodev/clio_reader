@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { InMemoryKeyValueStore, LocalRepository } from '@echo-reader/storage';
+import { InMemoryKeyValueStore, LocalRepository } from '@clio-reader/storage';
 
 import { ProgressSaver } from '../src/progress-saver.js';
 

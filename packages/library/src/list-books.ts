@@ -1,4 +1,4 @@
-import type { Book, BookFormat } from '@echo-reader/domain';
+import type { Book, BookFormat } from '@clio-reader/domain';
 
 import type { LibraryRepository } from './repository.js';
 

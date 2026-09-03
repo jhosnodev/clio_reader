@@ -2,7 +2,7 @@
 
 | Campo                             | Valor                                            |
 | --------------------------------- | ------------------------------------------------ |
-| **Nombre**                        | echo_reader — Data, metadata y estado de lectura |
+| **Nombre**                        | clio_reader — Data, metadata y estado de lectura |
 | **Autor**                         | Manus AI                                         |
 | **Fecha de creación**             | 28 de agosto de 2026                             |
 | **Fecha de última actualización** | 28 de agosto de 2026                             |

@@ -43,11 +43,7 @@ export default function App(): JSX.Element {
   if (openBook) {
     return (
       <SafeAreaView style={styles.container}>
-        <ReaderScreen
-          fileUri={openBook.uri}
-          format={openBook.format}
-          onClose={handleCloseBook}
-        />
+        <ReaderScreen fileUri={openBook.uri} format={openBook.format} onClose={handleCloseBook} />
       </SafeAreaView>
     );
   }

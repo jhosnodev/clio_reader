@@ -7,10 +7,10 @@ import {
   ReaderPreferences,
   ReadingProgress,
   validateReaderPreferences,
-} from '@echo-reader/domain';
+} from '@clio-reader/domain';
 
 export const CURRENT_SCHEMA_VERSION = 1;
-const DEFAULT_STATE_KEY = 'echo-reader.state';
+const DEFAULT_STATE_KEY = 'clio-reader.state';
 
 type StoredPreferences = {
   global: ReaderPreferences;

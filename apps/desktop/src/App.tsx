@@ -1,5 +1,5 @@
 /**
- * App.tsx — Componente raíz de Echo Reader
+ * App.tsx — Componente raíz de Clio Reader
  *
  * Principios aplicados:
  * - DIP: Crea y expone el repository (abstracción) que los hijos consumen
@@ -12,11 +12,11 @@ import { LibraryView } from './components/LibraryView';
 import { ReaderView } from './components/ReaderView';
 import { useAppLifecycle } from './bridges/lifecycle';
 import { bridge } from './bridges/bridge-singleton';
-import { LocalRepository } from '@echo-reader/storage';
+import { LocalRepository } from '@clio-reader/storage';
 import { createElectronKVStore } from './bridges/storage';
-import { importBook, listBooks, removeBook, generateId } from '@echo-reader/library';
-import type { Book, BookFormat } from '@echo-reader/domain';
-import { detectBookFormat } from '@echo-reader/reader-core';
+import { importBook, listBooks, removeBook, generateId } from '@clio-reader/library';
+import type { Book, BookFormat } from '@clio-reader/domain';
+import { detectBookFormat } from '@clio-reader/reader-core';
 
 /* ==========================================================================
    Dependencias — DIP: se crean una vez y se inyectan
@@ -115,9 +115,7 @@ export function App(): JSX.Element {
   /* ----- Eliminar libro ----- */
   const handleRemoveBook = useCallback(
     async (bookId: string, bookTitle: string) => {
-      const confirmed = window.confirm(
-        `¿Estás seguro de que quieres eliminar "${bookTitle}"?`,
-      );
+      const confirmed = window.confirm(`¿Estás seguro de que quieres eliminar "${bookTitle}"?`);
       if (!confirmed) return;
 
       try {

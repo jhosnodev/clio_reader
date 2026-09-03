@@ -49,14 +49,14 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@echo-reader/domain': resolve(__dirname, '../../packages/domain/src'),
-      '@echo-reader/reader-core': resolve(__dirname, '../../packages/reader-core/src'),
-      '@echo-reader/reader-epub': resolve(__dirname, '../../packages/reader-epub/src'),
-      '@echo-reader/reader-pdf': resolve(__dirname, '../../packages/reader-pdf/src'),
-      '@echo-reader/reader-cbz': resolve(__dirname, '../../packages/reader-cbz/src'),
-      '@echo-reader/reader-session': resolve(__dirname, '../../packages/reader-session/src'),
-      '@echo-reader/storage': resolve(__dirname, '../../packages/storage/src'),
-      '@echo-reader/library': resolve(__dirname, '../../packages/library/src'),
+      '@clio-reader/domain': resolve(__dirname, '../../packages/domain/src'),
+      '@clio-reader/reader-core': resolve(__dirname, '../../packages/reader-core/src'),
+      '@clio-reader/reader-epub': resolve(__dirname, '../../packages/reader-epub/src'),
+      '@clio-reader/reader-pdf': resolve(__dirname, '../../packages/reader-pdf/src'),
+      '@clio-reader/reader-cbz': resolve(__dirname, '../../packages/reader-cbz/src'),
+      '@clio-reader/reader-session': resolve(__dirname, '../../packages/reader-session/src'),
+      '@clio-reader/storage': resolve(__dirname, '../../packages/storage/src'),
+      '@clio-reader/library': resolve(__dirname, '../../packages/library/src'),
     },
   },
 });

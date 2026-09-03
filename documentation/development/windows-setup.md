@@ -1,6 +1,6 @@
 # Setup en Windows — App de escritorio
 
-Guía paso a paso para configurar el entorno de desarrollo en Windows y ejecutar la app de Echo Reader.
+Guía paso a paso para configurar el entorno de desarrollo en Windows y ejecutar la app de Clio Reader.
 
 ## 1. Instalar Node.js
 
@@ -40,7 +40,7 @@ git --version
 ```bash
 # Clonar
 git clone <url-del-repo>
-cd echo_reader
+cd clio_reader
 
 # Instalar todas las dependencias del monorepo
 pnpm install
@@ -51,10 +51,11 @@ pnpm install
 ## 5. Ejecutar la app en desarrollo
 
 ```bash
-pnpm --filter @echo-reader/desktop dev
+pnpm --filter @clio-reader/desktop dev
 ```
 
 Esto:
+
 1. Compila los paquetes del dominio (`packages/*`)
 2. Inicia el servidor de Vite con hot-reload
 3. Abre la ventana de Electron
@@ -68,7 +69,7 @@ La app se recarga automáticamente al guardar cambios.
 pnpm test
 
 # Tests solo del desktop
-pnpm --filter @echo-reader/desktop test
+pnpm --filter @clio-reader/desktop test
 
 # Validación completa (recomendado antes de un PR)
 pnpm validate
@@ -79,15 +80,15 @@ pnpm validate
 ### Instalador NSIS (.exe)
 
 ```bash
-pnpm --filter @echo-reader/desktop build:win
+pnpm --filter @clio-reader/desktop build:win
 ```
 
-Genera un instalador en `apps/desktop/release/Echo Reader Setup 0.1.0.exe`.
+Genera un instalador en `apps/desktop/release/Clio Reader Setup 0.1.0.exe`.
 
 ### Versión portable (sin instalar)
 
 ```bash
-pnpm --filter @echo-reader/desktop build:win:portable
+pnpm --filter @clio-reader/desktop build:win:portable
 ```
 
 Genera una carpeta `win-unpacked/` con el ejecutable portátil.
@@ -97,7 +98,7 @@ Genera una carpeta `win-unpacked/` con el ejecutable portátil.
 Ya hay un build compilado en el repositorio:
 
 ```bash
-start "apps/desktop/release/Echo Reader Setup 0.1.0.exe"
+start "apps/desktop/release/Clio Reader Setup 0.1.0.exe"
 ```
 
 ## Troubleshooting
@@ -154,7 +155,7 @@ nvm use 22
 Ejecuta el typecheck para ver el error específico:
 
 ```bash
-pnpm --filter @echo-reader/desktop check
+pnpm --filter @clio-reader/desktop check
 ```
 
 Corrige los errores de tipos y vuelve a intentar.
@@ -166,8 +167,8 @@ Corrige los errores de tipos y vuelve a intentar.
 3. Intenta limpiar y reconstruir:
 
 ```bash
-pnpm --filter @echo-reader/desktop build
-pnpm --filter @echo-reader/desktop dev
+pnpm --filter @clio-reader/desktop build
+pnpm --filter @clio-reader/desktop dev
 ```
 
 ### Error en tests: "Cannot find module"
@@ -190,7 +191,7 @@ electron-builder necesita herramientas de Windows. Asegúrate de tener:
 ## Estructura del proyecto
 
 ```
-echo_reader/
+clio_reader/
 ├── apps/
 │   └── desktop/          ← App de Electron (Windows)
 │       ├── electron/     ← Proceso principal de Electron
@@ -204,14 +205,14 @@ echo_reader/
 
 ## Comandos rápidos
 
-| Acción | Comando |
-|--------|---------|
-| Instalar dependencias | `pnpm install` |
-| Ejecutar en desarrollo | `pnpm --filter @echo-reader/desktop dev` |
-| Build Windows | `pnpm --filter @echo-reader/desktop build:win` |
-| Build portable | `pnpm --filter @echo-reader/desktop build:win:portable` |
-| Tests | `pnpm test` |
-| Validación completa | `pnpm validate` |
-| Typecheck | `pnpm check` |
-| Lint | `pnpm lint` |
-| Formatear código | `pnpm format` |
+| Acción                 | Comando                                                 |
+| ---------------------- | ------------------------------------------------------- |
+| Instalar dependencias  | `pnpm install`                                          |
+| Ejecutar en desarrollo | `pnpm --filter @clio-reader/desktop dev`                |
+| Build Windows          | `pnpm --filter @clio-reader/desktop build:win`          |
+| Build portable         | `pnpm --filter @clio-reader/desktop build:win:portable` |
+| Tests                  | `pnpm test`                                             |
+| Validación completa    | `pnpm validate`                                         |
+| Typecheck              | `pnpm check`                                            |
+| Lint                   | `pnpm lint`                                             |
+| Formatear código       | `pnpm format`                                           |

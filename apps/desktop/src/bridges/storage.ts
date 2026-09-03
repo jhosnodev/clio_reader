@@ -1,4 +1,4 @@
-import type { KeyValueStore } from '@echo-reader/storage';
+import type { KeyValueStore } from '@clio-reader/storage';
 
 export function createElectronKVStore(): KeyValueStore {
   const api = window.electronAPI;

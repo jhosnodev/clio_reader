@@ -1,4 +1,4 @@
-import type { ReaderPreferences } from '@echo-reader/domain';
+import type { ReaderPreferences } from '@clio-reader/domain';
 
 const THEME_COLORS: Record<string, { bg: string; fg: string; accent: string }> = {
   light: { bg: '#ffffff', fg: '#1f2937', accent: '#2563eb' },

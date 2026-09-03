@@ -1,4 +1,4 @@
-import type { ReaderPreferences, ReadingProgress } from '@echo-reader/domain';
+import type { ReaderPreferences, ReadingProgress } from '@clio-reader/domain';
 
 export interface SessionRepository {
   getProgress(bookId: string): Promise<ReadingProgress | undefined>;

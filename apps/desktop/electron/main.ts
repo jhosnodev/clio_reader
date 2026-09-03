@@ -17,7 +17,7 @@ if (!gotTheLock) {
 
   function getDataPath(): string {
     const userDataPath = app.getPath('userData');
-    return join(userDataPath, 'echo-reader');
+    return join(userDataPath, 'clio-reader');
   }
 
   function getStoragePath(): string {
@@ -37,7 +37,7 @@ if (!gotTheLock) {
       height: 800,
       minWidth: 800,
       minHeight: 600,
-      title: 'Echo Reader',
+      title: 'Clio Reader',
       show: false,
       webPreferences: {
         preload: join(__dirname, 'preload.cjs'),
@@ -138,9 +138,7 @@ if (!gotTheLock) {
       try {
         const filePath = uri.startsWith('file://') ? uri.slice(7) : uri;
         const normalizedPath =
-          process.platform === 'win32' && filePath.startsWith('/')
-            ? filePath.slice(1)
-            : filePath;
+          process.platform === 'win32' && filePath.startsWith('/') ? filePath.slice(1) : filePath;
         await access(normalizedPath, constants.F_OK);
         return { exists: true };
       } catch {

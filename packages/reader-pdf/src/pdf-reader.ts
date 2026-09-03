@@ -1,5 +1,5 @@
-import type { BookFormat } from '@echo-reader/domain';
-import type { FileSource, ReaderAdapter, ReaderDocument } from '@echo-reader/reader-core';
+import type { BookFormat } from '@clio-reader/domain';
+import type { FileSource, ReaderAdapter, ReaderDocument } from '@clio-reader/reader-core';
 
 import { PdfReaderDocument } from './pdf-document.js';
 

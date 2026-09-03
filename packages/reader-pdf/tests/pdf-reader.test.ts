@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { FileSource } from '@echo-reader/reader-core';
+import type { FileSource } from '@clio-reader/reader-core';
 
 import { PdfReaderAdapter } from '../src/pdf-reader.js';
 import { PdfReaderDocument } from '../src/pdf-document.js';

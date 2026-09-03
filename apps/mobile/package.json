@@ -1,5 +1,5 @@
 {
-  "name": "@echo-reader/mobile",
+  "name": "@clio-reader/mobile",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -12,13 +12,13 @@
     "lint": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@echo-reader/reader-core": "workspace:*",
-    "@echo-reader/reader-cbz": "workspace:*",
-    "@echo-reader/reader-pdf": "workspace:*",
-    "@echo-reader/reader-epub": "workspace:*",
-    "@echo-reader/reader-session": "workspace:*",
-    "@echo-reader/storage": "workspace:*",
-    "@echo-reader/domain": "workspace:*",
+    "@clio-reader/reader-core": "workspace:*",
+    "@clio-reader/reader-cbz": "workspace:*",
+    "@clio-reader/reader-pdf": "workspace:*",
+    "@clio-reader/reader-epub": "workspace:*",
+    "@clio-reader/reader-session": "workspace:*",
+    "@clio-reader/storage": "workspace:*",
+    "@clio-reader/domain": "workspace:*",
     "expo": "~52.0.0",
     "expo-document-picker": "~13.0.0",
     "expo-file-system": "~18.0.0",

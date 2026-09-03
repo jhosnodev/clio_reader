@@ -10,7 +10,7 @@
  */
 
 import { useEffect } from 'react';
-import type { Book } from '@echo-reader/domain';
+import type { Book } from '@clio-reader/domain';
 
 /* ==========================================================================
    Props
@@ -42,12 +42,8 @@ export function LibraryView({
   return (
     <div style={styles.container}>
       <header style={styles.header}>
-        <h1 style={styles.title}>Echo Reader</h1>
-        <button
-          style={styles.importButton}
-          onClick={onImportBook}
-          aria-label="Importar libro"
-        >
+        <h1 style={styles.title}>Clio Reader</h1>
+        <button style={styles.importButton} onClick={onImportBook} aria-label="Importar libro">
           Importar libro
         </button>
       </header>
@@ -56,11 +52,7 @@ export function LibraryView({
         {books.length === 0 ? (
           <EmptyState />
         ) : (
-          <BookGrid
-            books={books}
-            onOpenBook={onOpenBook}
-            onRemoveBook={onRemoveBook}
-          />
+          <BookGrid books={books} onOpenBook={onOpenBook} onRemoveBook={onRemoveBook} />
         )}
       </main>
     </div>
@@ -75,7 +67,9 @@ function EmptyState(): JSX.Element {
   return (
     <div style={styles.emptyState}>
       <p style={styles.emptyText}>No hay libros importados</p>
-      <p style={styles.emptyHint}>Haz clic en &quot;Importar libro&quot; para agregar tu primer libro.</p>
+      <p style={styles.emptyHint}>
+        Haz clic en &quot;Importar libro&quot; para agregar tu primer libro.
+      </p>
     </div>
   );
 }
@@ -90,12 +84,7 @@ function BookGrid({ books, onOpenBook, onRemoveBook }: BookGridProps): JSX.Eleme
   return (
     <div style={styles.bookGrid}>
       {books.map((book) => (
-        <BookCard
-          key={book.id}
-          book={book}
-          onOpen={onOpenBook}
-          onRemove={onRemoveBook}
-        />
+        <BookCard key={book.id} book={book} onOpen={onOpenBook} onRemove={onRemoveBook} />
       ))}
     </div>
   );
@@ -140,9 +129,7 @@ function BookCard({ book, onOpen, onRemove }: BookCardProps): JSX.Element {
       </div>
       <div style={styles.bookInfo}>
         <h3 style={styles.bookTitle}>{book.title}</h3>
-        {book.author && (
-          <p style={styles.bookAuthor}>{book.author}</p>
-        )}
+        {book.author && <p style={styles.bookAuthor}>{book.author}</p>}
         <button
           style={styles.removeButton}
           onClick={handleRemove}

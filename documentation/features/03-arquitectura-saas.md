@@ -2,7 +2,7 @@
 
 | Campo                             | Valor                            |
 | --------------------------------- | -------------------------------- |
-| **Nombre**                        | Arquitectura SaaS de echo_reader |
+| **Nombre**                        | Arquitectura SaaS de clio_reader |
 | **Autor**                         | Manus AI                         |
 | **Fecha de creación**             | 28 de agosto de 2026             |
 | **Fecha de última actualización** | 28 de agosto de 2026             |

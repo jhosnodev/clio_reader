@@ -1,10 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 
-export function useAppLifecycle(
-  onSuspend?: () => void,
-  onResume?: () => void,
-): void {
+export function useAppLifecycle(onSuspend?: () => void, onResume?: () => void): void {
   const appState = useRef(AppState.currentState);
 
   useEffect(() => {

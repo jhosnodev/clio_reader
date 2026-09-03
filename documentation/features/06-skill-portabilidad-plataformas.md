@@ -11,7 +11,7 @@
 
 ## Objetivo
 
-Proporcionar un procedimiento repetible para añadir iOS, macOS, Linux, web u otra plataforma a `echo_reader` sin duplicar dominio, progreso, preferencias, anotaciones ni contratos de lectura. El skill debe guiar el análisis de compatibilidad, el diseño de adaptadores, la implementación del shell, la documentación y la validación.
+Proporcionar un procedimiento repetible para añadir iOS, macOS, Linux, web u otra plataforma a `clio_reader` sin duplicar dominio, progreso, preferencias, anotaciones ni contratos de lectura. El skill debe guiar el análisis de compatibilidad, el diseño de adaptadores, la implementación del shell, la documentación y la validación.
 
 ## Análisis de la base existente
 
@@ -21,7 +21,7 @@ El análisis identificó límites importantes: los shells todavía son esqueleto
 
 ## Decisión
 
-Crear el skill `echo-reader-platform-porting` fuera del repositorio de aplicación, con un `SKILL.md` breve y dos referencias progresivas:
+Crear el skill `clio-reader-platform-porting` fuera del repositorio de aplicación, con un `SKILL.md` breve y dos referencias progresivas:
 
 | Recurso                           | Propósito                                                                  |
 | --------------------------------- | -------------------------------------------------------------------------- |
@@ -52,7 +52,7 @@ Para portar una plataforma real, comenzar con un spike del shell y de la retenci
 
 ## Referencias
 
-[1]: ../../README.md 'README del proyecto echo_reader'
-[2]: ../02-arquitectura-tecnica.md 'Arquitectura técnica de echo_reader'
+[1]: ../../README.md 'README del proyecto clio_reader'
+[2]: ../02-arquitectura-tecnica.md 'Arquitectura técnica de clio_reader'
 [3]: 04-otras-plataformas.md 'F-004: Soporte para otras plataformas'
 [4]: ../04-features-futuros.md 'Features futuros'

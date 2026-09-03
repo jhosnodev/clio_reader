@@ -2,7 +2,7 @@
 
 | Campo                             | Valor                                  |
 | --------------------------------- | -------------------------------------- |
-| **Nombre**                        | echo_reader — Guía de desarrollo local |
+| **Nombre**                        | clio_reader — Guía de desarrollo local |
 | **Autor**                         | Manus AI                               |
 | **Fecha de creación**             | 28 de agosto de 2026                   |
 | **Fecha de última actualización** | 28 de agosto de 2026                   |

@@ -1,13 +1,13 @@
 # Flujo del WebView — Lector de libros
 
-| Campo                             | Valor                                        |
-| --------------------------------- | -------------------------------------------- |
-| **Nombre**                        | echo_reader — Flujo del WebView              |
-| **Autor**                         | Manus AI                                     |
-| **Fecha de creación**             | 28 de agosto de 2026                         |
-| **Fecha de última actualización** | 28 de agosto de 2026                         |
-| **Estado**                        | Implementado                                 |
-| **Versión del documento**         | 1.0.0                                        |
+| Campo                             | Valor                           |
+| --------------------------------- | ------------------------------- |
+| **Nombre**                        | clio_reader — Flujo del WebView |
+| **Autor**                         | Manus AI                        |
+| **Fecha de creación**             | 28 de agosto de 2026            |
+| **Fecha de última actualización** | 28 de agosto de 2026            |
+| **Estado**                        | Implementado                    |
+| **Versión del documento**         | 1.0.0                           |
 
 ## 1. Propósito
 
@@ -75,12 +75,12 @@ Este documento describe cómo el lector de libros utiliza un `<webview>` de Elec
 
 El webview y el shell se comunican mediante `postMessage`:
 
-| Mensaje                        | Dirección       | Descripción                         |
-| ------------------------------ | --------------- | ----------------------------------- |
-| `{ type: 'ready' }`           | WebView → Shell | El libro está cargado y listo       |
-| `{ type: 'chapter-changed' }` | WebView → Shell | Se cambió de capítulo               |
-| `{ type: 'error', message }`  | WebView → Shell | Ocurrió un error en el lector       |
-| `{ type: 'close' }`           | WebView → Shell | El usuario quiere cerrar el libro   |
+| Mensaje                       | Dirección       | Descripción                       |
+| ----------------------------- | --------------- | --------------------------------- |
+| `{ type: 'ready' }`           | WebView → Shell | El libro está cargado y listo     |
+| `{ type: 'chapter-changed' }` | WebView → Shell | Se cambió de capítulo             |
+| `{ type: 'error', message }`  | WebView → Shell | Ocurrió un error en el lector     |
+| `{ type: 'close' }`           | WebView → Shell | El usuario quiere cerrar el libro |
 
 ## 4. Navegación entre capítulos
 
@@ -109,6 +109,7 @@ El webview y el shell se comunican mediante `postMessage`:
 ### 5.1 Partition del WebView
 
 El `<webview>` usa `partition="persist:reader"` para:
+
 - Aislar las cookies y storage del lector
 - Evitar contaminar la sesión principal
 - Mantener el estado entre recargas
@@ -127,14 +128,14 @@ El `<webview>` usa `partition="persist:reader"` para:
 
 ## 6. Manejo de errores
 
-| Error                         | Causa                              | Manejo                                    |
-| ----------------------------- | ---------------------------------- | ----------------------------------------- |
-| `Falta parámetro uri`         | URL mal formada                    | Se muestra error en el webview            |
-| `Formato no soportado`        | Extensión no reconocida            | Se muestra error con formatos válidos     |
-| `Archivo no encontrado`       | URI inválida o archivo movido      | Se muestra error en ReaderView (shell)    |
-| `Error de parseo EPUB`        | Archivo corrupto o inválido        | Se muestra error en el webview            |
-| `Navegación en límite`        | Primer/último capítulo             | Se ignora silenciosamente                 |
-| `Error de renderizado`        | CSS o HTML inválido del EPUB       | Se muestra error en el webview            |
+| Error                   | Causa                         | Manejo                                 |
+| ----------------------- | ----------------------------- | -------------------------------------- |
+| `Falta parámetro uri`   | URL mal formada               | Se muestra error en el webview         |
+| `Formato no soportado`  | Extensión no reconocida       | Se muestra error con formatos válidos  |
+| `Archivo no encontrado` | URI inválida o archivo movido | Se muestra error en ReaderView (shell) |
+| `Error de parseo EPUB`  | Archivo corrupto o inválido   | Se muestra error en el webview         |
+| `Navegación en límite`  | Primer/último capítulo        | Se ignora silenciosamente              |
+| `Error de renderizado`  | CSS o HTML inválido del EPUB  | Se muestra error en el webview         |
 
 ## 7. Rendimiento
 

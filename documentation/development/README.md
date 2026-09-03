@@ -1,14 +1,14 @@
 # Desarrollo local — App Windows (Electron)
 
-Guía rápida para ejecutar la aplicación de escritorio de Echo Reader en tu máquina local.
+Guía rápida para ejecutar la aplicación de escritorio de Clio Reader en tu máquina local.
 
 ## Requisitos
 
-| Requisito | Versión |
-|-----------|---------|
-| Node.js | 22+ |
-| pnpm | 10.15.1 |
-| Git | Cualquier versión reciente |
+| Requisito | Versión                    |
+| --------- | -------------------------- |
+| Node.js   | 22+                        |
+| pnpm      | 10.15.1                    |
+| Git       | Cualquier versión reciente |
 
 > No se requiere Rust, .NET ni ninguna otra herramienta. El proyecto es 100% TypeScript/JavaScript.
 
@@ -17,7 +17,7 @@ Guía rápida para ejecutar la aplicación de escritorio de Echo Reader en tu m�
 ```bash
 # 1. Clonar el repositorio
 git clone <url-del-repo>
-cd echo_reader
+cd clio_reader
 
 # 2. Instalar dependencias del monorepo
 pnpm install
@@ -27,7 +27,7 @@ pnpm install
 
 ```bash
 # Desde la raíz del monorepo
-pnpm --filter @echo-reader/desktop dev
+pnpm --filter @clio-reader/desktop dev
 ```
 
 Esto abre la app de Electron con hot-reload. Cualquier cambio en el código se refleja automáticamente.
@@ -36,21 +36,21 @@ Esto abre la app de Electron con hot-reload. Cualquier cambio en el código se r
 
 ```bash
 # Build + empaquetado NSIS (instalador .exe)
-pnpm --filter @echo-reader/desktop build:win
+pnpm --filter @clio-reader/desktop build:win
 
 # Build portable (sin instalar)
-pnpm --filter @echo-reader/desktop build:win:portable
+pnpm --filter @clio-reader/desktop build:win:portable
 ```
 
 Los archivos generados quedan en `apps/desktop/release/`.
 
-> Ya existe un build compilado: `apps/desktop/release/Echo Reader Setup 0.1.0.exe`
+> Ya existe un build compilado: `apps/desktop/release/Clio Reader Setup 0.1.0.exe`
 
 ## Ejecutar el build existente
 
 ```bash
 # Abrir el instalador
-start "apps/desktop/release/Echo Reader Setup 0.1.0.exe"
+start "apps/desktop/release/Clio Reader Setup 0.1.0.exe"
 ```
 
 ## Tests y validación
@@ -69,14 +69,14 @@ Si Electron no se instala correctamente, consulta la [guía de troubleshooting](
 
 ## Scripts disponibles
 
-| Script | Descripción |
-|--------|-------------|
-| `pnpm dev` | Desarrollo con HMR (Electron) |
-| `pnpm build` | Build de producción |
-| `pnpm build:win` | Build + instalador Windows NSIS |
-| `pnpm build:win:portable` | Build portable Windows |
-| `pnpm test` | Ejecutar tests con Vitest |
-| `pnpm validate` | Validación completa |
+| Script                    | Descripción                     |
+| ------------------------- | ------------------------------- |
+| `pnpm dev`                | Desarrollo con HMR (Electron)   |
+| `pnpm build`              | Build de producción             |
+| `pnpm build:win`          | Build + instalador Windows NSIS |
+| `pnpm build:win:portable` | Build portable Windows          |
+| `pnpm test`               | Ejecutar tests con Vitest       |
+| `pnpm validate`           | Validación completa             |
 
 ## Documentación
 

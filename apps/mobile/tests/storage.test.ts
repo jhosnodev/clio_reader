@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { KeyValueStore } from '@echo-reader/storage';
+import type { KeyValueStore } from '@clio-reader/storage';
 
 vi.mock('expo-file-system', () => ({
   documentDirectory: 'file:///mock-documents/',
@@ -63,7 +63,7 @@ describe('Mobile Storage', () => {
       await store.set('test-key', '{"test":"value"}');
 
       expect(mockFileSystem.writeAsStringAsync).toHaveBeenCalledWith(
-        'file:///mock-documents/echo-reader/test-key.json',
+        'file:///mock-documents/clio-reader/test-key.json',
         '{"test":"value"}',
       );
     });
@@ -77,7 +77,7 @@ describe('Mobile Storage', () => {
       await store.remove('test-key');
 
       expect(mockFileSystem.deleteAsync).toHaveBeenCalledWith(
-        'file:///mock-documents/echo-reader/test-key.json',
+        'file:///mock-documents/clio-reader/test-key.json',
       );
     });
   });

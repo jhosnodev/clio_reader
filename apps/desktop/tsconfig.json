@@ -12,14 +12,14 @@
     "composite": false,
     "baseUrl": ".",
     "paths": {
-      "@echo-reader/domain": ["../../packages/domain/src"],
-      "@echo-reader/reader-core": ["../../packages/reader-core/src"],
-      "@echo-reader/reader-epub": ["../../packages/reader-epub/src"],
-      "@echo-reader/reader-pdf": ["../../packages/reader-pdf/src"],
-      "@echo-reader/reader-cbz": ["../../packages/reader-cbz/src"],
-      "@echo-reader/reader-session": ["../../packages/reader-session/src"],
-      "@echo-reader/storage": ["../../packages/storage/src"],
-      "@echo-reader/library": ["../../packages/library/src"]
+      "@clio-reader/domain": ["../../packages/domain/src"],
+      "@clio-reader/reader-core": ["../../packages/reader-core/src"],
+      "@clio-reader/reader-epub": ["../../packages/reader-epub/src"],
+      "@clio-reader/reader-pdf": ["../../packages/reader-pdf/src"],
+      "@clio-reader/reader-cbz": ["../../packages/reader-cbz/src"],
+      "@clio-reader/reader-session": ["../../packages/reader-session/src"],
+      "@clio-reader/storage": ["../../packages/storage/src"],
+      "@clio-reader/library": ["../../packages/library/src"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],

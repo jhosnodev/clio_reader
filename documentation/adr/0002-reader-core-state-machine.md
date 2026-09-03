@@ -15,7 +15,7 @@ La aplicación debe abrir distintos formatos sin que la UI conozca los detalles 
 
 ## Decisión
 
-`@echo-reader/reader-core` define `FileSource`, `ReaderAdapter`, `ReaderDocument` y `ReaderCapabilities`. `ReaderFactory` registra adaptadores por `BookFormat` y crea documentos mediante el contrato común.
+`@clio-reader/reader-core` define `FileSource`, `ReaderAdapter`, `ReaderDocument` y `ReaderCapabilities`. `ReaderFactory` registra adaptadores por `BookFormat` y crea documentos mediante el contrato común.
 
 `detectBookFormat` reconoce EPUB, PDF, CBZ y Markdown por extensión y utiliza MIME como fallback. Las extensiones se priorizan porque los selectores de archivos pueden proporcionar MIME vacío o genérico.
 

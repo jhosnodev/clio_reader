@@ -1,6 +1,6 @@
-# echo_reader
+# clio_reader
 
-**echo_reader** es un lector y gestor de biblioteca local para libros y cómics digitales.
+**clio_reader** es un lector y gestor de biblioteca local para libros y cómics digitales.
 
 ## MVP
 
@@ -35,19 +35,20 @@ La documentación del proyecto se encuentra en [`documentation/`](./documentatio
 
 El proyecto se encuentra en fase de implementación activa. Las fases completadas son:
 
-| Fase | Estado | Detalle |
-|------|--------|---------|
-| Fase 0 — Preparación repo | ✅ Completa | Monorepo, TypeScript estricto, Prettier, ESLint, Vitest, CI |
-| Fase 1 — Spike Windows | ✅ Completa | Electron shell, selector de archivos, IPC, ciclo de vida |
-| Fase 2 — Dominio/contratos | ✅ Completa | `domain`, `reader-core`, `reader-session` con tests |
-| Fase 3 — Biblioteca/persistencia | ✅ Completa | `storage` + `library` conectados a la UI via Electron KV store |
-| Fase 4 — Renderer CBZ | ✅ Completa | `reader-cbz` implementado con tests |
-| Fase 5 — Renderer PDF | ✅ Completa | `reader-pdf` implementado con tests |
-| Fase 6 — Renderer EPUB | ✅ Completa | `reader-epub` integrado al webview con navegación y temas |
-| Fase 7 — Progreso/settings | ⚠️ Parcial | `reader-session` existe, progreso se guarda al cerrar |
-| Fase 8 — Marcadores/notas | ❌ Pendiente | Tipos definidos en dominio, sin UI |
+| Fase                             | Estado       | Detalle                                                        |
+| -------------------------------- | ------------ | -------------------------------------------------------------- |
+| Fase 0 — Preparación repo        | ✅ Completa  | Monorepo, TypeScript estricto, Prettier, ESLint, Vitest, CI    |
+| Fase 1 — Spike Windows           | ✅ Completa  | Electron shell, selector de archivos, IPC, ciclo de vida       |
+| Fase 2 — Dominio/contratos       | ✅ Completa  | `domain`, `reader-core`, `reader-session` con tests            |
+| Fase 3 — Biblioteca/persistencia | ✅ Completa  | `storage` + `library` conectados a la UI via Electron KV store |
+| Fase 4 — Renderer CBZ            | ✅ Completa  | `reader-cbz` implementado con tests                            |
+| Fase 5 — Renderer PDF            | ✅ Completa  | `reader-pdf` implementado con tests                            |
+| Fase 6 — Renderer EPUB           | ✅ Completa  | `reader-epub` integrado al webview con navegación y temas      |
+| Fase 7 — Progreso/settings       | ⚠️ Parcial   | `reader-session` existe, progreso se guarda al cerrar          |
+| Fase 8 — Marcadores/notas        | ❌ Pendiente | Tipos definidos en dominio, sin UI                             |
 
 **Funcionalidades implementadas:**
+
 - Importar libros EPUB, PDF y CBZ
 - Biblioteca local con persistencia (los libros sobreviven al reinicio)
 - Lector EPUB con navegación por capítulos

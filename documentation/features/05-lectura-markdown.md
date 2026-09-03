@@ -11,7 +11,7 @@
 
 ## Objetivo
 
-Permitir importar y leer archivos `.md` desde la biblioteca local de echo_reader, manteniendo el funcionamiento offline y el mismo modelo de progreso, preferencias, marcadores y notas utilizado por los demás formatos.
+Permitir importar y leer archivos `.md` desde la biblioteca local de clio_reader, manteniendo el funcionamiento offline y el mismo modelo de progreso, preferencias, marcadores y notas utilizado por los demás formatos.
 
 ## Alcance propuesto
 

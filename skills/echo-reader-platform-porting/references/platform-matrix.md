@@ -1,4 +1,4 @@
-# Matriz de portabilidad de echo_reader
+# Matriz de portabilidad de clio_reader
 
 Usar esta matriz como punto de partida; sustituir `por validar` con resultados del spike y pruebas reales antes de declarar soporte.
 
