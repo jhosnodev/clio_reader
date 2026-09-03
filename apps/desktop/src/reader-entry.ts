@@ -4,14 +4,15 @@
  * Principios aplicados:
  * - SRP: Cada función tiene una única responsabilidad
  * - OCP: Abierto a extensión (nuevos formatos) sin modificar este archivo
- * - DIP: Depende de abstractions (EpubReaderDocument)
+ * - DIP: Depende de abstractions (ReaderDocument), no de implementaciones concretas
  * - Funciones puras donde es posible
  * - Manejo de errores en los límites
+ * - Seguridad: Sanitización de HTML, targetOrigin en postMessage
  */
 
-import { EpubReaderDocument } from '@echo-reader/reader-epub';
 import type { ReaderDocument } from '@echo-reader/reader-core';
 import type { ReaderPreferences } from '@echo-reader/domain';
+import { EpubReaderDocument } from '@echo-reader/reader-epub';
 
 /* ==========================================================================
    Constantes
@@ -19,6 +20,8 @@ import type { ReaderPreferences } from '@echo-reader/domain';
 
 const SUPPORTED_FORMATS = ['epub'] as const;
 type SupportedFormat = (typeof SUPPORTED_FORMATS)[number];
+
+const READER_TARGET_ORIGIN = 'file://';
 
 const DEFAULT_PREFERENCES: ReaderPreferences = {
   theme: 'light',
@@ -31,6 +34,38 @@ const DEFAULT_PREFERENCES: ReaderPreferences = {
   margin: 'comfortable',
   readingDirection: 'ltr',
 };
+
+/* ==========================================================================
+   Sanitización de HTML (Seguridad: previene XSS desde contenido EPUB)
+   ========================================================================== */
+
+const BLOCKED_TAGS = ['script', 'iframe', 'object', 'embed', 'form', 'input', 'textarea', 'button', 'link'];
+const EVENT_HANDLER_REGEX = /\bon\w+\s*=/gi;
+const DANGEROUS_ATTRS = ['srcdoc', 'data', 'codebase', 'formaction'];
+
+function sanitizeHtml(html: string): string {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+
+  for (const tag of BLOCKED_TAGS) {
+    const elements = doc.querySelectorAll(tag);
+    elements.forEach((el) => el.remove());
+  }
+
+  const allElements = doc.querySelectorAll('*');
+  for (const el of allElements) {
+    const attrs = Array.from(el.attributes);
+    for (const attr of attrs) {
+      if (EVENT_HANDLER_REGEX.test(attr.name)) {
+        el.removeAttribute(attr.name);
+      }
+      if (DANGEROUS_ATTRS.includes(attr.name.toLowerCase())) {
+        el.removeAttribute(attr.name);
+      }
+    }
+  }
+
+  return doc.body.innerHTML;
+}
 
 /* ==========================================================================
    Funciones puras — Query params
@@ -79,41 +114,32 @@ class ReaderError extends Error {
    ========================================================================== */
 
 function showLoading(): void {
-  const loading = document.getElementById('reader-loading');
-  const error = document.getElementById('reader-error');
-  const content = document.getElementById('reader-content');
-  const controls = document.getElementById('reader-controls');
-
-  if (loading) loading.style.display = 'flex';
-  if (error) error.style.display = 'none';
-  if (content) content.style.display = 'none';
-  if (controls) controls.style.display = 'none';
+  setVisible('reader-loading', true);
+  setVisible('reader-error', false);
+  setVisible('reader-content', false);
+  setVisible('reader-controls', false);
 }
 
 function showError(message: string): void {
-  const loading = document.getElementById('reader-loading');
-  const error = document.getElementById('reader-error');
-  const errorMessage = document.getElementById('reader-error-message');
-  const content = document.getElementById('reader-content');
-  const controls = document.getElementById('reader-controls');
+  setVisible('reader-loading', false);
+  setVisible('reader-error', true);
+  setVisible('reader-content', false);
+  setVisible('reader-controls', false);
 
-  if (loading) loading.style.display = 'none';
-  if (error) error.style.display = 'flex';
+  const errorMessage = document.getElementById('reader-error-message');
   if (errorMessage) errorMessage.textContent = message;
-  if (content) content.style.display = 'none';
-  if (controls) controls.style.display = 'none';
 }
 
 function showContent(): void {
-  const loading = document.getElementById('reader-loading');
-  const error = document.getElementById('reader-error');
-  const content = document.getElementById('reader-content');
-  const controls = document.getElementById('reader-controls');
+  setVisible('reader-loading', false);
+  setVisible('reader-error', false);
+  setVisible('reader-content', true);
+  setVisible('reader-controls', true);
+}
 
-  if (loading) loading.style.display = 'none';
-  if (error) error.style.display = 'none';
-  if (content) content.style.display = 'block';
-  if (controls) controls.style.display = 'flex';
+function setVisible(id: string, visible: boolean): void {
+  const el = document.getElementById(id);
+  if (el) el.style.display = visible ? (id === 'reader-controls' ? 'flex' : 'block') : 'none';
 }
 
 /* ==========================================================================
@@ -131,39 +157,39 @@ async function renderChapter(
 
   if (!contentEl) return;
 
-  // Obtener contenido del capítulo actual
-  const epubDoc = readerDoc as EpubReaderDocument;
-  const htmlContent = await epubDoc.getCurrentChapterContent();
-  contentEl.innerHTML = htmlContent;
+  // Obtener contenido del capítulo actual (usa métodos opcionales de la interfaz)
+  if (!readerDoc.getCurrentChapterContent) {
+    throw new ReaderError('El formato no soporta renderizado de contenido');
+  }
+
+  const htmlContent = await readerDoc.getCurrentChapterContent();
+  contentEl.innerHTML = sanitizeHtml(htmlContent);
 
   // Aplicar estilos del tema
-  const existingStyle = contentEl.querySelector('style');
-  if (existingStyle) existingStyle.remove();
+  if (readerDoc.applyPreferences) {
+    const existingStyle = contentEl.querySelector('style');
+    if (existingStyle) existingStyle.remove();
 
-  const styleEl = document.createElement('style');
-  const css = await epubDoc.applyPreferences(preferences);
-  styleEl.textContent = css;
-  contentEl.prepend(styleEl);
+    const styleEl = document.createElement('style');
+    const css = await readerDoc.applyPreferences(preferences);
+    styleEl.textContent = css;
+    contentEl.prepend(styleEl);
+  }
 
   // Actualizar información del capítulo
-  const currentIndex = await epubDoc.getCurrentChapterIndex();
-  const totalChapters = await epubDoc.getChapterCount();
-  if (chapterInfo) {
-    chapterInfo.textContent = `Capítulo ${currentIndex + 1} de ${totalChapters}`;
+  if (readerDoc.getCurrentChapterIndex && readerDoc.getChapterCount) {
+    const currentIndex = await readerDoc.getCurrentChapterIndex();
+    const totalChapters = await readerDoc.getChapterCount();
+    if (chapterInfo) {
+      chapterInfo.textContent = `Capítulo ${currentIndex + 1} de ${totalChapters}`;
+    }
+
+    // Actualizar estado de botones de navegación
+    if (btnPrev) btnPrev.disabled = currentIndex <= 0;
+    if (btnNext) btnNext.disabled = currentIndex >= totalChapters - 1;
   }
 
-  // Actualizar estado de botones de navegación
-  if (btnPrev) {
-    btnPrev.disabled = currentIndex <= 0;
-  }
-  if (btnNext) {
-    btnNext.disabled = currentIndex >= totalChapters - 1;
-  }
-
-  // Notificar al host que el capítulo está listo
   communicateToHost({ type: 'chapter-changed' });
-
-  // Scroll al inicio
   contentEl.scrollTop = 0;
 }
 
@@ -172,7 +198,7 @@ async function renderChapter(
    ========================================================================== */
 
 function communicateToHost(message: unknown): void {
-  window.parent.postMessage(message, '*');
+  window.parent.postMessage(message, READER_TARGET_ORIGIN);
 }
 
 /* ==========================================================================
@@ -184,31 +210,31 @@ function setupNavigation(readerDoc: ReaderDocument, preferences: ReaderPreferenc
   const btnNext = document.getElementById('btn-next');
 
   if (btnPrev) {
-    btnPrev.addEventListener('click', async () => {
-      try {
-        await readerDoc.goPrevious();
-        await renderChapter(readerDoc, preferences);
-      } catch (error) {
-        if (error instanceof Error && error.name === 'EpubNavigationError') {
-          return;
-        }
-        throw error;
-      }
-    });
+    btnPrev.addEventListener('click', () => navigateChapter(readerDoc, preferences, 'previous'));
   }
 
   if (btnNext) {
-    btnNext.addEventListener('click', async () => {
-      try {
-        await readerDoc.goNext();
-        await renderChapter(readerDoc, preferences);
-      } catch (error) {
-        if (error instanceof Error && error.name === 'EpubNavigationError') {
-          return;
-        }
-        throw error;
-      }
-    });
+    btnNext.addEventListener('click', () => navigateChapter(readerDoc, preferences, 'next'));
+  }
+}
+
+async function navigateChapter(
+  readerDoc: ReaderDocument,
+  preferences: ReaderPreferences,
+  direction: 'next' | 'previous',
+): Promise<void> {
+  try {
+    if (direction === 'next') {
+      await readerDoc.goNext();
+    } else {
+      await readerDoc.goPrevious();
+    }
+    await renderChapter(readerDoc, preferences);
+  } catch (error) {
+    if (error instanceof Error && error.name === 'EpubNavigationError') {
+      return;
+    }
+    throw error;
   }
 }
 
@@ -225,6 +251,19 @@ async function loadDocument(uri: string, format: SupportedFormat): Promise<Reade
     }
     default:
       throw new ReaderError(`Formato no implementado: ${format}`);
+  }
+}
+
+/* ==========================================================================
+   Retry (SRP: solo maneja reintento)
+   ========================================================================== */
+
+function setupRetry(): void {
+  const retryBtn = document.getElementById('reader-error-retry');
+  if (retryBtn) {
+    retryBtn.addEventListener('click', () => {
+      main();
+    });
   }
 }
 
@@ -254,4 +293,5 @@ async function main(): Promise<void> {
   }
 }
 
+setupRetry();
 main();

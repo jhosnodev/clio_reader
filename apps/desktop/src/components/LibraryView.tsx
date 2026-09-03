@@ -20,7 +20,7 @@ interface LibraryViewProps {
   readonly books: readonly Book[];
   readonly onOpenBook: (book: Book) => void;
   readonly onImportBook: () => void;
-  readonly onRemoveBook: (bookId: string) => void;
+  readonly onRemoveBook: (bookId: string, bookTitle: string) => void;
   readonly onLoadBooks: () => void;
 }
 
@@ -83,7 +83,7 @@ function EmptyState(): JSX.Element {
 interface BookGridProps {
   readonly books: readonly Book[];
   readonly onOpenBook: (book: Book) => void;
-  readonly onRemoveBook: (bookId: string) => void;
+  readonly onRemoveBook: (bookId: string, bookTitle: string) => void;
 }
 
 function BookGrid({ books, onOpenBook, onRemoveBook }: BookGridProps): JSX.Element {
@@ -104,7 +104,7 @@ function BookGrid({ books, onOpenBook, onRemoveBook }: BookGridProps): JSX.Eleme
 interface BookCardProps {
   readonly book: Book;
   readonly onOpen: (book: Book) => void;
-  readonly onRemove: (bookId: string) => void;
+  readonly onRemove: (bookId: string, bookTitle: string) => void;
 }
 
 function BookCard({ book, onOpen, onRemove }: BookCardProps): JSX.Element {
@@ -117,7 +117,7 @@ function BookCard({ book, onOpen, onRemove }: BookCardProps): JSX.Element {
 
   const handleRemove = (e: React.MouseEvent): void => {
     e.stopPropagation();
-    onRemove(book.id);
+    onRemove(book.id, book.title);
   };
 
   const isMissing = book.status === 'missing';

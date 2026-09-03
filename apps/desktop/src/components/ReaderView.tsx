@@ -10,7 +10,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { createDesktopBridge } from '../bridges/desktop-bridge';
+import { bridge } from '../bridges/bridge-singleton';
 
 /* ==========================================================================
    Props
@@ -27,12 +27,6 @@ interface ReaderViewProps {
    ========================================================================== */
 
 type FileStatus = 'checking' | 'found' | 'not-found';
-
-/* ==========================================================================
-   Bridge (DIP: se crea una vez)
-   ========================================================================== */
-
-const bridge = createDesktopBridge();
 
 /* ==========================================================================
    Componente

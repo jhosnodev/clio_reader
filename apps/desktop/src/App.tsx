@@ -7,11 +7,11 @@
  * - Explícito: Los datos fluyen de arriba hacia abajo via props
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { LibraryView } from './components/LibraryView';
 import { ReaderView } from './components/ReaderView';
 import { useAppLifecycle } from './bridges/lifecycle';
-import { createDesktopBridge } from './bridges/desktop-bridge';
+import { bridge } from './bridges/bridge-singleton';
 import { LocalRepository } from '@echo-reader/storage';
 import { createElectronKVStore } from './bridges/storage';
 import { importBook, listBooks, removeBook } from '@echo-reader/library';
@@ -22,7 +22,6 @@ import { detectBookFormat } from '@echo-reader/reader-core';
    Dependencias — DIP: se crean una vez y se inyectan
    ========================================================================== */
 
-const bridge = createDesktopBridge();
 const store = createElectronKVStore();
 const repository = new LocalRepository(store);
 
@@ -40,7 +39,7 @@ interface OpenBook {
 export function App(): JSX.Element {
   const [openBook, setOpenBook] = useState<OpenBook | null>(null);
   const [books, setBooks] = useState<readonly Book[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const isLoadingRef = useRef(false);
 
   /* ----- Ciclo de vida ----- */
   useAppLifecycle(
@@ -55,7 +54,10 @@ export function App(): JSX.Element {
   /* ----- Cargar libros ----- */
   const loadBooks = useCallback(async () => {
     try {
-      const loadedBooks = await listBooks(repository, { sortBy: 'addedAt', sortDirection: 'desc' });
+      const loadedBooks = await listBooks(repository, {
+        sortBy: 'addedAt',
+        sortDirection: 'desc',
+      });
       setBooks(loadedBooks);
     } catch (err) {
       console.error('Error al cargar libros:', err);
@@ -64,9 +66,9 @@ export function App(): JSX.Element {
 
   /* ----- Importar libro ----- */
   const handleImportBook = useCallback(async () => {
-    if (isLoading) return;
+    if (isLoadingRef.current) return;
+    isLoadingRef.current = true;
 
-    setIsLoading(true);
     try {
       const fileSource = await bridge.pickFile();
       if (!fileSource) return;
@@ -91,9 +93,9 @@ export function App(): JSX.Element {
     } catch (err) {
       console.error('Error al importar libro:', err);
     } finally {
-      setIsLoading(false);
+      isLoadingRef.current = false;
     }
-  }, [isLoading, loadBooks]);
+  }, [loadBooks]);
 
   /* ----- Abrir libro ----- */
   const handleOpenBook = useCallback((book: Book) => {
@@ -112,7 +114,12 @@ export function App(): JSX.Element {
 
   /* ----- Eliminar libro ----- */
   const handleRemoveBook = useCallback(
-    async (bookId: string) => {
+    async (bookId: string, bookTitle: string) => {
+      const confirmed = window.confirm(
+        `¿Estás seguro de que quieres eliminar "${bookTitle}"?`,
+      );
+      if (!confirmed) return;
+
       try {
         await removeBook(repository, bookId);
         await loadBooks();

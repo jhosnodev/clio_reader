@@ -1,4 +1,4 @@
-import type { BookFormat, ReaderLocator } from '@echo-reader/domain';
+import type { BookFormat, ReaderLocator, ReaderPreferences } from '@echo-reader/domain';
 
 export interface FileSource {
   readonly uri: string;
@@ -21,6 +21,10 @@ export interface ReaderDocument {
   getLocator(): Promise<ReaderLocator>;
   goNext(): Promise<ReaderLocator>;
   goPrevious(): Promise<ReaderLocator>;
+  getCurrentChapterContent?(): Promise<string>;
+  getChapterCount?(): Promise<number>;
+  getCurrentChapterIndex?(): Promise<number>;
+  applyPreferences?(prefs: ReaderPreferences): Promise<string>;
 }
 
 export interface ReaderAdapter {
