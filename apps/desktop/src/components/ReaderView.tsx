@@ -191,6 +191,15 @@ export function ReaderView({
       console.log('[reader] webview elemento creado, adjuntando listener did-finish-load');
       (el as HTMLElement & { addEventListener: (event: string, handler: () => void) => void })
         .addEventListener('did-finish-load', handleFinishLoadRef.current!);
+      (el as HTMLElement & { addEventListener: (event: string, handler: () => void) => void })
+        .addEventListener('dom-ready', () => {
+          console.log('[reader] webview dom-ready, abriendo devtools...');
+          try {
+            (el as unknown as { openDevTools: () => void }).openDevTools();
+          } catch (e) {
+            console.error('[reader] error abriendo devtools:', e);
+          }
+        });
     }
   }, []);
 

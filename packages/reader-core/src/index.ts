@@ -25,6 +25,7 @@ export interface ReaderDocument {
   getChapterCount?(): Promise<number>;
   getCurrentChapterIndex?(): Promise<number>;
   applyPreferences?(prefs: ReaderPreferences): Promise<string>;
+  resolveResources?(html: string): Promise<string>;
 }
 
 export interface ReaderAdapter {

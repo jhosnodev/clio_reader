@@ -72,6 +72,87 @@ function sanitizeHtml(html: string): string {
 }
 
 /* ==========================================================================
+   Resolución de imágenes embebidas en EPUB
+   ========================================================================== */
+
+async function resolveImagesInHtml(
+  readerDoc: ReaderDocument,
+  html: string,
+): Promise<string> {
+  log('[imgs] resolveImagesInHtml() — HTML length:', html.length);
+
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const images = doc.querySelectorAll('img');
+  log('[imgs] <img> tags encontrados:', images.length);
+
+  if (images.length === 0) return html;
+
+  const allSrcs: string[] = [];
+  images.forEach((img) => {
+    const src = img.getAttribute('src');
+    if (src) allSrcs.push(src);
+  });
+  log('[imgs] srcs de imágenes:', allSrcs);
+
+  const docAsAny = readerDoc as unknown as Record<string, unknown>;
+  const getImageData = docAsAny['getImageData'] as
+    | ((href: string) => Promise<{ data: Uint8Array; mimeType: string } | null>)
+    | undefined;
+
+  log('[imgs] método getImageData disponible:', !!getImageData);
+  if (!getImageData) return html;
+
+  const blobUrlCache = new Map<string, string>();
+  let resolvedCount = 0;
+  let failedCount = 0;
+
+  for (const img of images) {
+    const src = img.getAttribute('src');
+    if (!src || src.startsWith('data:') || src.startsWith('blob:')) {
+      log('[imgs] saltando src (data/blob/vacío):', src);
+      continue;
+    }
+
+    if (!blobUrlCache.has(src)) {
+      try {
+        log('[imgs] llamando getImageData para:', src);
+        const result = await getImageData(src);
+        if (result) {
+          log('[imgs] getImageData OK — tamaño:', result.data.byteLength, 'mimeType:', result.mimeType);
+          const blob = new Blob([result.data.buffer as ArrayBuffer], { type: result.mimeType });
+          const blobUrl = URL.createObjectURL(blob);
+          log('[imgs] blob URL creada:', blobUrl);
+          blobUrlCache.set(src, blobUrl);
+          resolvedCount++;
+        } else {
+          log('[imgs] getImageData retornó NULL para:', src);
+          blobUrlCache.set(src, '');
+          failedCount++;
+        }
+      } catch (err) {
+        log('[imgs] getImageData LANZÓ EXCEPCIÓN para:', src, 'error:', err);
+        blobUrlCache.set(src, '');
+        failedCount++;
+      }
+    }
+
+    const blobUrl = blobUrlCache.get(src);
+    if (blobUrl) {
+      log('[imgs] reescribiendo src:', src, '→', blobUrl.substring(0, 60) + '...');
+      img.setAttribute('src', blobUrl);
+    } else {
+      log('[imgs] NO se pudo resolver src:', src);
+    }
+  }
+
+  log('[imgs] resumen: resolved=', resolvedCount, 'failed=', failedCount, 'total=', images.length);
+
+  const resultHtml = doc.body.innerHTML;
+  log('[imgs] HTML resultante (primeros 300 chars):', resultHtml.substring(0, 300));
+  return resultHtml;
+}
+
+/* ==========================================================================
    Funciones puras — Query params
    ========================================================================== */
 
@@ -193,9 +274,26 @@ async function renderChapter(
   const htmlContent = await readerDoc.getCurrentChapterContent();
   log('contenido obtenido, tamaño:', htmlContent.length, 'caracteres');
 
+  log('resolviendo recursos (imágenes)...');
+  const resolvedHtml = await resolveImagesInHtml(readerDoc, htmlContent);
+
   log('sanitizando HTML...');
-  contentEl.innerHTML = sanitizeHtml(htmlContent);
+  contentEl.innerHTML = sanitizeHtml(resolvedHtml);
   log('HTML sanitizado e inyectado');
+
+  const injectedImages = contentEl.querySelectorAll('img');
+  log('[imgs] imágenes en DOM después de inyección:', injectedImages.length);
+  injectedImages.forEach((img, i) => {
+    const src = img.getAttribute('src') ?? '(sin src)';
+    log(`[imgs] img[${i}] src:`, src.substring(0, 80));
+
+    img.addEventListener('load', () => {
+      log(`[imgs] img[${i}] ONLOAD — naturalWidth:`, img.naturalWidth, 'naturalHeight:', img.naturalHeight, 'displayWidth:', img.width, 'displayHeight:', img.height);
+    });
+    img.addEventListener('error', (e) => {
+      log(`[imgs] img[${i}] ONERROR — src:`, src.substring(0, 80), 'error:', e);
+    });
+  });
 
   if (readerDoc.applyPreferences) {
     const existingStyle = contentEl.querySelector('style');

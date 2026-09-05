@@ -1,6 +1,7 @@
 import type { EpubLocator, ReaderPreferences, ReaderLocator } from '@clio-reader/domain';
 import type { FileSource, ReaderCapabilities, ReaderDocument } from '@clio-reader/reader-core';
 
+import JSZip from 'jszip';
 import {
   parseEpub,
   readChapterContent,
@@ -38,6 +39,10 @@ const EPUB_CAPABILITIES: ReaderCapabilities = {
   supportsAnnotations: false,
 };
 
+function epubLog(...args: unknown[]): void {
+  console.log('[epub-doc]', ...args);
+}
+
 export class EpubReaderDocument implements ReaderDocument {
   readonly format = 'epub' as const;
   readonly capabilities = EPUB_CAPABILITIES;
@@ -68,7 +73,27 @@ export class EpubReaderDocument implements ReaderDocument {
       this.rawData = new Uint8Array(arrayBuffer);
     }
 
+    epubLog('open() rawData tamaño:', this.rawData.byteLength);
+
     this.parsedEpub = await parseEpub(this.rawData);
+    epubLog('open() EPUB parseado OK');
+    epubLog('open() OPF basePath:', this.parsedEpub.opf.basePath);
+    epubLog('open() manifest items:', this.parsedEpub.opf.manifest.length);
+    epubLog('open() spine items:', this.parsedEpub.opf.spine.length);
+    epubLog('open() chapters:', this.parsedEpub.chapters.length);
+
+    this.parsedEpub.chapters.forEach((ch, i) => {
+      epubLog(`open() chapter[${i}]: id=${ch.id} href=${ch.href} fullPath=${ch.fullPath} mediaType=${ch.mediaType}`);
+    });
+
+    const imageItems = this.parsedEpub.opf.manifest.filter((item) =>
+      item.mediaType.startsWith('image/'),
+    );
+    epubLog('open() manifest image items:', imageItems.length);
+    imageItems.forEach((item) => {
+      epubLog(`open() image manifest: id=${item.id} href=${item.href} mediaType=${item.mediaType}`);
+    });
+
     this.toc = await extractToc(this.rawData, this.parsedEpub.opf);
     this.currentChapterIndex = 0;
   }
@@ -137,7 +162,20 @@ export class EpubReaderDocument implements ReaderDocument {
       throw new EpubNavigationError('No chapter at current index');
     }
 
-    return readChapterContent(this.rawData!, chapter.fullPath);
+    epubLog('getCurrentChapterContent() chapter:', chapter.fullPath);
+    const content = await readChapterContent(this.rawData!, chapter.fullPath);
+    epubLog('getCurrentChapterContent() HTML length:', content.length);
+    epubLog('getCurrentChapterContent() HTML COMPLETO:', content);
+
+    const imgCount = (content.match(/<img/gi) ?? []).length;
+    epubLog('getCurrentChapterContent() <img> tags en HTML:', imgCount);
+
+    if (imgCount > 0) {
+      const srcMatches = content.match(/src\s*=\s*["']([^"']+)["']/gi) ?? [];
+      epubLog('getCurrentChapterContent() srcs encontrados:', srcMatches.slice(0, 10));
+    }
+
+    return content;
   }
 
   async getChapterCount(): Promise<number> {
@@ -158,6 +196,77 @@ export class EpubReaderDocument implements ReaderDocument {
   async applyPreferences(prefs: ReaderPreferences): Promise<string> {
     this.assertOpen();
     return generateReaderStyle(prefs);
+  }
+
+  async getImageData(href: string): Promise<{ data: Uint8Array; mimeType: string } | null> {
+    this.assertOpen();
+
+    epubLog('getImageData() href:', href);
+
+    const chapter = this.parsedEpub!.chapters[this.currentChapterIndex];
+    if (!chapter) {
+      epubLog('getImageData() NO hay capítulo en índice', this.currentChapterIndex);
+      return null;
+    }
+
+    epubLog('getImageData() chapter.fullPath:', chapter.fullPath);
+
+    const chapterDir = chapter.fullPath.includes('/')
+      ? chapter.fullPath.substring(0, chapter.fullPath.lastIndexOf('/') + 1)
+      : '';
+
+    epubLog('getImageData() chapterDir:', chapterDir);
+
+    const resolvedPath = this.resolveHref(chapterDir, href);
+    epubLog('getImageData() resolvedPath:', resolvedPath);
+
+    const zip = await JSZip.loadAsync(this.rawData!);
+    const entry = zip.file(resolvedPath);
+    epubLog('getImageData() ZIP entry encontrado:', !!entry);
+
+    if (!entry) {
+      epubLog('getImageData() ARCHIVO NO ENCONTRADO en ZIP:', resolvedPath);
+      const allFiles = Object.keys(zip.files);
+      epubLog('getImageData() archivos en ZIP (primeros 20):', allFiles.slice(0, 20));
+      return null;
+    }
+
+    const data = new Uint8Array(await entry.async('arraybuffer'));
+    epubLog('getImageData() datos extraídos, tamaño:', data.byteLength);
+
+    const ext = resolvedPath.split('.').pop()?.toLowerCase() ?? '';
+    const mimeMap: Record<string, string> = {
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      gif: 'image/gif',
+      webp: 'image/webp',
+      svg: 'image/svg+xml',
+      bmp: 'image/bmp',
+    };
+    const mimeType = mimeMap[ext] ?? 'application/octet-stream';
+    epubLog('getImageData() ext:', ext, 'mimeType:', mimeType);
+
+    return { data, mimeType };
+  }
+
+  private resolveHref(basePath: string, href: string): string {
+    if (href.startsWith('/')) return href.substring(1);
+    if (!basePath) return href;
+
+    const baseParts = basePath.split('/').filter(Boolean);
+    const hrefParts = href.split('/');
+
+    const resolved: string[] = [...baseParts];
+    for (const part of hrefParts) {
+      if (part === '..') {
+        resolved.pop();
+      } else if (part !== '.') {
+        resolved.push(part);
+      }
+    }
+
+    return resolved.join('/');
   }
 
   async getTitle(): Promise<string | undefined> {
