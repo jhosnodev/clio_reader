@@ -6,6 +6,13 @@
  * No se usa postMessage porque <webview> no es un iframe.
  */
 
+window.addEventListener('error', (e) => {
+  console.error('[reader-entry] UNCAUGHT ERROR:', e.message, e.filename, e.lineno, e.error);
+});
+window.addEventListener('unhandledrejection', (e) => {
+  console.error('[reader-entry] UNHANDLED REJECTION:', e.reason);
+});
+
 import type { ReaderDocument } from '@clio-reader/reader-core';
 import type { ReaderPreferences } from '@clio-reader/domain';
 import { EpubReaderDocument } from '@clio-reader/reader-epub';
@@ -48,32 +55,56 @@ const EVENT_HANDLER_REGEX = /\bon\w+\s*=/gi;
 const DANGEROUS_ATTRS = ['srcdoc', 'data', 'codebase', 'formaction'];
 
 function sanitizeHtml(html: string): string {
-  const doc = new DOMParser().parseFromString(html, 'text/html');
+  let result = html;
 
   for (const tag of BLOCKED_TAGS) {
-    const elements = doc.querySelectorAll(tag);
-    elements.forEach((el) => el.remove());
+    const re = new RegExp(`<${tag}\\b[^>]*>[\\s\\S]*?</${tag}>`, 'gi');
+    result = result.replace(re, '');
+    const selfCloseRe = new RegExp(`<${tag}\\b[^>]*/>`, 'gi');
+    result = result.replace(selfCloseRe, '');
   }
 
-  const allElements = doc.querySelectorAll('*');
-  for (const el of allElements) {
-    const attrs = Array.from(el.attributes);
-    for (const attr of attrs) {
-      if (EVENT_HANDLER_REGEX.test(attr.name)) {
-        el.removeAttribute(attr.name);
-      }
-      if (DANGEROUS_ATTRS.includes(attr.name.toLowerCase())) {
-        el.removeAttribute(attr.name);
-      }
-    }
+  for (const attr of DANGEROUS_ATTRS) {
+    const re = new RegExp(`\\s${attr}\\s*=\\s*["'][^"']*["']`, 'gi');
+    result = result.replace(re, '');
   }
 
-  return doc.body.innerHTML;
+  result = result.replace(EVENT_HANDLER_REGEX, '');
+
+  return result;
 }
 
 /* ==========================================================================
    Resolución de imágenes embebidas en EPUB
    ========================================================================== */
+
+const IMG_SRC_REGEX = /<img\b([^>]*?)src\s*=\s*["']([^"']+)["']([^>]*?)>/gi;
+const SVG_IMAGE_HREF_RE = /<image\b([^>]*?)(?:xlink:)?href\s*=\s*["']([^"']+)["']([^>]*?)>/gi;
+const FAILED_IMG_CLASS = 'epub-img-failed';
+
+let previousBlobUrls: string[] = [];
+
+function revokePreviousBlobUrls(): void {
+  for (const url of previousBlobUrls) {
+    try {
+      URL.revokeObjectURL(url);
+    } catch {
+      // ignore
+    }
+  }
+  previousBlobUrls = [];
+}
+
+function addFailedImgClass(match: string): string {
+  if (match.includes('class=')) {
+    return match.replace(/class\s*=\s*["']([^"']*)["']/, `class="$1 ${FAILED_IMG_CLASS}"`);
+  }
+  const isImgTag = match.charAt(4) === ' ' || match.charAt(4) === '>';
+  if (isImgTag) {
+    return match.replace(/<img\b/, `<img class="${FAILED_IMG_CLASS}"`);
+  }
+  return match.replace(/<image\b/, `<image class="${FAILED_IMG_CLASS}"`);
+}
 
 async function resolveImagesInHtml(
   readerDoc: ReaderDocument,
@@ -81,75 +112,123 @@ async function resolveImagesInHtml(
 ): Promise<string> {
   log('[imgs] resolveImagesInHtml() — HTML length:', html.length);
 
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  const images = doc.querySelectorAll('img');
-  log('[imgs] <img> tags encontrados:', images.length);
-
-  if (images.length === 0) return html;
-
   const allSrcs: string[] = [];
-  images.forEach((img) => {
-    const src = img.getAttribute('src');
-    if (src) allSrcs.push(src);
-  });
-  log('[imgs] srcs de imágenes:', allSrcs);
+  const srcTypes: Map<string, 'img' | 'svg'> = new Map();
+  let m: RegExpExecArray | null;
 
-  const docAsAny = readerDoc as unknown as Record<string, unknown>;
-  const getImageData = docAsAny['getImageData'] as
-    | ((href: string) => Promise<{ data: Uint8Array; mimeType: string } | null>)
-    | undefined;
+  const srcRegex = new RegExp(IMG_SRC_REGEX.source, 'gi');
+  while ((m = srcRegex.exec(html)) !== null) {
+    if (m[2]) {
+      const src = stripFragment(m[2]);
+      allSrcs.push(src);
+      srcTypes.set(src, 'img');
+      log('[imgs] <img> tag encontrado:', m[0].substring(0, 150));
+    }
+  }
 
-  log('[imgs] método getImageData disponible:', !!getImageData);
-  if (!getImageData) return html;
+  const svgRegex = new RegExp(SVG_IMAGE_HREF_RE.source, 'gi');
+  while ((m = svgRegex.exec(html)) !== null) {
+    if (m[2]) {
+      const src = stripFragment(m[2]);
+      allSrcs.push(src);
+      srcTypes.set(src, 'svg');
+      log('[imgs] <image> SVG tag encontrado:', m[0].substring(0, 150));
+    }
+  }
 
+  log('[imgs] tags de imagen encontrados:', allSrcs.length, '(img:', [...srcTypes.values()].filter(t => t === 'img').length, 'svg:', [...srcTypes.values()].filter(t => t === 'svg').length, ')');
+
+  if (allSrcs.length === 0) return html;
+
+  log('[imgs] srcs únicos:', [...new Set(allSrcs)]);
+
+  if (!readerDoc.getImageData) return html;
+
+  revokePreviousBlobUrls();
+  const newBlobUrls: string[] = [];
   const blobUrlCache = new Map<string, string>();
   let resolvedCount = 0;
   let failedCount = 0;
 
-  for (const img of images) {
-    const src = img.getAttribute('src');
-    if (!src || src.startsWith('data:') || src.startsWith('blob:')) {
-      log('[imgs] saltando src (data/blob/vacío):', src);
-      continue;
-    }
+  const srcsToResolve = [...new Set(allSrcs.filter((s) => !s.startsWith('data:') && !s.startsWith('blob:')))];
+  log('[imgs] srcs a resolver (sin data:/blob:):', srcsToResolve);
 
-    if (!blobUrlCache.has(src)) {
-      try {
-        log('[imgs] llamando getImageData para:', src);
-        const result = await getImageData(src);
-        if (result) {
-          log('[imgs] getImageData OK — tamaño:', result.data.byteLength, 'mimeType:', result.mimeType);
-          const blob = new Blob([result.data.buffer as ArrayBuffer], { type: result.mimeType });
-          const blobUrl = URL.createObjectURL(blob);
-          log('[imgs] blob URL creada:', blobUrl);
-          blobUrlCache.set(src, blobUrl);
-          resolvedCount++;
-        } else {
-          log('[imgs] getImageData retornó NULL para:', src);
-          blobUrlCache.set(src, '');
-          failedCount++;
-        }
-      } catch (err) {
-        log('[imgs] getImageData LANZÓ EXCEPCIÓN para:', src, 'error:', err);
+  for (const src of srcsToResolve) {
+    try {
+      log('[imgs] → llamando getImageData para:', JSON.stringify(src));
+      const result = await readerDoc.getImageData(src);
+      if (result) {
+        log('[imgs] ← getImageData OK — tamaño:', result.data.byteLength, 'mimeType:', result.mimeType);
+        const buf = result.data.buffer as ArrayBuffer;
+        const blob = new Blob(
+          [buf.slice(result.data.byteOffset, result.data.byteOffset + result.data.byteLength)],
+          { type: result.mimeType },
+        );
+        const blobUrl = URL.createObjectURL(blob);
+        log('[imgs] blob URL creada:', blobUrl);
+        blobUrlCache.set(src, blobUrl);
+        newBlobUrls.push(blobUrl);
+        resolvedCount++;
+      } else {
+        log('[imgs] ← getImageData retornó NULL para:', JSON.stringify(src));
         blobUrlCache.set(src, '');
         failedCount++;
       }
-    }
-
-    const blobUrl = blobUrlCache.get(src);
-    if (blobUrl) {
-      log('[imgs] reescribiendo src:', src, '→', blobUrl.substring(0, 60) + '...');
-      img.setAttribute('src', blobUrl);
-    } else {
-      log('[imgs] NO se pudo resolver src:', src);
+    } catch (err) {
+      log('[imgs] ← getImageData LANZÓ EXCEPCIÓN para:', JSON.stringify(src), 'error:', err);
+      blobUrlCache.set(src, '');
+      failedCount++;
     }
   }
 
-  log('[imgs] resumen: resolved=', resolvedCount, 'failed=', failedCount, 'total=', images.length);
+  log('[imgs] === RESUMEN: resolved=', resolvedCount, 'failed=', failedCount, 'total=', allSrcs.length, '===');
 
-  const resultHtml = doc.body.innerHTML;
-  log('[imgs] HTML resultante (primeros 300 chars):', resultHtml.substring(0, 300));
+  previousBlobUrls = newBlobUrls;
+
+  let resultHtml = html;
+  for (const [src, blobUrl] of blobUrlCache) {
+    const safeSrc = escapeRegExp(src);
+    if (!blobUrl) {
+      const imgFailRe = new RegExp(
+        `(<img\\b[^>]*?src\\s*=\\s*["']${safeSrc}["'][^>]*?>)`,
+        'gi',
+      );
+      resultHtml = resultHtml.replace(imgFailRe, addFailedImgClass);
+      const svgFailRe = new RegExp(
+        `(<image\\b[^>]*?(?:xlink:)?href\\s*=\\s*["']${safeSrc}["'][^>]*?>)`,
+        'gi',
+      );
+      resultHtml = resultHtml.replace(svgFailRe, addFailedImgClass);
+      log('[imgs] FAILED — clase epub-img-failed agregada para:', JSON.stringify(src));
+      continue;
+    }
+    const imgRe = new RegExp(
+      `(<img\\b[^>]*?)src\\s*=\\s*["']${safeSrc}["']([^>]*?>)`,
+      'gi',
+    );
+    resultHtml = resultHtml.replace(imgRe, `$1src="${blobUrl}"$2`);
+    const svgRe = new RegExp(
+      `(<image\\b[^>]*?)(xlink:)?href\\s*=\\s*["']${safeSrc}["']([^>]*?>)`,
+      'gi',
+    );
+    resultHtml = resultHtml.replace(svgRe, (_match, pre, xlinkPrefix, post) => {
+      const prefix = xlinkPrefix ? 'xlink:' : '';
+      return `${pre}${prefix}href="${blobUrl}"${post}`;
+    });
+    log('[imgs] REemplazado — src/href de', JSON.stringify(src), '→', blobUrl.substring(0, 40) + '...');
+  }
+
+  log('[imgs] HTML resultante (primeros 500 chars):', resultHtml.substring(0, 500));
   return resultHtml;
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function stripFragment(href: string): string {
+  const hashIndex = href.indexOf('#');
+  return hashIndex >= 0 ? href.substring(0, hashIndex) : href;
 }
 
 /* ==========================================================================
@@ -282,16 +361,38 @@ async function renderChapter(
   log('HTML sanitizado e inyectado');
 
   const injectedImages = contentEl.querySelectorAll('img');
-  log('[imgs] imágenes en DOM después de inyección:', injectedImages.length);
+  log('[imgs] <img> en DOM después de inyección:', injectedImages.length);
   injectedImages.forEach((img, i) => {
     const src = img.getAttribute('src') ?? '(sin src)';
-    log(`[imgs] img[${i}] src:`, src.substring(0, 80));
+    const isBlob = src.startsWith('blob:');
+    log(`[imgs] img[${i}] src:`, src.substring(0, 100), '| isBlob:', isBlob);
 
     img.addEventListener('load', () => {
-      log(`[imgs] img[${i}] ONLOAD — naturalWidth:`, img.naturalWidth, 'naturalHeight:', img.naturalHeight, 'displayWidth:', img.width, 'displayHeight:', img.height);
+      log(`[imgs] img[${i}] ONLOAD — naturalWidth:`, img.naturalWidth, 'naturalHeight:', img.naturalHeight);
     });
-    img.addEventListener('error', (e) => {
-      log(`[imgs] img[${i}] ONERROR — src:`, src.substring(0, 80), 'error:', e);
+    img.addEventListener('error', () => {
+      log(`[imgs] img[${i}] ONERROR — src:`, src.substring(0, 100));
+      if (!img.classList.contains(FAILED_IMG_CLASS)) {
+        img.classList.add(FAILED_IMG_CLASS);
+      }
+    });
+  });
+
+  const svgImages = contentEl.querySelectorAll('image');
+  log('[imgs] <image> SVG en DOM después de inyección:', svgImages.length);
+  svgImages.forEach((svgImg, i) => {
+    const href = svgImg.getAttribute('href') ?? svgImg.getAttributeNS('http://www.w3.org/1999/xlink', 'href') ?? '(sin href)';
+    const isBlob = href.startsWith('blob:');
+    log(`[imgs] svg-image[${i}] href:`, href.substring(0, 100), '| isBlob:', isBlob);
+
+    svgImg.addEventListener('load', () => {
+      log(`[imgs] svg-image[${i}] ONLOAD`);
+    });
+    svgImg.addEventListener('error', () => {
+      log(`[imgs] svg-image[${i}] ONERROR — href:`, href.substring(0, 100));
+      if (!svgImg.classList.contains(FAILED_IMG_CLASS)) {
+        svgImg.classList.add(FAILED_IMG_CLASS);
+      }
     });
   });
 

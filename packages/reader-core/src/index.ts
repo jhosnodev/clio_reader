@@ -26,6 +26,7 @@ export interface ReaderDocument {
   getCurrentChapterIndex?(): Promise<number>;
   applyPreferences?(prefs: ReaderPreferences): Promise<string>;
   resolveResources?(html: string): Promise<string>;
+  getImageData?(href: string): Promise<{ data: Uint8Array; mimeType: string } | null>;
 }
 
 export interface ReaderAdapter {

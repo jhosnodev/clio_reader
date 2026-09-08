@@ -97,6 +97,26 @@ body {
   height: auto;
 }
 
+.epub-content svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.epub-content svg image {
+  max-width: 100%;
+  height: auto;
+}
+
+.epub-content img.epub-img-failed {
+  max-width: 100%;
+  min-height: 48px;
+  border: 2px dashed #d1d5db;
+  background-color: #f9fafb;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='48'%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%239ca3af' font-size='13' font-family='sans-serif'%3EImagen no disponible%3C/text%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
 .epub-content p {
   margin-bottom: 1em;
 }

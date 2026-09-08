@@ -229,7 +229,7 @@ export function ReaderView({
   }, [format]);
 
   /* ----- Construir URL del reader ----- */
-  const readerUrl = `/reader.html?uri=${encodeURIComponent(fileUri)}&format=${encodeURIComponent(format)}`;
+  const readerUrl = `/reader.html?uri=${encodeURIComponent(fileUri)}&format=${encodeURIComponent(format)}&_v=${Date.now()}`;
 
   /* ----- Renderizado ----- */
   return (
