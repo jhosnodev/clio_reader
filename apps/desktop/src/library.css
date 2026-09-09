@@ -1,26 +1,26 @@
 /* ==========================================================================
    Clio Reader — Estilos de la biblioteca (Shell principal)
-   Identidad: tinta nocturna + tierra + verdigrís
+   Identidad: bosque nocturno + oliva + verdigrís
    Tipos: Fraunces + Hanken Grotesk
    ========================================================================== */
 
 :root {
   /* --- Tinta nocturna (chrome de la app) --- */
-  --ink-950: #100f18;
-  --ink-900: #16141f;
-  --ink-850: #1c1a28;
-  --ink-800: #232032;
-  --ink-700: #2e2a40;
-  --ink-600: #3b3652;
-  --line: #332f47;
+  --ink-950: #0b1412;
+  --ink-900: #141d18;
+  --ink-850: #1f2b24;
+  --ink-800: #28362d;
+  --ink-700: #35473a;
+  --ink-600: #445e4e;
+  --line: #2b3a30;
 
   /* --- Acentos de identidad --- */
-  --ink: #3b392a;
-  --moss: #655d4a;
-  --dust: #a46a66;
-  --wine: #6f4143;
-  --verdigris: #4fa393;
-  --verdigris-dim: #2f6d61;
+  --gold: #a9ab3a;
+  --gold-bright: #dfe0ba;
+  --gold-dim: #826b24;
+  --verdigris: #85b396;
+  --verdigris-dim: #5f8a71;
+  --rose: #8f5c3c;
 
   /* --- Texto --- */
   --tx-hi: #efe9dd;
@@ -30,8 +30,8 @@
 
   /* --- Constantes --- */
   --ease: cubic-bezier(.22,.61,.36,1);
-  --on-moss: #1a1710;
-  --accent-strong: var(--dust);
+  --on-gold: #2b1107;
+  --accent-strong: #dfe0ba;
 }
 
 /* ==========================================================================
@@ -50,7 +50,7 @@
   --tx: #474a40;
   --tx-lo: #7b7e70;
   --tx-faint: #a6a897;
-  --accent-strong: var(--moss);
+  --accent-strong: #8a6d12;
 }
 
 /* --- Theme toggle: iconos según el tema activo --- */
@@ -71,7 +71,7 @@ body {
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
 }
-::selection { background: var(--dust); color: var(--tx-hi); }
+::selection { background: rgba(169,171,58,.35); color: var(--tx-hi); }
 button { font-family: inherit; cursor: pointer; color: inherit; background: none; border: none; }
 
 /* ==========================================================================
@@ -81,8 +81,8 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
   display: flex;
   height: 100vh;
   background:
-    radial-gradient(1200px 600px at 80% -10%, rgba(79,163,147,.06), transparent 60%),
-    radial-gradient(1000px 500px at -5% 110%, rgba(101,93,74,.06), transparent 55%),
+    radial-gradient(1200px 600px at 80% -10%, rgba(133,179,150,.06), transparent 60%),
+    radial-gradient(1000px 500px at -5% 110%, rgba(169,171,58,.06), transparent 55%),
     var(--ink-950);
   font-family: "Hanken Grotesk", system-ui, sans-serif;
   color: var(--tx);

@@ -1,25 +1,25 @@
 /* ==========================================================================
    Clio Reader — Estilos del lector
-   Identidad: tinta nocturna + tierra + verdigrís
+   Identidad: bosque nocturno + oliva + verdigrís
    ========================================================================== */
 
 :root {
   /* --- Tinta nocturna --- */
-  --ink-950: #100f18;
-  --ink-900: #16141f;
-  --ink-850: #1c1a28;
-  --ink-800: #232032;
-  --ink-700: #2e2a40;
-  --ink-600: #3b3652;
-  --line: #332f47;
+  --ink-950: #0b1412;
+  --ink-900: #141d18;
+  --ink-850: #1f2b24;
+  --ink-800: #28362d;
+  --ink-700: #35473a;
+  --ink-600: #445e4e;
+  --line: #2b3a30;
 
   /* --- Acentos --- */
-  --ink: #3b392a;
-  --moss: #655d4a;
-  --dust: #a46a66;
-  --wine: #6f4143;
-  --verdigris: #4fa393;
-  --verdigris-dim: #2f6d61;
+  --gold: #a9ab3a;
+  --gold-bright: #dfe0ba;
+  --gold-dim: #826b24;
+  --verdigris: #85b396;
+  --verdigris-dim: #5f8a71;
+  --rose: #8f5c3c;
 
   /* --- Texto --- */
   --tx-hi: #efe9dd;
@@ -30,7 +30,7 @@
   /* --- Temas de lectura --- */
   --read-bg: #f4efe4;
   --read-tx: #2b2620;
-  --read-tx-lo: #8a8073;
+  --read-tx-lo: #7a7266;
 
   --ease: cubic-bezier(.22,.61,.36,1);
 }
@@ -45,7 +45,7 @@ body {
   font-size: 15px;
 }
 button { font-family: inherit; cursor: pointer; color: inherit; background: none; border: none; }
-::selection { background: var(--dust); color: var(--tx-hi); }
+::selection { background: rgba(169,171,58,.35); color: var(--tx-hi); }
 
 /* ==========================================================================
    Reader — contenedor principal
@@ -57,14 +57,14 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
   background: var(--read-bg); color: var(--read-tx);
   transform: translateY(100%); pointer-events: none;
   transition: transform .42s var(--ease);
-  --ink-800: #232032; --tx-hi: #efe9dd;
+  --ink-800: #28362d; --tx-hi: #efe9dd;
 }
 .reader.open { transform: none; pointer-events: auto; }
 
 /* --- Temas --- */
 .reader[data-theme="paper"] { --read-bg: #f4efe4; --read-tx: #2b2620; --read-tx-lo: #8a8073; }
 .reader[data-theme="sepia"] { --read-bg: #e7d9bd; --read-tx: #453a29; --read-tx-lo: #8a7a5c; }
-.reader[data-theme="night"] { --read-bg: #16141f; --read-tx: #cfc7ba; --read-tx-lo: #7a7488; }
+.reader[data-theme="night"] { --read-bg: #0b1412; --read-tx: #cfc7ba; --read-tx-lo: #7f8d80; }
 
 /* ==========================================================================
    Toolbar (r-bar)
@@ -102,8 +102,8 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
 .r-btn svg { width: 19px; height: 19px; }
 .r-btn:hover { opacity: 1; background: rgba(0,0,0,.06); }
 .reader[data-theme="night"] .r-btn:hover { background: rgba(255,255,255,.07); }
-.r-btn.on { opacity: 1; color: var(--ink); background: rgba(101,93,74,.14); }
-.reader[data-theme="night"] .r-btn.on { color: var(--dust); }
+.r-btn.on { opacity: 1; color: var(--gold-dim); background: rgba(169,171,58,.14); }
+.reader[data-theme="night"] .r-btn.on { color: var(--gold-bright); }
 
 .r-sep { width: 1px; height: 22px; background: currentColor; opacity: .14; margin: 0 5px; }
 
@@ -136,7 +136,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
 }
 .reader[data-font="sans"] .page p,
 .reader[data-font="sans"] .page h2 { font-family: "Hanken Grotesk", sans-serif; }
-.page mark { background: var(--dust); color: inherit; border-radius: 3px; padding: 0 2px; }
+.page mark { background: rgba(169,171,58,.4); color: inherit; border-radius: 3px; padding: 0 2px; }
 
 /* images */
 .page img { max-width: 100%; height: auto; }
@@ -181,7 +181,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
 }
 .track i {
   display: block; height: 100%;
-  background: linear-gradient(90deg, var(--moss), var(--dust));
+  background: linear-gradient(90deg, var(--gold), var(--gold-bright));
   border-radius: 20px; transition: width .3s var(--ease);
 }
 .r-progress .pct {
@@ -271,7 +271,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
 }
 .toc-item:hover { background: rgba(0,0,0,.05); }
 .reader[data-theme="night"] .toc-item:hover { background: rgba(255,255,255,.05); }
-.toc-item.current { background: rgba(101,93,74,.16); }
+.toc-item.current { background: rgba(169,171,58,.16); }
 .toc-item .n { font-variant-numeric: tabular-nums; color: var(--read-tx-lo); font-size: 12.5px; min-width: 20px; }
 .toc-item .t { font-family: "Fraunces", serif; font-size: 14.5px; flex: 1; line-height: 1.3; }
 .toc-item .pp { font-size: 11.5px; color: var(--read-tx-lo); }
@@ -296,7 +296,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
   transition: .14s var(--ease);
 }
 .reader[data-theme="night"] .sres { background: rgba(255,255,255,.04); }
-.sres:hover { background: rgba(101,93,74,.12); }
+.sres:hover { background: rgba(169,171,58,.12); }
 .sres .loc {
   font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
   color: var(--read-tx-lo); font-weight: 600; margin-bottom: 5px;
@@ -313,19 +313,19 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
 .reader[data-theme="night"] .note-add { background: rgba(255,255,255,.04); border-color: rgba(255,255,255,.1); }
 .note-save {
   padding: 9px 16px; border-radius: 9px; font-weight: 600; font-size: 13.5px;
-  background: linear-gradient(180deg, var(--dust), var(--moss));
-  color: var(--ink-950);
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  color: var(--on-gold);
 }
 .note {
-  border-left: 3px solid var(--moss); padding: 12px 14px; margin-top: 16px;
-  background: rgba(101,93,74,.08); border-radius: 0 10px 10px 0;
+  border-left: 3px solid var(--gold); padding: 12px 14px; margin-top: 16px;
+  background: rgba(169,171,58,.08); border-radius: 0 10px 10px 0;
 }
 .note .nmeta {
   font-size: 11px; color: var(--read-tx-lo); margin-bottom: 6px;
   display: flex; justify-content: space-between; align-items: center;
 }
 .note .nmeta button { color: var(--read-tx-lo); opacity: .7; }
-.note .nmeta button:hover { opacity: 1; color: var(--wine); }
+.note .nmeta button:hover { opacity: 1; color: var(--rose); }
 .note .ntx { font-family: "Fraunces", serif; font-size: 14px; line-height: 1.5; color: var(--read-tx); }
 
 /* --- Info --- */
@@ -363,10 +363,10 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
   position: relative; border: 2px solid transparent;
   transition: .15s var(--ease);
 }
-.sw.sel { border-color: var(--moss); }
+.sw.sel { border-color: var(--gold); }
 .sw[data-t="paper"] { background: #f4efe4; }
 .sw[data-t="sepia"] { background: #e7d9bd; }
-.sw[data-t="night"] { background: #16141f; box-shadow: inset 0 0 0 1px rgba(255,255,255,.15); }
+.sw[data-t="night"] { background: #0b1412; box-shadow: inset 0 0 0 1px rgba(255,255,255,.15); }
 
 /* segmented control */
 .seg { display: flex; gap: 6px; background: rgba(0,0,0,.05); padding: 5px; border-radius: 12px; }
@@ -393,7 +393,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
   transition: .14s var(--ease);
 }
 .reader[data-theme="night"] .stepper button { background: rgba(255,255,255,.06); }
-.stepper button:hover { background: rgba(101,93,74,.2); }
+.stepper button:hover { background: rgba(169,171,58,.2); }
 .stepper .val {
   flex: 1; text-align: center; font-weight: 600; font-size: 15px;
   color: var(--read-tx); font-variant-numeric: tabular-nums;
@@ -407,7 +407,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
   position: absolute; bottom: 88px; left: 50%;
   transform: translateX(-50%) translateY(20px);
   background: var(--ink-800); color: var(--tx-hi);
-  border: 1px solid var(--ink);
+  border: 1px solid var(--gold-dim);
   padding: 12px 20px; border-radius: 12px;
   display: flex; align-items: center; gap: 10px;
   font-size: 14px; font-weight: 500;
@@ -417,7 +417,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
   transition: .3s var(--ease);
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-.toast svg { width: 18px; height: 18px; color: var(--dust); }
+.toast svg { width: 18px; height: 18px; color: var(--gold-bright); }
 
 /* ==========================================================================
    Overlay (loading / error)
@@ -435,7 +435,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
 .spinner {
   width: 32px; height: 32px;
   border: 3px solid rgba(120,110,90,.25);
-  border-top-color: var(--moss);
+  border-top-color: var(--gold);
   border-radius: 50%;
   animation: spin .8s linear infinite;
 }
@@ -444,8 +444,8 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
 .r-action-btn {
   padding: 9px 16px; border-radius: 9px;
   font-weight: 600; font-size: 13.5px;
-  background: linear-gradient(180deg, var(--dust), var(--moss));
-  color: var(--ink-950);
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  color: var(--on-gold);
 }
 
 /* ==========================================================================
