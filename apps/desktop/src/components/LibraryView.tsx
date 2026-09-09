@@ -8,6 +8,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import type { Book, ReadingStatus } from '@clio-reader/domain';
 import type { ThemePalette } from '../themes';
 import { PALETTES } from '../themes';
+import { BrandIcon } from './BrandIcon';
 
 /* ==========================================================================
    Paletas de portada
@@ -246,13 +247,7 @@ function Rail({ active, onChange, theme, paletteId, palette, onToggleTheme, onSe
   return (
     <aside style={S.rail}>
       <div style={S.brand} title="Clio">
-        <svg viewBox="0 0 24 24" fill="none" width="26" height="26">
-          <path d="M12 3c-2.4 1.6-3.4 4-3.4 6.4M12 3c2.4 1.6 3.4 4 3.4 6.4" stroke={palette.dark['gold-bright']} strokeWidth="1.3" strokeLinecap="round"/>
-          <path d="M9 6.2c-1.6.3-2.6 1.3-3 2.7M15 6.2c1.6.3 2.6 1.3 3 2.7" stroke={palette.dark.verdigris} strokeWidth="1.2" strokeLinecap="round"/>
-          <rect x="10.4" y="9.5" width="3.2" height="9" rx=".4" fill={palette.dark.gold}/>
-          <path d="M8.5 18.5h7" stroke={palette.dark['gold-bright']} strokeWidth="1.4" strokeLinecap="round"/>
-          <path d="M9.2 21h5.6" stroke={palette.dark['gold-dim']} strokeWidth="1.3" strokeLinecap="round"/>
-        </svg>
+        <BrandIcon color={palette.dark.gold} size={26} />
       </div>
 
       <nav style={S.nav}>
