@@ -43,22 +43,30 @@ Cada paleta redefine estos tokens CSS (extraídos de `library.css`):
 
 ### Highlights dark mode (paleta Nocturna)
 
-Colores de highlight para texto seleccionado y marcado en tema oscuro. No alteran los fondos de superficie.
+Colores de highlight basados en la paleta gold para tema oscuro. Reemplazan los `rgba(201,162,75,.xx)` actuales. No alteran los fondos de superficie.
 
-| Token | Hex | Rol |
-|-------|-----|-----|
-| `--hl-1` | `#3b392a` | Highlight más oscuro (fondo sutil) |
-| `--hl-2` | `#655d4a` | Highlight medio-oscuro |
-| `--hl-3` | `#6f4143` | Highlight rose oscuro |
-| `--hl-4` | `#a46a66` | Highlight rosa apagado |
-| `--hl-5` | `#a4825d` | Highlight caramelo |
-| `--hl-6` | `#d6baa5` | Highlight más claro (arena) |
+| Token | Hex | Rol | Uso actual reemplazado |
+|-------|-----|-----|------------------------|
+| `--hl-1` | `#3b392a` | Gold muy oscuro (fondo sutil) | — |
+| `--hl-2` | `#655d4a` | Gold apagado medio | — |
+| `--hl-3` | `#6f4143` | Rose oscuro (notas, bookmarks) | — |
+| `--hl-4` | `#a46a66` | Rosa apagado (mark en reader) | `rgba(201,162,75,.4)` |
+| `--hl-5` | `#a4825d` | Caramelo (::selection) | `rgba(201,162,75,.35)` |
+| `--hl-6` | `#d6baa5` | Arena (highlights de búsqueda) | — |
 
-**Uso previsto:**
-- `::selection` → `var(--hl-5)` (caramelo, el actual gold apagado)
-- `mark` en reader → `var(--hl-4)` (rosa apagado)
-- Highlights de búsqueda → `var(--hl-6)` (arena)
-- Notas / bookmarks → `var(--hl-3)` (rose oscuro)
+**Mapeo a CSS actual:**
+
+```css
+/* Actual */
+::selection { background: rgba(201,162,75,.35); }
+.page mark  { background: rgba(201,162,75,.4); }
+
+/* Propuesto */
+::selection { background: var(--hl-5); }  /* #a4825d caramelo */
+.page mark  { background: var(--hl-4); }  /* #a46a66 rosa apagado */
+```
+
+**Regla de contraste:** Cada highlight debe mantener legibilidad del texto superpuesto. `--hl-5` y `--hl-6` sobre `var(--tx-hi)` (`#efe9dd`) deben pasar WCAG AA (4.5:1).
 
 ### Reader themes (tokens adicionales)
 
