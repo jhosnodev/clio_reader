@@ -16,10 +16,8 @@
   /* --- Acentos --- */
   --ink: #3b392a;
   --moss: #655d4a;
-  --caramel: #a4825d;
   --dust: #a46a66;
   --wine: #6f4143;
-  --sand: #d6baa5;
   --verdigris: #4fa393;
   --verdigris-dim: #2f6d61;
 
@@ -47,7 +45,7 @@ body {
   font-size: 15px;
 }
 button { font-family: inherit; cursor: pointer; color: inherit; background: none; border: none; }
-::selection { background: var(--caramel); color: var(--tx-hi); }
+::selection { background: var(--dust); color: var(--tx-hi); }
 
 /* ==========================================================================
    Reader — contenedor principal
@@ -105,7 +103,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
 .r-btn:hover { opacity: 1; background: rgba(0,0,0,.06); }
 .reader[data-theme="night"] .r-btn:hover { background: rgba(255,255,255,.07); }
 .r-btn.on { opacity: 1; color: var(--ink); background: rgba(101,93,74,.14); }
-.reader[data-theme="night"] .r-btn.on { color: var(--caramel); }
+.reader[data-theme="night"] .r-btn.on { color: var(--dust); }
 
 .r-sep { width: 1px; height: 22px; background: currentColor; opacity: .14; margin: 0 5px; }
 
@@ -183,7 +181,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
 }
 .track i {
   display: block; height: 100%;
-  background: linear-gradient(90deg, var(--moss), var(--caramel));
+  background: linear-gradient(90deg, var(--moss), var(--dust));
   border-radius: 20px; transition: width .3s var(--ease);
 }
 .r-progress .pct {
@@ -315,7 +313,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
 .reader[data-theme="night"] .note-add { background: rgba(255,255,255,.04); border-color: rgba(255,255,255,.1); }
 .note-save {
   padding: 9px 16px; border-radius: 9px; font-weight: 600; font-size: 13.5px;
-  background: linear-gradient(180deg, var(--caramel), var(--moss));
+  background: linear-gradient(180deg, var(--dust), var(--moss));
   color: var(--ink-950);
 }
 .note {
@@ -419,7 +417,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
   transition: .3s var(--ease);
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-.toast svg { width: 18px; height: 18px; color: var(--caramel); }
+.toast svg { width: 18px; height: 18px; color: var(--dust); }
 
 /* ==========================================================================
    Overlay (loading / error)
@@ -446,7 +444,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
 .r-action-btn {
   padding: 9px 16px; border-radius: 9px;
   font-weight: 600; font-size: 13.5px;
-  background: linear-gradient(180deg, var(--caramel), var(--moss));
+  background: linear-gradient(180deg, var(--dust), var(--moss));
   color: var(--ink-950);
 }
 

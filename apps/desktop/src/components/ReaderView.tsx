@@ -379,7 +379,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   relocateButton: {
     padding: '10px 20px',
-    background: 'linear-gradient(180deg, #a4825d, #655d4a)',
+    background: 'linear-gradient(180deg, #a46a66, #655d4a)',
     color: '#100f18',
     border: 'none',
     borderRadius: 10,

@@ -26,12 +26,9 @@ Cada paleta redefine estos tokens CSS (extraídos de `library.css`):
 | `--ink` | Acento oscuro (bordes sutiles) | Acento |
 | `--moss` | Acento primario (chips activos) | Acento |
 | `--wine` | Acento terciario (notas) | Acento |
-| `--dust` | Acento fuerte (CTAs) | Acento |
-| `--caramel` | Hover, gradientes | Acento |
-| `--sand` | Texto sutil, metadata | Acento |
+| `--dust` | Acento fuerte (CTAs, selection) | Acento |
 | `--verdigris` | Acento secundario | Acento |
 | `--verdigris-dim` | Acento secundario apagado | Acento |
-| `--rose` | Acento terciario | Acento |
 | `--tx-hi` | Texto alto contraste | Texto |
 | `--tx` | Texto normal | Texto |
 | `--tx-lo` | Texto bajo contraste | Texto |
@@ -43,12 +40,10 @@ Colores de highlight basados en la paleta custom para tema oscuro. Reemplazan lo
 
 | Token | Hex | Rol | Uso actual reemplazado |
 |-------|-----|-----|------------------------|
-| `--ink` | `#3b392a` | Gold muy oscuro (fondo sutil) | — |
-| `--moss` | `#655d4a` | Gold apagado medio | — |
-| `--wine` | `#6f4143` | Rose oscuro (notas, bookmarks) | — |
-| `--dust` | `#a46a66` | Rosa apagado (mark en reader) | `rgba(201,162,75,.4)` |
-| `--caramel` | `#a4825d` | Caramelo (::selection) | `rgba(201,162,75,.35)` |
-| `--sand` | `#d6baa5` | Arena (highlights de búsqueda) | — |
+| `--ink` | `#3b392a` | Oscuro (fondo sutil) | — |
+| `--moss` | `#655d4a` | Medio (hover, borders) | — |
+| `--wine` | `#6f4143` | Terciario (notas, bookmarks) | — |
+| `--dust` | `#a46a66` | Fuerte (::selection, mark) | `rgba(201,162,75,.35)` y `.4` |
 
 **Mapeo a CSS actual:**
 
@@ -58,11 +53,11 @@ Colores de highlight basados en la paleta custom para tema oscuro. Reemplazan lo
 .page mark  { background: rgba(201,162,75,.4); }
 
 /* Propuesto */
-::selection { background: var(--caramel); }  /* #a4825d */
-.page mark  { background: var(--dust); }     /* #a46a66 */
+::selection { background: var(--dust); }  /* #a46a66 */
+.page mark  { background: var(--wine); }  /* #6f4143 */
 ```
 
-**Regla de contraste:** `--caramel` y `--sand` sobre `var(--tx-hi)` (`#efe9dd`) deben pasar WCAG AA (4.5:1).
+**Regla de contraste:** `--dust` y `--wine` sobre `var(--tx-hi)` (`#efe9dd`) deben pasar WCAG AA (4.5:1).
 
 ### Reader themes (tokens adicionales)
 
@@ -99,8 +94,6 @@ interface PaletteTokens {
     moss: string;
     wine: string;
     dust: string;
-    caramel: string;
-    sand: string;
     verdigris: string;
     verdigrisDim: string;
     rose: string;
@@ -121,13 +114,13 @@ interface PaletteTokens {
 
 ### Paletas predefinidas
 
-| Paleta | Identidad | `ink` | `moss` | `wine` | `dust` | `caramel` | `sand` | `verdigris` | `verdigris-dim` | `rose` |
-|--------|-----------|-------|--------|--------|--------|-----------|--------|-------------|-----------------|--------|
-| **Nocturna** (default) | Tinta + tierra | `#3b392a` | `#655d4a` | `#6f4143` | `#a46a66` | `#a4825d` | `#d6baa5` | `#4fa393` | `#2f6d61` | `#c17b7b` |
-| **Bosque** | Verde profundo | `#2e3a28` | `#4a5e3e` | `#5e3a3a` | `#8a6e5a` | `#7a8a5a` | `#c4cfa5` | `#6b9e7a` | `#3d6e4a` | `#c4917a` |
-| **Océano** | Azul marino | `#2a3040` | `#3e5060` | `#4a3050` | `#7a6080` | `#5a7a8a` | `#a0c0d0` | `#81b4d8` | `#4a7da3` | `#b87aad` |
-| **Lavanda** | Púrpura suave | `#302a3a` | `#504060` | `#5a3858` | `#8a6888` | `#7060a0` | `#b8a8d0` | `#9b8ec4` | `#6a5e93` | `#c48b8b` |
-| **Carmesí** | Rojo oscuro | `#3a2828` | `#5a3838` | `#6a3030` | `#9a6060` | `#8a5050` | `#d0a0a0` | `#a63d40` | `#6e2829` | `#d4a07a` |
+| Paleta | Identidad | `ink` | `moss` | `wine` | `dust` | `verdigris` | `verdigris-dim` | `rose` |
+|--------|-----------|-------|--------|--------|--------|-------------|-----------------|--------|
+| **Nocturna** (default) | Tinta + tierra | `#3b392a` | `#655d4a` | `#6f4143` | `#a46a66` | `#4fa393` | `#2f6d61` | `#c17b7b` |
+| **Bosque** | Verde profundo | `#2e3a28` | `#4a5e3e` | `#5e3a3a` | `#8a6e5a` | `#6b9e7a` | `#3d6e4a` | `#c4917a` |
+| **Océano** | Azul marino | `#2a3040` | `#3e5060` | `#4a3050` | `#7a6080` | `#81b4d8` | `#4a7da3` | `#b87aad` |
+| **Lavanda** | Púrpura suave | `#302a3a` | `#504060` | `#5a3858` | `#8a6888` | `#9b8ec4` | `#6a5e93` | `#c48b8b` |
+| **Carmesí** | Rojo oscuro | `#3a2828` | `#5a3838` | `#6a3030` | `#9a6060` | `#a63d40` | `#6e2829` | `#d4a07a` |
 
 **Mapeo de tokens:**
 
@@ -136,9 +129,7 @@ interface PaletteTokens {
 | `--ink` | Acento oscuro, bordes sutiles |
 | `--moss` | Acento primario, bg de chips activos |
 | `--wine` | Acento terciario, notas |
-| `--dust` | Acento fuerte, CTAs |
-| `--caramel` | Hover, gradientes |
-| `--sand` | Texto sutil, metadata |
+| `--dust` | Acento fuerte, CTAs, selection |
 
 **Uso en CSS actual:**
 
@@ -149,9 +140,9 @@ interface PaletteTokens {
 background: linear-gradient(180deg, var(--gold-bright), var(--gold));
 
 /* Propuesto */
-::selection { background: var(--caramel); }            /* #a4825d */
-.page mark  { background: var(--dust); }               /* #a46a66 */
-background: linear-gradient(180deg, var(--caramel), var(--moss));
+::selection { background: var(--dust); }               /* #a46a66 */
+.page mark  { background: var(--wine); }               /* #6f4143 */
+background: linear-gradient(180deg, var(--dust), var(--moss));
 ```
 
 ### Reader themes (tokens adicionales)

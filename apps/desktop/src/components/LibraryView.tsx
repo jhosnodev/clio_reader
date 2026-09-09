@@ -230,10 +230,10 @@ function Rail({ active, onChange, theme, onToggleTheme }: { readonly active: Vie
     <aside style={S.rail}>
       <div style={S.brand} title="Clio">
         <svg viewBox="0 0 24 24" fill="none" width="26" height="26">
-          <path d="M12 3c-2.4 1.6-3.4 4-3.4 6.4M12 3c2.4 1.6 3.4 4 3.4 6.4" stroke="#a4825d" strokeWidth="1.3" strokeLinecap="round"/>
+          <path d="M12 3c-2.4 1.6-3.4 4-3.4 6.4M12 3c2.4 1.6 3.4 4 3.4 6.4" stroke="#a46a66" strokeWidth="1.3" strokeLinecap="round"/>
           <path d="M9 6.2c-1.6.3-2.6 1.3-3 2.7M15 6.2c1.6.3 2.6 1.3 3 2.7" stroke="#4fa393" strokeWidth="1.2" strokeLinecap="round"/>
           <rect x="10.4" y="9.5" width="3.2" height="9" rx=".4" fill="#655d4a"/>
-          <path d="M8.5 18.5h7" stroke="#a4825d" strokeWidth="1.4" strokeLinecap="round"/>
+          <path d="M8.5 18.5h7" stroke="#a46a66" strokeWidth="1.4" strokeLinecap="round"/>
           <path d="M9.2 21h5.6" stroke="#3b392a" strokeWidth="1.3" strokeLinecap="round"/>
         </svg>
       </div>
@@ -699,11 +699,11 @@ const S: Record<string, React.CSSProperties> = {
   },
   navBtnActive: {
     color: 'var(--on-moss)',
-    background: 'linear-gradient(180deg, var(--caramel), var(--moss))',
+    background: 'linear-gradient(180deg, var(--dust), var(--moss))',
   },
   navIndicator: {
     position: 'absolute', left: -18, top: '50%', transform: 'translateY(-50%)',
-    width: 4, height: 22, borderRadius: '0 4px 4px 0', background: 'var(--caramel)',
+    width: 4, height: 22, borderRadius: '0 4px 4px 0', background: 'var(--dust)',
   },
   tooltip: {
     position: 'absolute', left: 58, top: '50%', transform: 'translateY(-50%)',
@@ -768,7 +768,7 @@ const S: Record<string, React.CSSProperties> = {
     transition: '.18s', cursor: 'pointer', fontFamily: 'inherit',
   },
   chipActive: {
-    background: 'linear-gradient(180deg, var(--caramel), var(--moss))',
+    background: 'linear-gradient(180deg, var(--dust), var(--moss))',
     color: 'var(--on-moss)', border: '1px solid transparent', fontWeight: 600,
   },
 
@@ -790,7 +790,7 @@ const S: Record<string, React.CSSProperties> = {
     transition: '.18s', cursor: 'pointer', fontFamily: 'inherit',
   },
   chipSmActive: {
-    background: 'linear-gradient(180deg, var(--caramel), var(--moss))',
+    background: 'linear-gradient(180deg, var(--dust), var(--moss))',
     color: 'var(--on-moss)', border: '1px solid transparent', fontWeight: 600,
   },
   select: {
@@ -817,7 +817,7 @@ const S: Record<string, React.CSSProperties> = {
   emptyHint: { fontSize: 14, color: 'var(--tx-faint)', margin: 0, maxWidth: 340 },
   emptyBtn: {
     marginTop: 8, padding: '10px 20px',
-    background: 'linear-gradient(180deg, var(--caramel), var(--moss))',
+    background: 'linear-gradient(180deg, var(--dust), var(--moss))',
     color: 'var(--on-moss)', border: 'none', borderRadius: 10,
     fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
   },

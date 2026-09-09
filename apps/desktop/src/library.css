@@ -17,10 +17,8 @@
   /* --- Acentos de identidad --- */
   --ink: #3b392a;
   --moss: #655d4a;
-  --caramel: #a4825d;
   --dust: #a46a66;
   --wine: #6f4143;
-  --sand: #d6baa5;
   --verdigris: #4fa393;
   --verdigris-dim: #2f6d61;
 
@@ -73,7 +71,7 @@ body {
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
 }
-::selection { background: var(--caramel); color: var(--tx-hi); }
+::selection { background: var(--dust); color: var(--tx-hi); }
 button { font-family: inherit; cursor: pointer; color: inherit; background: none; border: none; }
 
 /* ==========================================================================

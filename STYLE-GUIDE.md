@@ -32,7 +32,7 @@ antes de implementar.
 
 | Token         | Valores                          | Uso                                 |
 |---------------|----------------------------------|-------------------------------------|
-| `gold`        | `#c9a24b` / `#e6c874` / `#8a7434` | Botones activos, gradientes, indicadores |
+| `earth`       | `#3b392a` / `#655d4a` / `#a46a66` | Botones activos, gradientes, indicadores |
 | `verdigris`   | `#4fa393`                        | Acentos secundarios, progreso       |
 | `verdigris-l` | `#6fd0bf`                        | Gradiente de barra de progreso      |
 
@@ -75,7 +75,7 @@ El toggle se encuentra en el **Rail (sidebar)** como botón sol/luna.
   --tx: #cbc4ba;        /* text-n */
   --tx-lo: #8b8598;     /* text-lo */
   --tx-faint: #6a657a;  /* text-f */
-  --on-gold: #1a1710;   /* texto sobre oro */
+  --on-moss: #1a1710;   /* texto sobre acento */
   --accent-strong: #e6c874;
 }
 
@@ -105,8 +105,8 @@ El toggle se encuentra en el **Rail (sidebar)** como botón sol/luna.
 
 - **Rail**: Botón sol/luna al final del sidebar (debajo de la nav).
 - **Iconos**: Sol visible en tema oscuro, luna visible en tema claro.
-- **Color del icono**: `var(--gold-dim)` en tema oscuro, `var(--gold)` en tema claro.
-- **Hover**: Cambia a `var(--gold-bright)` / `var(--gold-dim)` respectivamente.
+- **Color del icono**: `var(--ink)` en tema oscuro, `var(--moss)` en tema claro.
+- **Hover**: Cambia a `var(--dust)` / `var(--wine)` respectivamente.
 - **Tooltip**: Muestra "Tema claro" o "Tema oscuro" según el estado actual.
 
 ---
@@ -221,8 +221,8 @@ pequeño usa `borderRadius: 6`.
 
 // Chip activo
 {
-  background: 'linear-gradient(180deg, var(--gold-bright), var(--gold))',
-  color: 'var(--on-gold)',
+  background: 'linear-gradient(180deg, var(--dust), var(--moss))',
+  color: 'var(--on-moss)',
   border: '1px solid transparent',
   fontWeight: 600,
 }
@@ -308,8 +308,8 @@ dimensiones y estilos. No crear variaciones de tamaño.
 // SVG icons inside nav buttons: 22×22
 // Theme toggle: positionado al final del rail, debajo de la nav
 //   - Mismas dimensiones que nav buttons (48×48, borderRadius: 13)
-//   - Color: var(--gold-dim) en dark, var(--gold) en light
-//   - Hover: var(--gold-bright) en dark, var(--gold-dim) en light
+//   - Color: var(--ink) en dark, var(--moss) en light
+//   - Hover: var(--dust) en dark, var(--wine) en light
 //   - Icono sol visible en dark, icono luna visible en light
 ```
 
@@ -371,8 +371,8 @@ dimensiones y estilos. No crear variaciones de tamaño.
 // Botón de acción
 {
   padding: '10px 20px',
-  background: 'linear-gradient(180deg, var(--gold-bright), var(--gold))',
-  color: 'var(--on-gold)',
+  background: 'linear-gradient(180deg, var(--dust), var(--moss))',
+  color: 'var(--on-moss)',
   border: 'none',
   borderRadius: 10,
   fontSize: 14,
@@ -431,7 +431,28 @@ dimensiones y estilos. No crear variaciones de tamaño.
 
 ---
 
-## 9. Modelo de dominio
+## 9. Referencias de diseño
+
+La referencia visual completa del proyecto se encuentra en:
+
+```
+apps/desktop/public/refs/clio.html
+```
+
+Este archivo contiene la implementación HTML/CSS/JS de la UI de Clio, incluyendo:
+- Paleta completa con variables CSS
+- Estructura de layout (rail + stage + views)
+- Tarjetas de libro (cover, status, progress)
+- Lector (reader) con transiciones, toolbar, drawer, zen mode
+- Componentes UI (chips, search, tooltip, toast, empty states)
+- Comportamiento de navegación entre vistas
+
+**Regla**: Toda UI nueva debe replicar fielmente los estilos de esta referencia.
+Consultar este archivo antes de implementar cualquier componente nuevo.
+
+---
+
+## 10. Modelo de dominio
 
 ```ts
 type BookFormat = 'epub' | 'pdf' | 'cbz' | 'md';
