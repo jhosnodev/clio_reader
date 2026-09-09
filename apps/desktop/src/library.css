@@ -96,3 +96,15 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ==========================================================================
+   Scrollbar personalizado (sensible al tema)
+   ========================================================================== */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--ink-700);
+  border-radius: 20px;
+  border: 2px solid var(--ink-950);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--ink-600); }

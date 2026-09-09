@@ -120,7 +120,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
   flex: 1; overflow-y: auto; position: relative;
 }
 .r-scroll::-webkit-scrollbar { width: 10px; }
-.r-scroll::-webkit-scrollbar-thumb { background: rgba(120,110,90,.35); border-radius: 20px; }
+.r-scroll::-webkit-scrollbar-thumb { background: var(--ink-700); border-radius: 20px; }
 
 .page {
   max-width: 680px; margin: 0 auto;
@@ -262,7 +262,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
   flex: 1; overflow-y: auto; padding: 18px 22px;
 }
 .drawer-body::-webkit-scrollbar { width: 8px; }
-.drawer-body::-webkit-scrollbar-thumb { background: rgba(120,110,90,.35); border-radius: 20px; }
+.drawer-body::-webkit-scrollbar-thumb { background: var(--ink-700); border-radius: 20px; }
 
 .panel { display: none; }
 .panel.active { display: block; }
