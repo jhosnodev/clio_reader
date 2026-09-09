@@ -13,7 +13,10 @@ export function BrandIcon({ color, size = 26 }: { color: string; size?: number }
     fetch('/brand.svg')
       .then(r => r.text())
       .then(raw => {
-        const colored = raw.replace(/currentColor/g, color);
+        const colored = raw
+          .replace(/currentColor/g, color)
+          .replace(/width="512"/, 'width="100%"')
+          .replace(/height="512"/, 'height="100%"');
         BRAND_SVG_CACHE.set(color, colored);
         setSvg(colored);
       });
@@ -23,7 +26,7 @@ export function BrandIcon({ color, size = 26 }: { color: string; size?: number }
 
   return (
     <div
-      style={{ width: size, height: size, lineHeight: 0 }}
+      style={{ width: size, height: size, lineHeight: 0, display: 'grid', placeItems: 'center' }}
       dangerouslySetInnerHTML={{ __html: svg }}
     />
   );

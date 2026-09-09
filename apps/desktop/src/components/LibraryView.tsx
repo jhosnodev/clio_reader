@@ -749,6 +749,8 @@ const S: Record<string, React.CSSProperties> = {
     border: '1px solid var(--gold-dim)',
     boxShadow: 'inset 0 1px 0 rgba(var(--gold-rgb),.25), 0 6px 18px -8px rgba(0,0,0,.8)',
     position: 'relative',
+    overflow: 'hidden',
+    boxSizing: 'border-box',
   },
   nav: { display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center', flex: 1 },
   navBtn: {
