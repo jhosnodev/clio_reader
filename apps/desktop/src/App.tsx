@@ -17,9 +17,12 @@ import { createElectronKVStore } from './bridges/storage';
 import { importBook, listBooks, removeBook, generateId } from '@clio-reader/library';
 import type { Book, BookFormat } from '@clio-reader/domain';
 import { detectBookFormat } from '@clio-reader/reader-core';
-
-type Theme = 'dark' | 'light';
-const THEME_KEY = 'clio-app-theme';
+import {
+  applyTheme,
+  savePalettePreference,
+  loadPalettePreference,
+  getPalette,
+} from './themes';
 
 /* ==========================================================================
    Dependencias — DIP: se crean una vez y se inyectan
@@ -42,20 +45,33 @@ interface OpenBook {
 export function App(): JSX.Element {
   const [openBook, setOpenBook] = useState<OpenBook | null>(null);
   const [books, setBooks] = useState<readonly Book[]>([]);
-  const [theme, setTheme] = useState<Theme>(() => {
-    const stored = localStorage.getItem(THEME_KEY);
-    if (stored === 'dark' || stored === 'light') return stored;
+
+  // Theme state: palette ID + dark/light mode
+  const [paletteId, setPaletteId] = useState<string>(() => {
+    const saved = loadPalettePreference();
+    return saved?.id ?? 'clio-0';
+  });
+
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const saved = loadPalettePreference();
+    if (saved) return saved.mode;
     return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
   });
+
   const isLoadingRef = useRef(false);
 
+  // Apply theme to DOM whenever paletteId or theme changes
   useEffect(() => {
-    localStorage.setItem(THEME_KEY, theme);
-    document.querySelector('.app')?.setAttribute('data-app-theme', theme);
-  }, [theme]);
+    applyTheme(paletteId, theme);
+    savePalettePreference(paletteId, theme);
+  }, [paletteId, theme]);
 
   const toggleTheme = useCallback(() => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  }, []);
+
+  const setPalette = useCallback((id: string) => {
+    setPaletteId(id);
   }, []);
 
   /* ----- Ciclo de vida ----- */
@@ -174,7 +190,10 @@ export function App(): JSX.Element {
     <LibraryView
       books={books}
       theme={theme}
+      paletteId={paletteId}
+      palette={getPalette(paletteId)}
       onToggleTheme={toggleTheme}
+      onSetPalette={setPalette}
       onOpenBook={handleOpenBook}
       onImportBook={handleImportBook}
       onRemoveBook={handleRemoveBook}

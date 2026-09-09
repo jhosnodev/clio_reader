@@ -6,6 +6,8 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import type { Book, ReadingStatus } from '@clio-reader/domain';
+import type { ThemePalette } from '../themes';
+import { PALETTES } from '../themes';
 
 /* ==========================================================================
    Paletas de portada
@@ -65,9 +67,9 @@ function getReadingStatus(book: Book): ReadingStatus {
 }
 
 const STATUS_CFG: Record<ReadingStatus, { label: string; dot: string }> = {
-  unread: { label: 'Sin leer', dot: '#8f5c3c' },
-  opened: { label: 'Abierto', dot: '#a9ab3a' },
-  reading: { label: 'Leyendo', dot: '#85b396' },
+  unread: { label: 'Sin leer', dot: 'var(--rose)' },
+  opened: { label: 'Abierto', dot: 'var(--gold)' },
+  reading: { label: 'Leyendo', dot: 'var(--verdigris)' },
 };
 
 /* ==========================================================================
@@ -79,7 +81,10 @@ type ViewId = 'home' | 'collection' | 'bookmarks';
 interface LibraryViewProps {
   readonly books: readonly Book[];
   readonly theme: 'dark' | 'light';
+  readonly paletteId: string;
+  readonly palette: ThemePalette;
   readonly onToggleTheme: () => void;
+  readonly onSetPalette: (id: string) => void;
   readonly onOpenBook: (book: Book) => void;
   readonly onImportBook: () => void;
   readonly onRemoveBook: (bookId: string, bookTitle: string) => void;
@@ -93,7 +98,10 @@ interface LibraryViewProps {
 export function LibraryView({
   books,
   theme,
+  paletteId,
+  palette,
   onToggleTheme,
+  onSetPalette,
   onOpenBook,
   onImportBook,
   onRemoveBook,
@@ -162,7 +170,7 @@ export function LibraryView({
 
   return (
     <div style={S.app} className="app" data-app-theme={theme}>
-      <Rail active={activeView} onChange={setActiveView} theme={theme} onToggleTheme={onToggleTheme} />
+      <Rail active={activeView} onChange={setActiveView} theme={theme} paletteId={paletteId} palette={palette} onToggleTheme={onToggleTheme} onSetPalette={onSetPalette} />
       <main style={S.stage}>
         {activeView === 'home' && (
           <HomeView
@@ -208,8 +216,17 @@ export function LibraryView({
    Rail (sidebar de navegación)
    ========================================================================== */
 
-function Rail({ active, onChange, theme, onToggleTheme }: { readonly active: ViewId; readonly onChange: (v: ViewId) => void; readonly theme: 'dark' | 'light'; readonly onToggleTheme: () => void }): JSX.Element {
+function Rail({ active, onChange, theme, paletteId, palette, onToggleTheme, onSetPalette }: {
+  readonly active: ViewId;
+  readonly onChange: (v: ViewId) => void;
+  readonly theme: 'dark' | 'light';
+  readonly paletteId: string;
+  readonly palette: ThemePalette;
+  readonly onToggleTheme: () => void;
+  readonly onSetPalette: (id: string) => void;
+}): JSX.Element {
   const [hovered, setHovered] = useState<string | null>(null);
+  const [showPalettePicker, setShowPalettePicker] = useState(false);
 
   const items: { id: ViewId; label: string; icon: JSX.Element }[] = [
     {
@@ -230,11 +247,11 @@ function Rail({ active, onChange, theme, onToggleTheme }: { readonly active: Vie
     <aside style={S.rail}>
       <div style={S.brand} title="Clio">
         <svg viewBox="0 0 24 24" fill="none" width="26" height="26">
-          <path d="M12 3c-2.4 1.6-3.4 4-3.4 6.4M12 3c2.4 1.6 3.4 4 3.4 6.4" stroke="#dfe0ba" strokeWidth="1.3" strokeLinecap="round"/>
-          <path d="M9 6.2c-1.6.3-2.6 1.3-3 2.7M15 6.2c1.6.3 2.6 1.3 3 2.7" stroke="#85b396" strokeWidth="1.2" strokeLinecap="round"/>
-          <rect x="10.4" y="9.5" width="3.2" height="9" rx=".4" fill="#a9ab3a"/>
-          <path d="M8.5 18.5h7" stroke="#dfe0ba" strokeWidth="1.4" strokeLinecap="round"/>
-          <path d="M9.2 21h5.6" stroke="#826b24" strokeWidth="1.3" strokeLinecap="round"/>
+          <path d="M12 3c-2.4 1.6-3.4 4-3.4 6.4M12 3c2.4 1.6 3.4 4 3.4 6.4" stroke={palette.dark['gold-bright']} strokeWidth="1.3" strokeLinecap="round"/>
+          <path d="M9 6.2c-1.6.3-2.6 1.3-3 2.7M15 6.2c1.6.3 2.6 1.3 3 2.7" stroke={palette.dark.verdigris} strokeWidth="1.2" strokeLinecap="round"/>
+          <rect x="10.4" y="9.5" width="3.2" height="9" rx=".4" fill={palette.dark.gold}/>
+          <path d="M8.5 18.5h7" stroke={palette.dark['gold-bright']} strokeWidth="1.4" strokeLinecap="round"/>
+          <path d="M9.2 21h5.6" stroke={palette.dark['gold-dim']} strokeWidth="1.3" strokeLinecap="round"/>
         </svg>
       </div>
 
@@ -262,11 +279,59 @@ function Rail({ active, onChange, theme, onToggleTheme }: { readonly active: Vie
         })}
       </nav>
 
+      {/* Palette selector */}
+      <div style={{ position: 'relative' }}>
+        <button
+          style={{
+            ...S.navBtn,
+            background: palette.dark['ink-950'],
+            border: `2px solid ${palette.dark.gold}`,
+          }}
+          onClick={() => setShowPalettePicker(!showPalettePicker)}
+          onMouseEnter={() => setHovered('palette')}
+          onMouseLeave={() => setHovered(null)}
+          aria-label="Selector de tema de color"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={palette.dark.gold} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <circle cx="12" cy="12" r="4"/>
+          </svg>
+        </button>
+        {hovered === 'palette' && (
+          <span style={S.tooltip}>Tema de color</span>
+        )}
+        {showPalettePicker && (
+          <div style={S.palettePopover}>
+            <div style={S.palettePopoverTitle}>Tema de color</div>
+            <div style={S.paletteGrid}>
+              {PALETTES.map((p) => (
+                <button
+                  key={p.id}
+                  style={{
+                    ...S.paletteSwatch,
+                    background: p.dark['ink-950'],
+                    borderColor: p.id === paletteId ? p.dark.gold : 'transparent',
+                  }}
+                  onClick={() => {
+                    onSetPalette(p.id);
+                    setShowPalettePicker(false);
+                  }}
+                  title={p.name}
+                >
+                  <div style={{ ...S.paletteSwatchAccent, background: p.dark.gold }} />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Theme toggle (dark/light) */}
       <button
         className="theme-toggle"
         style={{
           ...S.navBtn,
-          color: theme === 'dark' ? '#826b24' : '#a9ab3a',
+          color: theme === 'dark' ? palette.dark['gold-dim'] : palette.dark.gold,
         }}
         onClick={onToggleTheme}
         onMouseEnter={() => setHovered('theme')}
@@ -493,7 +558,7 @@ function CollectionView({
 
       {books.length === 0 ? (
         <div style={S.emptyCol}>
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#6a657a" strokeWidth="1.5" strokeLinecap="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--tx-faint)" strokeWidth="1.5" strokeLinecap="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
           <h3 style={S.emptyTitle}>Sin resultados</h3>
           <p style={S.emptyHint}>Prueba con otro filtro o término de búsqueda.</p>
         </div>
@@ -518,7 +583,7 @@ function BookmarksView(): JSX.Element {
       </header>
       <div style={S.meander} />
       <div style={S.emptyBookmarks}>
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6a657a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--tx-faint)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M6 4h12v16l-6-4-6 4z"/>
         </svg>
         <h3 style={S.emptyTitle}>Aún no hay marcadores</h3>
@@ -535,7 +600,7 @@ function BookmarksView(): JSX.Element {
 function EmptyState({ onImport }: { readonly onImport: () => void }): JSX.Element {
   return (
     <div style={S.empty}>
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6a657a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--tx-faint)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
       </svg>
       <h3 style={S.emptyTitle}>No hay libros importados</h3>
@@ -648,7 +713,7 @@ function BookCard({ book, onOpen, onRemove }: BookCardProps): JSX.Element {
         <div style={S.cardFooter}>
           <div style={S.starRating} aria-label="Calificación pendiente">
             {[1, 2, 3, 4, 5].map((s) => (
-              <svg key={s} width="12" height="12" viewBox="0 0 24 24" fill="#2b3a30" stroke="none">
+              <svg key={s} width="12" height="12" viewBox="0 0 24 24" fill="var(--line)" stroke="none">
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
               </svg>
             ))}
@@ -669,7 +734,7 @@ function BookCard({ book, onOpen, onRemove }: BookCardProps): JSX.Element {
 const S: Record<string, React.CSSProperties> = {
   app: {
     display: 'flex', height: '100vh',
-    background: 'radial-gradient(1200px 600px at 80% -10%, rgba(133,179,150,.06), transparent 60%), radial-gradient(1000px 500px at -5% 110%, rgba(169,171,58,.06), transparent 55%), var(--ink-950)',
+    background: 'radial-gradient(1200px 600px at 80% -10%, rgba(var(--verdigris-rgb),.06), transparent 60%), radial-gradient(1000px 500px at -5% 110%, rgba(var(--gold-rgb),.06), transparent 55%), var(--ink-950)',
     fontFamily: '"Hanken Grotesk", system-ui, sans-serif', color: 'var(--tx)',
     transition: 'background .3s var(--ease)',
   },
@@ -685,9 +750,9 @@ const S: Record<string, React.CSSProperties> = {
   brand: {
     width: 46, height: 46, borderRadius: 13,
     display: 'grid', placeItems: 'center', marginBottom: 18,
-    background: 'radial-gradient(120% 120% at 30% 20%, #2b2740, #17141f)',
+    background: 'radial-gradient(120% 120% at 30% 20%, var(--ink-800), var(--ink-950))',
     border: '1px solid var(--gold-dim)',
-    boxShadow: 'inset 0 1px 0 rgba(223,224,186,.25), 0 6px 18px -8px rgba(0,0,0,.8)',
+    boxShadow: 'inset 0 1px 0 rgba(var(--gold-rgb),.25), 0 6px 18px -8px rgba(0,0,0,.8)',
     position: 'relative',
   },
   nav: { display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center', flex: 1 },
@@ -739,7 +804,7 @@ const S: Record<string, React.CSSProperties> = {
   /* --- Meander --- */
   meander: {
     height: 8, width: '100%', marginBottom: 34,
-    backgroundImage: 'repeating-linear-gradient(90deg, rgba(169,171,58,.55) 0 2px, transparent 2px 14px)',
+    backgroundImage: 'repeating-linear-gradient(90deg, rgba(var(--gold-rgb),.55) 0 2px, transparent 2px 14px)',
     WebkitMask: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'8\' viewBox=\'0 0 24 8\'%3E%3Cpath d=\'M0 7h4V3h4v4h4V1h4v6h4\' fill=\'none\' stroke=\'%23000\' stroke-width=\'1.4\'/%3E%3C/svg%3E") repeat-x',
     mask: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'8\' viewBox=\'0 0 24 8\'%3E%3Cpath d=\'M0 7h4V3h4v4h4V1h4v6h4\' fill=\'none\' stroke=\'%23000\' stroke-width=\'1.4\'/%3E%3C/svg%3E") repeat-x',
     opacity: 0.7,
@@ -836,7 +901,7 @@ const S: Record<string, React.CSSProperties> = {
     position: 'absolute', top: 10, right: 10, zIndex: 4,
     fontSize: 9.5, fontWeight: 700, letterSpacing: '.09em',
     padding: '4px 7px', borderRadius: 6, color: '#fff',
-    background: 'rgba(16,15,24,.6)', backdropFilter: 'blur(6px)',
+    background: 'rgba(var(--ink950-rgb),.6)', backdropFilter: 'blur(6px)',
     border: '1px solid rgba(255,255,255,.18)',
   },
   statusTag: {
@@ -844,8 +909,8 @@ const S: Record<string, React.CSSProperties> = {
     display: 'flex', alignItems: 'center', gap: 5,
     fontSize: 10, fontWeight: 600, letterSpacing: '.02em',
     padding: '4px 8px 4px 6px', borderRadius: 20,
-    background: 'rgba(16,15,24,.62)', backdropFilter: 'blur(6px)',
-    color: '#efe9dd', border: '1px solid rgba(255,255,255,.12)',
+    background: 'rgba(var(--ink950-rgb),.62)', backdropFilter: 'blur(6px)',
+    color: 'var(--tx-hi)', border: '1px solid rgba(255,255,255,.12)',
   },
   dot: { width: 7, height: 7, borderRadius: '50%', flexShrink: 0 },
   coverArt: {
@@ -872,7 +937,7 @@ const S: Record<string, React.CSSProperties> = {
   },
   coverProgressFill: {
     display: 'block', height: '100%',
-    background: 'linear-gradient(90deg, #85b396, #aed0bb)', borderRadius: 20,
+    background: 'linear-gradient(90deg, var(--verdigris), var(--gold-bright))', borderRadius: 20,
   },
   cardBody: { display: 'flex', flexDirection: 'column', gap: 3, padding: '0 2px' },
   cardTitle: {
@@ -898,5 +963,32 @@ const S: Record<string, React.CSSProperties> = {
     border: '1px solid var(--line)', borderRadius: 6,
     color: 'var(--tx-faint)', cursor: 'pointer', display: 'grid', placeItems: 'center',
     fontFamily: 'inherit', transition: '.15s',
+  },
+
+  /* --- Palette picker --- */
+  palettePopover: {
+    position: 'absolute', left: 58, bottom: 0,
+    background: 'var(--ink-800)', border: '1px solid var(--line)',
+    borderRadius: 12, padding: 14, zIndex: 50,
+    boxShadow: '0 18px 50px -20px rgba(0,0,0,.7)',
+    minWidth: 200,
+  },
+  palettePopoverTitle: {
+    fontSize: 12, fontWeight: 600, letterSpacing: '.08em',
+    textTransform: 'uppercase', color: 'var(--tx-lo)',
+    marginBottom: 10,
+  },
+  paletteGrid: {
+    display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8,
+  },
+  paletteSwatch: {
+    width: 32, height: 32, borderRadius: 8,
+    border: '2px solid transparent', cursor: 'pointer',
+    position: 'relative', transition: '.15s',
+    display: 'grid', placeItems: 'center',
+    padding: 0,
+  },
+  paletteSwatchAccent: {
+    width: 8, height: 8, borderRadius: '50%',
   },
 };

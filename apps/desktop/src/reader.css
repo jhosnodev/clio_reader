@@ -33,6 +33,12 @@
   --read-tx-lo: #7a7266;
 
   --ease: cubic-bezier(.22,.61,.36,1);
+
+  /* --- RGB decompositions (para rgba() dinámico) --- */
+  --gold-rgb: 169,171,58;
+  --verdigris-rgb: 133,179,150;
+  --ink950-rgb: 11,20,18;
+  --rose-rgb: 143,92,60;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -45,7 +51,7 @@ body {
   font-size: 15px;
 }
 button { font-family: inherit; cursor: pointer; color: inherit; background: none; border: none; }
-::selection { background: rgba(169,171,58,.35); color: var(--tx-hi); }
+::selection { background: rgba(var(--gold-rgb),.35); color: var(--tx-hi); }
 
 /* ==========================================================================
    Reader — contenedor principal
@@ -64,7 +70,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
 /* --- Temas --- */
 .reader[data-theme="paper"] { --read-bg: #f4efe4; --read-tx: #2b2620; --read-tx-lo: #8a8073; }
 .reader[data-theme="sepia"] { --read-bg: #e7d9bd; --read-tx: #453a29; --read-tx-lo: #8a7a5c; }
-.reader[data-theme="night"] { --read-bg: #0b1412; --read-tx: #cfc7ba; --read-tx-lo: #7f8d80; }
+.reader[data-theme="night"] { --read-bg: var(--ink-950); --read-tx: #cfc7ba; --read-tx-lo: var(--rose); }
 
 /* ==========================================================================
    Toolbar (r-bar)
@@ -102,7 +108,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
 .r-btn svg { width: 19px; height: 19px; }
 .r-btn:hover { opacity: 1; background: rgba(0,0,0,.06); }
 .reader[data-theme="night"] .r-btn:hover { background: rgba(255,255,255,.07); }
-.r-btn.on { opacity: 1; color: var(--gold-dim); background: rgba(169,171,58,.14); }
+.r-btn.on { opacity: 1; color: var(--gold-dim); background: rgba(var(--gold-rgb),.14); }
 .reader[data-theme="night"] .r-btn.on { color: var(--gold-bright); }
 
 .r-sep { width: 1px; height: 22px; background: currentColor; opacity: .14; margin: 0 5px; }
@@ -136,7 +142,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
 }
 .reader[data-font="sans"] .page p,
 .reader[data-font="sans"] .page h2 { font-family: "Hanken Grotesk", sans-serif; }
-.page mark { background: rgba(169,171,58,.4); color: inherit; border-radius: 3px; padding: 0 2px; }
+.page mark { background: rgba(var(--gold-rgb),.4); color: inherit; border-radius: 3px; padding: 0 2px; }
 
 /* images */
 .page img { max-width: 100%; height: auto; }
@@ -271,7 +277,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
 }
 .toc-item:hover { background: rgba(0,0,0,.05); }
 .reader[data-theme="night"] .toc-item:hover { background: rgba(255,255,255,.05); }
-.toc-item.current { background: rgba(169,171,58,.16); }
+.toc-item.current { background: rgba(var(--gold-rgb),.16); }
 .toc-item .n { font-variant-numeric: tabular-nums; color: var(--read-tx-lo); font-size: 12.5px; min-width: 20px; }
 .toc-item .t { font-family: "Fraunces", serif; font-size: 14.5px; flex: 1; line-height: 1.3; }
 .toc-item .pp { font-size: 11.5px; color: var(--read-tx-lo); }
@@ -296,7 +302,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
   transition: .14s var(--ease);
 }
 .reader[data-theme="night"] .sres { background: rgba(255,255,255,.04); }
-.sres:hover { background: rgba(169,171,58,.12); }
+.sres:hover { background: rgba(var(--gold-rgb),.12); }
 .sres .loc {
   font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
   color: var(--read-tx-lo); font-weight: 600; margin-bottom: 5px;
@@ -318,7 +324,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
 }
 .note {
   border-left: 3px solid var(--gold); padding: 12px 14px; margin-top: 16px;
-  background: rgba(169,171,58,.08); border-radius: 0 10px 10px 0;
+  background: rgba(var(--gold-rgb),.08); border-radius: 0 10px 10px 0;
 }
 .note .nmeta {
   font-size: 11px; color: var(--read-tx-lo); margin-bottom: 6px;
@@ -366,7 +372,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
 .sw.sel { border-color: var(--gold); }
 .sw[data-t="paper"] { background: #f4efe4; }
 .sw[data-t="sepia"] { background: #e7d9bd; }
-.sw[data-t="night"] { background: #0b1412; box-shadow: inset 0 0 0 1px rgba(255,255,255,.15); }
+.sw[data-t="night"] { background: var(--ink-950); box-shadow: inset 0 0 0 1px rgba(255,255,255,.15); }
 
 /* segmented control */
 .seg { display: flex; gap: 6px; background: rgba(0,0,0,.05); padding: 5px; border-radius: 12px; }
@@ -393,7 +399,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
   transition: .14s var(--ease);
 }
 .reader[data-theme="night"] .stepper button { background: rgba(255,255,255,.06); }
-.stepper button:hover { background: rgba(169,171,58,.2); }
+.stepper button:hover { background: rgba(var(--gold-rgb),.2); }
 .stepper .val {
   flex: 1; text-align: center; font-weight: 600; font-size: 15px;
   color: var(--read-tx); font-variant-numeric: tabular-nums;
