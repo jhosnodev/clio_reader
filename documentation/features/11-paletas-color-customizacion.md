@@ -23,9 +23,12 @@ Cada paleta redefine estos tokens CSS (extraídos de `library.css`):
 | `--ink-700` | Superficie intermedia | Superficie |
 | `--ink-600` | Superficie ligera | Superficie |
 | `--line` | Bordes | Superficie |
-| `--gold` | Acento primario | Acento |
-| `--gold-bright` | Acento primario brillante | Acento |
-| `--gold-dim` | Acento primario apagado | Acento |
+| `--ink` | Acento oscuro (bordes sutiles) | Acento |
+| `--moss` | Acento primario (chips activos) | Acento |
+| `--wine` | Acento terciario (notas) | Acento |
+| `--dust` | Acento fuerte (CTAs) | Acento |
+| `--caramel` | Hover, gradientes | Acento |
+| `--sand` | Texto sutil, metadata | Acento |
 | `--verdigris` | Acento secundario | Acento |
 | `--verdigris-dim` | Acento secundario apagado | Acento |
 | `--rose` | Acento terciario | Acento |
@@ -33,26 +36,19 @@ Cada paleta redefine estos tokens CSS (extraídos de `library.css`):
 | `--tx` | Texto normal | Texto |
 | `--tx-lo` | Texto bajo contraste | Texto |
 | `--tx-faint` | Texto deshabilitado | Texto |
-| `--accent-strong` | Acento fuerte (varía por tema) | Acento |
-| `--hl-1` | Highlight 1 (darkest) | Highlight |
-| `--hl-2` | Highlight 2 | Highlight |
-| `--hl-3` | Highlight 3 | Highlight |
-| `--hl-4` | Highlight 4 | Highlight |
-| `--hl-5` | Highlight 5 | Highlight |
-| `--hl-6` | Highlight 6 (lightest) | Highlight |
 
 ### Highlights dark mode (paleta Nocturna)
 
-Colores de highlight basados en la paleta gold para tema oscuro. Reemplazan los `rgba(201,162,75,.xx)` actuales. No alteran los fondos de superficie.
+Colores de highlight basados en la paleta custom para tema oscuro. Reemplazan los `rgba(201,162,75,.xx)` actuales. No alteran los fondos de superficie.
 
 | Token | Hex | Rol | Uso actual reemplazado |
 |-------|-----|-----|------------------------|
-| `--hl-1` | `#3b392a` | Gold muy oscuro (fondo sutil) | — |
-| `--hl-2` | `#655d4a` | Gold apagado medio | — |
-| `--hl-3` | `#6f4143` | Rose oscuro (notas, bookmarks) | — |
-| `--hl-4` | `#a46a66` | Rosa apagado (mark en reader) | `rgba(201,162,75,.4)` |
-| `--hl-5` | `#a4825d` | Caramelo (::selection) | `rgba(201,162,75,.35)` |
-| `--hl-6` | `#d6baa5` | Arena (highlights de búsqueda) | — |
+| `--ink` | `#3b392a` | Gold muy oscuro (fondo sutil) | — |
+| `--moss` | `#655d4a` | Gold apagado medio | — |
+| `--wine` | `#6f4143` | Rose oscuro (notas, bookmarks) | — |
+| `--dust` | `#a46a66` | Rosa apagado (mark en reader) | `rgba(201,162,75,.4)` |
+| `--caramel` | `#a4825d` | Caramelo (::selection) | `rgba(201,162,75,.35)` |
+| `--sand` | `#d6baa5` | Arena (highlights de búsqueda) | — |
 
 **Mapeo a CSS actual:**
 
@@ -62,11 +58,11 @@ Colores de highlight basados en la paleta gold para tema oscuro. Reemplazan los 
 .page mark  { background: rgba(201,162,75,.4); }
 
 /* Propuesto */
-::selection { background: var(--hl-5); }  /* #a4825d caramelo */
-.page mark  { background: var(--hl-4); }  /* #a46a66 rosa apagado */
+::selection { background: var(--caramel); }  /* #a4825d */
+.page mark  { background: var(--dust); }     /* #a46a66 */
 ```
 
-**Regla de contraste:** Cada highlight debe mantener legibilidad del texto superpuesto. `--hl-5` y `--hl-6` sobre `var(--tx-hi)` (`#efe9dd`) deben pasar WCAG AA (4.5:1).
+**Regla de contraste:** `--caramel` y `--sand` sobre `var(--tx-hi)` (`#efe9dd`) deben pasar WCAG AA (4.5:1).
 
 ### Reader themes (tokens adicionales)
 
@@ -99,21 +95,15 @@ interface PaletteTokens {
     line: string;    // --line
   };
   accents: {
-    gold: string;
-    goldBright: string;
-    goldDim: string;
+    ink: string;
+    moss: string;
+    wine: string;
+    dust: string;
+    caramel: string;
+    sand: string;
     verdigris: string;
     verdigrisDim: string;
     rose: string;
-    accentStrong: string;
-  };
-  highlights: {
-    hl1: string;  // --hl-1 (darkest)
-    hl2: string;  // --hl-2
-    hl3: string;  // --hl-3
-    hl4: string;  // --hl-4
-    hl5: string;  // --hl-5
-    hl6: string;  // --hl-6 (lightest)
   };
   text: {
     hi: string;
@@ -131,23 +121,40 @@ interface PaletteTokens {
 
 ### Paletas predefinidas
 
-| Paleta | Identidad | `gold` | `gold-bright` | `gold-dim` | `verdigris` | `verdigris-dim` | `rose` | `accent-strong` |
-|--------|-----------|--------|---------------|------------|-------------|-----------------|--------|-----------------|
-| **Nocturna** (default) | Tinta + oro viejo | `#c9a24b` | `#e6c874` | `#8a7434` | `#4fa393` | `#2f6d61` | `#c17b7b` | `#e6c874` |
-| **Bosque** | Verde profundo + ámbar | `#d4a24e` | `#e8c06a` | `#9a7a3a` | `#6b9e7a` | `#3d6e4a` | `#c4917a` | `#e8c06a` |
-| **Océano** | Azul marino + coral | `#e07a5f` | `#f09a82` | `#a85a44` | `#81b4d8` | `#4a7da3` | `#b87aad` | `#f09a82` |
-| **Lavanda** | Púrpura suave + dorado | `#c9a24b` | `#e6c874` | `#8a7434` | `#9b8ec4` | `#6a5e93` | `#c48b8b` | `#e6c874` |
-| **Carmesí** | Rojo oscuro + crema | `#e8d5b7` | `#f2e4cc` | `#b09a7a` | `#a63d40` | `#6e2829` | `#d4a07a` | `#f2e4cc` |
+| Paleta | Identidad | `ink` | `moss` | `wine` | `dust` | `caramel` | `sand` | `verdigris` | `verdigris-dim` | `rose` |
+|--------|-----------|-------|--------|--------|--------|-----------|--------|-------------|-----------------|--------|
+| **Nocturna** (default) | Tinta + tierra | `#3b392a` | `#655d4a` | `#6f4143` | `#a46a66` | `#a4825d` | `#d6baa5` | `#4fa393` | `#2f6d61` | `#c17b7b` |
+| **Bosque** | Verde profundo | `#2e3a28` | `#4a5e3e` | `#5e3a3a` | `#8a6e5a` | `#7a8a5a` | `#c4cfa5` | `#6b9e7a` | `#3d6e4a` | `#c4917a` |
+| **Océano** | Azul marino | `#2a3040` | `#3e5060` | `#4a3050` | `#7a6080` | `#5a7a8a` | `#a0c0d0` | `#81b4d8` | `#4a7da3` | `#b87aad` |
+| **Lavanda** | Púrpura suave | `#302a3a` | `#504060` | `#5a3858` | `#8a6888` | `#7060a0` | `#b8a8d0` | `#9b8ec4` | `#6a5e93` | `#c48b8b` |
+| **Carmesí** | Rojo oscuro | `#3a2828` | `#5a3838` | `#6a3030` | `#9a6060` | `#8a5050` | `#d0a0a0` | `#a63d40` | `#6e2829` | `#d4a07a` |
 
-#### Highlights dark mode por paleta
+**Mapeo de tokens:**
 
-| Paleta | `hl-1` | `hl-2` | `hl-3` | `hl-4` | `hl-5` | `hl-6` |
-|--------|--------|--------|--------|--------|--------|--------|
-| **Nocturna** | `#3b392a` | `#655d4a` | `#6f4143` | `#a46a66` | `#a4825d` | `#d6baa5` |
-| **Bosque** | `#2e3a28` | `#4a5e3e` | `#5e3a3a` | `#8a6e5a` | `#7a8a5a` | `#c4cfa5` |
-| **Océano** | `#2a3040` | `#3e5060` | `#4a3050` | `#7a6080` | `#5a7a8a` | `#a0c0d0` |
-| **Lavanda** | `#302a3a` | `#504060` | `#5a3858` | `#8a6888` | `#7060a0` | `#b8a8d0` |
-| **Carmesí** | `#3a2828` | `#5a3838` | `#6a3030` | `#9a6060` | `#8a5050` | `#d0a0a0` |
+| Token | Rol |
+|-------|-----|
+| `--ink` | Acento oscuro, bordes sutiles |
+| `--moss` | Acento primario, bg de chips activos |
+| `--wine` | Acento terciario, notas |
+| `--dust` | Acento fuerte, CTAs |
+| `--caramel` | Hover, gradientes |
+| `--sand` | Texto sutil, metadata |
+
+**Uso en CSS actual:**
+
+```css
+/* Actual */
+::selection { background: rgba(201,162,75,.35); }    /* gold */
+.page mark  { background: rgba(201,162,75,.4); }     /* gold */
+background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+
+/* Propuesto */
+::selection { background: var(--caramel); }            /* #a4825d */
+.page mark  { background: var(--dust); }               /* #a46a66 */
+background: linear-gradient(180deg, var(--caramel), var(--moss));
+```
+
+### Reader themes (tokens adicionales)
 
 ### Mecanismo de aplicación
 
