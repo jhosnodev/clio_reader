@@ -2,7 +2,7 @@ import {
   createDefaultPreferences,
   validateReaderPreferences,
   type ReaderPreferences,
-} from '@echo-reader/domain';
+} from '@clio-reader/domain';
 
 import type { SessionRepository } from './session-repository.js';
 

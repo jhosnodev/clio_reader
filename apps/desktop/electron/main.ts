@@ -1,8 +1,10 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { readFile, writeFile, mkdir } from 'fs/promises';
+import { readFile, writeFile, mkdir, access, constants, unlink } from 'fs/promises';
 import { existsSync } from 'fs';
+import { tmpdir } from 'os';
+import { randomUUID } from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -17,7 +19,7 @@ if (!gotTheLock) {
 
   function getDataPath(): string {
     const userDataPath = app.getPath('userData');
-    return join(userDataPath, 'echo-reader');
+    return join(userDataPath, 'clio-reader');
   }
 
   function getStoragePath(): string {
@@ -37,13 +39,14 @@ if (!gotTheLock) {
       height: 800,
       minWidth: 800,
       minHeight: 600,
-      title: 'Echo Reader',
+      title: 'Clio Reader',
       show: false,
       webPreferences: {
-        preload: join(__dirname, 'preload.js'),
+        preload: join(__dirname, 'preload.cjs'),
         contextIsolation: true,
         nodeIntegration: false,
         sandbox: false,
+        webviewTag: true,
       },
     });
 
@@ -105,6 +108,17 @@ if (!gotTheLock) {
       return buffer;
     });
 
+    ipcMain.handle('write-file-temp', async (_event, buffer: ArrayBuffer, ext: string) => {
+      const tempDir = join(tmpdir(), 'clio-reader');
+      if (!existsSync(tempDir)) {
+        await mkdir(tempDir, { recursive: true });
+      }
+      const fileName = `${randomUUID()}.${ext}`;
+      const tempPath = join(tempDir, fileName);
+      await writeFile(tempPath, Buffer.from(buffer));
+      return tempPath;
+    });
+
     ipcMain.handle('read-storage', async (_event, key: string) => {
       await ensureDataDir();
       const filePath = join(getDataPath(), `${key}.json`);
@@ -125,13 +139,24 @@ if (!gotTheLock) {
       await ensureDataDir();
       const filePath = join(getDataPath(), `${key}.json`);
       if (existsSync(filePath)) {
-        const { unlink } = await import('fs/promises');
         await unlink(filePath);
       }
     });
 
     ipcMain.handle('get-storage-path', () => {
       return getStoragePath();
+    });
+
+    ipcMain.handle('check-file-exists', async (_event, uri: string) => {
+      try {
+        const filePath = uri.startsWith('file://') ? uri.slice(7) : uri;
+        const normalizedPath =
+          process.platform === 'win32' && filePath.startsWith('/') ? filePath.slice(1) : filePath;
+        await access(normalizedPath, constants.F_OK);
+        return { exists: true };
+      } catch {
+        return { exists: false };
+      }
     });
   }
 

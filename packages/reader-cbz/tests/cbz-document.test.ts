@@ -1,8 +1,8 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import JSZip from 'jszip';
 
-import type { CbzLocator } from '@echo-reader/domain';
-import type { FileSource } from '@echo-reader/reader-core';
+import type { CbzLocator } from '@clio-reader/domain';
+import type { FileSource } from '@clio-reader/reader-core';
 
 import {
   CbzReaderDocument,

@@ -1,8 +1,8 @@
 import * as FileSystem from 'expo-file-system';
-import type { KeyValueStore } from '@echo-reader/storage';
+import type { KeyValueStore } from '@clio-reader/storage';
 
 function getStorageDir(): string {
-  return `${FileSystem.documentDirectory}echo-reader/`;
+  return `${FileSystem.documentDirectory}clio-reader/`;
 }
 
 async function ensureDir(): Promise<void> {

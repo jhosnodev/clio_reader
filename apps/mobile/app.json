@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Echo Reader",
-    "slug": "echo-reader",
+    "name": "Clio Reader",
+    "slug": "clio-reader",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,13 +12,13 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.echo-reader.mobile"
+      "bundleIdentifier": "com.clio-reader.mobile"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#f9fafb"
       },
-      "package": "com.echo_reader.mobile"
+      "package": "com.clio_reader.mobile"
     },
     "plugins": ["expo-document-picker"]
   }

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 
-import type { PdfLocator } from '@echo-reader/domain';
-import type { FileSource } from '@echo-reader/reader-core';
+import type { PdfLocator } from '@clio-reader/domain';
+import type { FileSource } from '@clio-reader/reader-core';
 
 import {
   PdfReaderDocument,

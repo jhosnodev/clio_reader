@@ -9,6 +9,10 @@ const electronAPI = {
     return ipcRenderer.invoke('read-file', uri);
   },
 
+  writeFileTemp: (buffer: ArrayBuffer, ext: string): Promise<string> => {
+    return ipcRenderer.invoke('write-file-temp', buffer, ext);
+  },
+
   readStorage: (key: string): Promise<string | undefined> => {
     return ipcRenderer.invoke('read-storage', key);
   },
@@ -23,6 +27,10 @@ const electronAPI = {
 
   getStoragePath: (): Promise<string> => {
     return ipcRenderer.invoke('get-storage-path');
+  },
+
+  checkFileExists: (uri: string): Promise<{ exists: boolean }> => {
+    return ipcRenderer.invoke('check-file-exists', uri);
   },
 
   onSuspend: (callback: () => void): void => {

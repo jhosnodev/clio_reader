@@ -1,5 +1,5 @@
 {
-  "name": "echo_reader",
+  "name": "clio_reader",
   "version": "0.1.0",
   "private": true,
   "description": "Biblioteca local multiplataforma para leer EPUB, PDF, CBZ y futuros formatos.",

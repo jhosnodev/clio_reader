@@ -1,4 +1,4 @@
-import type { Book, ReadingProgress, ReaderPreferences } from '@echo-reader/domain';
+import type { Book, ReadingProgress, ReaderPreferences } from '@clio-reader/domain';
 
 import { BookNotFoundError } from './errors.js';
 import type { LibraryRepository } from './repository.js';

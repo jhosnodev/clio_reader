@@ -2,7 +2,7 @@
 
 | Campo                             | Valor                                    |
 | --------------------------------- | ---------------------------------------- |
-| **Nombre**                        | echo_reader — Índice de features futuros |
+| **Nombre**                        | clio_reader — Índice de features futuros |
 | **Autor**                         | Manus AI                                 |
 | **Fecha de creación**             | 28 de agosto de 2026                     |
 | **Fecha de última actualización** | 28 de agosto de 2026                     |

@@ -1,9 +1,11 @@
-import type { FileSource } from '@echo-reader/reader-core';
+import type { FileSource } from '@clio-reader/reader-core';
 
 export interface DesktopBridge {
   readonly platform: 'desktop';
   pickFile(): Promise<FileSource | null>;
   readFile(uri: string): Promise<Uint8Array>;
+  writeFileTemp(data: Uint8Array, ext: string): Promise<string>;
+  checkFileExists(uri: string): Promise<boolean>;
   getStoragePath(): string;
   onSuspend(callback: () => void): void;
   onResume(callback: () => void): void;
@@ -30,6 +32,16 @@ export function createDesktopBridge(): DesktopBridge {
     async readFile(uri: string): Promise<Uint8Array> {
       const buffer = await api.readFile(uri);
       return new Uint8Array(buffer);
+    },
+
+    async writeFileTemp(data: Uint8Array, ext: string): Promise<string> {
+      const buffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
+      return await api.writeFileTemp(buffer, ext);
+    },
+
+    async checkFileExists(uri: string): Promise<boolean> {
+      const result = await api.checkFileExists(uri);
+      return result.exists;
     },
 
     getStoragePath(): string {

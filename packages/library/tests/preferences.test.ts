@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { createDefaultPreferences, DomainValidationError } from '@echo-reader/domain';
-import { InMemoryKeyValueStore, LocalRepository } from '@echo-reader/storage';
+import { createDefaultPreferences, DomainValidationError } from '@clio-reader/domain';
+import { InMemoryKeyValueStore, LocalRepository } from '@clio-reader/storage';
 
 import {
   getGlobalPreferences,

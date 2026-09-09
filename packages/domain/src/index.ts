@@ -1,5 +1,6 @@
 export type BookFormat = 'epub' | 'pdf' | 'cbz' | 'md';
 export type BookId = string;
+export type ReadingStatus = 'unread' | 'opened' | 'reading';
 
 export interface Book {
   readonly id: BookId;
@@ -10,6 +11,8 @@ export interface Book {
   readonly fileHash?: string;
   readonly addedAt: number;
   readonly lastOpenedAt?: number;
+  readonly readingStatus?: ReadingStatus;
+  readonly language?: string;
   readonly status: 'available' | 'missing';
 }
 

@@ -2,7 +2,7 @@
 
 | Campo                             | Valor                                    |
 | --------------------------------- | ---------------------------------------- |
-| **Nombre**                        | echo_reader — Plan de implementación     |
+| **Nombre**                        | clio_reader — Plan de implementación     |
 | **Autor**                         | Manus AI                                 |
 | **Fecha de creación**             | 28 de agosto de 2026                     |
 | **Fecha de última actualización** | 28 de agosto de 2026                     |
@@ -11,7 +11,7 @@
 
 ## 1. Propósito
 
-Este documento define cómo implementar echo_reader de forma incremental. Es complementario a la definición del MVP y a la arquitectura técnica; no reemplaza esos documentos. El producto inicial será una biblioteca local offline para EPUB, PDF y CBZ, con Windows y Android como plataformas primarias. No se implementarán perfiles, backend, nube ni sincronización durante estas fases.
+Este documento define cómo implementar clio_reader de forma incremental. Es complementario a la definición del MVP y a la arquitectura técnica; no reemplaza esos documentos. El producto inicial será una biblioteca local offline para EPUB, PDF y CBZ, con Windows y Android como plataformas primarias. No se implementarán perfiles, backend, nube ni sincronización durante estas fases.
 
 El plan prioriza un código limpio, modular, testeable y documentado. Cada feature debe terminar con pruebas, documentación de uso o decisión técnica cuando la complejidad lo justifique, y una demostración ejecutable en las plataformas correspondientes.
 

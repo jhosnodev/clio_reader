@@ -1,4 +1,4 @@
-import type { Bookmark, Book, Note, ReaderPreferences, ReadingProgress } from '@echo-reader/domain';
+import type { Bookmark, Book, Note, ReaderPreferences, ReadingProgress } from '@clio-reader/domain';
 
 export interface LibraryRepository {
   listBooks(): Promise<readonly Book[]>;

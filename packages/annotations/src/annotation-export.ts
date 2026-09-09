@@ -1,11 +1,8 @@
-import type { Bookmark, Note } from '@echo-reader/domain';
-import { listBookmarks, listNotes } from '@echo-reader/library';
+import type { Bookmark, Note } from '@clio-reader/domain';
+import { listBookmarks, listNotes } from '@clio-reader/library';
 
 import { AnnotationValidationError } from './errors.js';
-import {
-  validateBookmarkForExport,
-  validateNoteForExport,
-} from './annotation-validator.js';
+import { validateBookmarkForExport, validateNoteForExport } from './annotation-validator.js';
 
 export interface AnnotationExportData {
   readonly version: 1;
@@ -16,7 +13,10 @@ export interface AnnotationExportData {
 }
 
 export async function exportAnnotations(
-  repo: { listBookmarks(bookId: string): Promise<readonly Bookmark[]>; listNotes(bookId: string): Promise<readonly Note[]> },
+  repo: {
+    listBookmarks(bookId: string): Promise<readonly Bookmark[]>;
+    listNotes(bookId: string): Promise<readonly Note[]>;
+  },
   bookId: string,
 ): Promise<AnnotationExportData> {
   const bookmarks = await listBookmarks(repo, bookId);
@@ -32,7 +32,12 @@ export async function exportAnnotations(
 }
 
 export async function importAnnotations(
-  repo: { listBookmarks(bookId: string): Promise<readonly Bookmark[]>; saveBookmark(bookmark: Bookmark): Promise<void>; listNotes(bookId: string): Promise<readonly Note[]>; saveNote(note: Note): Promise<void> },
+  repo: {
+    listBookmarks(bookId: string): Promise<readonly Bookmark[]>;
+    saveBookmark(bookmark: Bookmark): Promise<void>;
+    listNotes(bookId: string): Promise<readonly Note[]>;
+    saveNote(note: Note): Promise<void>;
+  },
   bookId: string,
   data: unknown,
 ): Promise<{ bookmarksImported: number; notesImported: number }> {

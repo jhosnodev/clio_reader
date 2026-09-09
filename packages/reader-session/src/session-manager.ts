@@ -1,6 +1,6 @@
-import type { Book, ReaderLocator, ReaderPreferences, ReadingProgress } from '@echo-reader/domain';
-import type { ReaderAdapter, ReaderDocument, ReaderSessionState } from '@echo-reader/reader-core';
-import { transitionReaderSession, INITIAL_READER_SESSION } from '@echo-reader/reader-core';
+import type { Book, ReaderLocator, ReaderPreferences, ReadingProgress } from '@clio-reader/domain';
+import type { ReaderAdapter, ReaderDocument, ReaderSessionState } from '@clio-reader/reader-core';
+import { transitionReaderSession, INITIAL_READER_SESSION } from '@clio-reader/reader-core';
 
 import { ProgressSaver } from './progress-saver.js';
 import { SettingsManager } from './settings-manager.js';

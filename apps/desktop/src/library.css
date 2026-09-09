@@ -1,0 +1,110 @@
+/* ==========================================================================
+   Clio Reader — Estilos de la biblioteca (Shell principal)
+   Identidad: bosque nocturno + oliva + verdigrís
+   Tipos: Fraunces + Hanken Grotesk
+   ========================================================================== */
+
+:root {
+  /* --- Tinta nocturna (chrome de la app) --- */
+  --ink-950: #0b1412;
+  --ink-900: #141d18;
+  --ink-850: #1f2b24;
+  --ink-800: #28362d;
+  --ink-700: #35473a;
+  --ink-600: #445e4e;
+  --line: #2b3a30;
+
+  /* --- Acentos de identidad --- */
+  --gold: #a9ab3a;
+  --gold-bright: #dfe0ba;
+  --gold-dim: #826b24;
+  --verdigris: #85b396;
+  --verdigris-dim: #5f8a71;
+  --rose: #8f5c3c;
+
+  /* --- Texto --- */
+  --tx-hi: #efe9dd;
+  --tx: #cbc4ba;
+  --tx-lo: #8b8598;
+  --tx-faint: #6a657a;
+
+  /* --- Constantes --- */
+  --ease: cubic-bezier(.22,.61,.36,1);
+  --on-gold: #2b1107;
+  --accent-strong: #dfe0ba;
+
+  /* --- RGB decompositions (para rgba() dinámico) --- */
+  --gold-rgb: 169,171,58;
+  --verdigris-rgb: 133,179,150;
+  --ink950-rgb: 11,20,18;
+  --rose-rgb: 143,92,60;
+}
+
+/* ==========================================================================
+   TEMA CLARO (alabastro / piedra)
+   Se activa con data-app-theme="light" en .app
+   ========================================================================== */
+.app[data-app-theme="light"] {
+  --ink-950: #eceee9;
+  --ink-900: #f6f7f3;
+  --ink-850: #ffffff;
+  --ink-800: #e6e8e1;
+  --ink-700: #d7dace;
+  --ink-600: #c2c6b6;
+  --line: #e0e3d9;
+  --tx-hi: #1e2019;
+  --tx: #474a40;
+  --tx-lo: #7b7e70;
+  --tx-faint: #a6a897;
+  --accent-strong: #8a6d12;
+}
+
+/* --- Theme toggle: iconos según el tema activo --- */
+.theme-toggle .i-moon { display: none; }
+.theme-toggle .i-sun { display: block; }
+.app[data-app-theme="light"] .theme-toggle .i-sun { display: none; }
+.app[data-app-theme="light"] .theme-toggle .i-moon { display: block; }
+
+/* ==========================================================================
+   Reset y base
+   ========================================================================== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body, #root { height: 100%; }
+body {
+  font-family: "Hanken Grotesk", system-ui, sans-serif;
+  background: var(--ink-950);
+  color: var(--tx);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+::selection { background: rgba(var(--gold-rgb),.35); color: var(--tx-hi); }
+button { font-family: inherit; cursor: pointer; color: inherit; background: none; border: none; }
+
+/* ==========================================================================
+   App layout
+   ========================================================================== */
+.app {
+  display: flex;
+  height: 100vh;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(var(--verdigris-rgb),.06), transparent 60%),
+    radial-gradient(1000px 500px at -5% 110%, rgba(var(--gold-rgb),.06), transparent 55%),
+    var(--ink-950);
+  font-family: "Hanken Grotesk", system-ui, sans-serif;
+  color: var(--tx);
+  transition: background .3s var(--ease);
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ==========================================================================
+   Scrollbar personalizado (sensible al tema)
+   ========================================================================== */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--ink-700);
+  border-radius: 20px;
+  border: 2px solid var(--ink-950);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--ink-600); }

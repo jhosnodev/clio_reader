@@ -10,8 +10,8 @@ Configured `electron-builder` for Windows builds with placeholder icons. The des
 
 Located at `apps/desktop/electron-builder.yml`:
 
-- **appId**: `com.echo-reader.desktop`
-- **productName**: `Echo Reader`
+- **appId**: `com.clio-reader.desktop`
+- **productName**: `Clio Reader`
 - **Output directory**: `release/`
 - **Build resources**: `resources/` (icons, license, etc.)
 - **Windows target**: NSIS installer (x64)
@@ -19,12 +19,12 @@ Located at `apps/desktop/electron-builder.yml`:
 
 ### Build Scripts
 
-| Script | Description |
-|---|---|
-| `build` | TypeScript compile + Vite build (no packaging) |
-| `build:win` | Full Windows NSIS installer |
-| `build:win:portable` | Portable Windows executable (no install) |
-| `generate-icons` | Regenerate placeholder icons |
+| Script               | Description                                    |
+| -------------------- | ---------------------------------------------- |
+| `build`              | TypeScript compile + Vite build (no packaging) |
+| `build:win`          | Full Windows NSIS installer                    |
+| `build:win:portable` | Portable Windows executable (no install)       |
+| `generate-icons`     | Regenerate placeholder icons                   |
 
 ## Placeholder Icons
 
@@ -78,7 +78,7 @@ Output files will be in `apps/desktop/release/`.
 1. Update version in `package.json`
 2. Run `pnpm build:win`
 3. Test the installer
-4. Upload `release/Echo Reader Setup x.x.x.exe` to GitHub Releases
+4. Upload `release/Clio Reader Setup x.x.x.exe` to GitHub Releases
 
 ## File Structure
 
@@ -99,4 +99,4 @@ apps/desktop/
 - The `release/` directory is gitignored
 - Icons are placeholders; replace before production release
 - NSIS installer preserves user data on uninstall (`deleteAppDataOnUninstall: false`)
-- User data is stored in `%APPDATA%/echo-reader/echo-reader/` (Electron userData path)
+- User data is stored in `%APPDATA%/clio-reader/clio-reader/` (Electron userData path)

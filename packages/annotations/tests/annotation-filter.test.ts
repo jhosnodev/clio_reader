@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Bookmark, Note } from '@echo-reader/domain';
+import type { Bookmark, Note } from '@clio-reader/domain';
 
 import {
   filterByDateRange,
@@ -13,7 +13,15 @@ import {
 
 const now = Date.now();
 
-function makeBookmark(overrides: Partial<{ id: string; label: string; createdAt: number; locator: { format: 'epub'; href: string; progression: number } | { format: 'pdf'; page: number } }> = {}): Bookmark {
+function makeBookmark(
+  overrides: Partial<{
+    id: string;
+    label: string;
+    createdAt: number;
+    locator:
+      { format: 'epub'; href: string; progression: number } | { format: 'pdf'; page: number };
+  }> = {},
+): Bookmark {
   const base: Bookmark = {
     id: overrides.id ?? 'bm-1',
     bookId: 'book-1',
@@ -26,7 +34,14 @@ function makeBookmark(overrides: Partial<{ id: string; label: string; createdAt:
   return base;
 }
 
-function makeNote(overrides: Partial<{ id: string; body: string; createdAt: number; locator: { format: 'epub'; href: string } }> = {}): Note {
+function makeNote(
+  overrides: Partial<{
+    id: string;
+    body: string;
+    createdAt: number;
+    locator: { format: 'epub'; href: string };
+  }> = {},
+): Note {
   return {
     id: overrides.id ?? 'note-1',
     bookId: 'book-1',
@@ -62,20 +77,14 @@ describe('AnnotationFilter', () => {
     });
 
     it('handles start only', () => {
-      const bookmarks = [
-        makeBookmark({ createdAt: now - 2000 }),
-        makeBookmark({ createdAt: now }),
-      ];
+      const bookmarks = [makeBookmark({ createdAt: now - 2000 }), makeBookmark({ createdAt: now })];
 
       const result = filterByDateRange(bookmarks, now - 1000);
       expect(result).toHaveLength(1);
     });
 
     it('handles end only', () => {
-      const bookmarks = [
-        makeBookmark({ createdAt: now - 2000 }),
-        makeBookmark({ createdAt: now }),
-      ];
+      const bookmarks = [makeBookmark({ createdAt: now - 2000 }), makeBookmark({ createdAt: now })];
 
       const result = filterByDateRange(bookmarks, undefined, now - 1000);
       expect(result).toHaveLength(1);
@@ -111,9 +120,18 @@ describe('AnnotationFilter', () => {
   describe('sortByPosition', () => {
     it('sorts by progression', () => {
       const bookmarks = [
-        makeBookmark({ locator: { format: 'epub', href: 'ch3', progression: 0.6 }, createdAt: now }),
-        makeBookmark({ locator: { format: 'epub', href: 'ch1', progression: 0.1 }, createdAt: now }),
-        makeBookmark({ locator: { format: 'epub', href: 'ch2', progression: 0.3 }, createdAt: now }),
+        makeBookmark({
+          locator: { format: 'epub', href: 'ch3', progression: 0.6 },
+          createdAt: now,
+        }),
+        makeBookmark({
+          locator: { format: 'epub', href: 'ch1', progression: 0.1 },
+          createdAt: now,
+        }),
+        makeBookmark({
+          locator: { format: 'epub', href: 'ch2', progression: 0.3 },
+          createdAt: now,
+        }),
       ];
 
       const result = sortByPosition(bookmarks);
@@ -168,10 +186,7 @@ describe('AnnotationFilter', () => {
     });
 
     it('applies date range filter', () => {
-      const bookmarks = [
-        makeBookmark({ createdAt: now - 2000 }),
-        makeBookmark({ createdAt: now }),
-      ];
+      const bookmarks = [makeBookmark({ createdAt: now - 2000 }), makeBookmark({ createdAt: now })];
 
       const result = applyFilter(bookmarks, { dateRange: { start: now - 1000 } });
       expect(result).toHaveLength(1);
@@ -185,10 +200,7 @@ describe('AnnotationFilter', () => {
     });
 
     it('applies date sort', () => {
-      const bookmarks = [
-        makeBookmark({ createdAt: now }),
-        makeBookmark({ createdAt: now - 1000 }),
-      ];
+      const bookmarks = [makeBookmark({ createdAt: now }), makeBookmark({ createdAt: now - 1000 })];
 
       const result = applySort(bookmarks, { field: 'date', order: 'asc' });
       expect(result[0]!.createdAt).toBe(now - 1000);

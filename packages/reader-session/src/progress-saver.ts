@@ -2,7 +2,7 @@ import {
   createReadingProgress,
   type ReaderLocator,
   type ReadingProgress,
-} from '@echo-reader/domain';
+} from '@clio-reader/domain';
 
 import type { SessionRepository } from './session-repository.js';
 

@@ -1,5 +1,5 @@
-import type { CbzLocator, ReaderLocator } from '@echo-reader/domain';
-import type { FileSource, ReaderCapabilities, ReaderDocument } from '@echo-reader/reader-core';
+import type { CbzLocator, ReaderLocator } from '@clio-reader/domain';
+import type { FileSource, ReaderCapabilities, ReaderDocument } from '@clio-reader/reader-core';
 
 import { getImageMimeType, sortImageFiles } from './image-sort.js';
 import { extractImagesFromZip, type ExtractedImage } from './zip-extractor.js';

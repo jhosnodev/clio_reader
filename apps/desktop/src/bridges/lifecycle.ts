@@ -1,9 +1,6 @@
 import { useEffect } from 'react';
 
-export function useAppLifecycle(
-  onSuspend?: () => void,
-  onResume?: () => void,
-): void {
+export function useAppLifecycle(onSuspend?: () => void, onResume?: () => void): void {
   useEffect(() => {
     if (!window.electronAPI) return;
 

@@ -1,4 +1,4 @@
-import { createBook, type Book, type BookFormat } from '@echo-reader/domain';
+import { createBook, type Book, type BookFormat } from '@clio-reader/domain';
 
 import { DuplicateBookError } from './errors.js';
 import type { LibraryRepository } from './repository.js';

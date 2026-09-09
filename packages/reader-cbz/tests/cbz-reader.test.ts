@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { FileSource } from '@echo-reader/reader-core';
+import type { FileSource } from '@clio-reader/reader-core';
 
 import { CbzReaderAdapter } from '../src/cbz-reader.js';
 import { CbzReaderDocument } from '../src/cbz-document.js';

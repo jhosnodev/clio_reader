@@ -11,11 +11,11 @@
 
 ## Contexto
 
-El MVP de echo_reader necesita guardar libros locales, última posición, preferencias, marcadores y notas sin perfiles ni conexión cloud. El dominio debe poder consumirse desde Windows y Android sin conocer la biblioteca concreta de almacenamiento ni el renderer de cada formato.
+El MVP de clio_reader necesita guardar libros locales, última posición, preferencias, marcadores y notas sin perfiles ni conexión cloud. El dominio debe poder consumirse desde Windows y Android sin conocer la biblioteca concreta de almacenamiento ni el renderer de cada formato.
 
 ## Decisión
 
-Se adopta un dominio TypeScript independiente en `@echo-reader/domain`, contratos de lectura en `@echo-reader/reader-core` y un repositorio local en `@echo-reader/storage`.
+Se adopta un dominio TypeScript independiente en `@clio-reader/domain`, contratos de lectura en `@clio-reader/reader-core` y un repositorio local en `@clio-reader/storage`.
 
 El dominio contiene entidades y validaciones puras. `ReaderFactory` registra adaptadores por formato y crea documentos mediante un contrato común. La persistencia se abstrae mediante `KeyValueStore`; la implementación inicial `InMemoryKeyValueStore` permite pruebas deterministas y sirve como doble de test mientras se conecta el almacenamiento nativo de cada plataforma.
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { InMemoryKeyValueStore, LocalRepository } from '@echo-reader/storage';
+import { InMemoryKeyValueStore, LocalRepository } from '@clio-reader/storage';
 
 import { importBook } from '../src/import-book.js';
 import { listBooks } from '../src/list-books.js';

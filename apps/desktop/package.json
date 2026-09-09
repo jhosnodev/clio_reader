@@ -1,8 +1,8 @@
 {
-  "name": "@echo-reader/desktop",
+  "name": "@clio-reader/desktop",
   "version": "0.1.0",
   "description": "Local-first digital book library manager and reader",
-  "author": "Echo Reader Team",
+  "author": "jhosno.dev",
   "private": true,
   "type": "module",
   "main": "dist-electron/main.js",
@@ -17,13 +17,13 @@
     "generate-icons": "node scripts/generate-icons.js"
   },
   "dependencies": {
-    "@echo-reader/reader-core": "workspace:*",
-    "@echo-reader/reader-cbz": "workspace:*",
-    "@echo-reader/reader-pdf": "workspace:*",
-    "@echo-reader/reader-epub": "workspace:*",
-    "@echo-reader/reader-session": "workspace:*",
-    "@echo-reader/storage": "workspace:*",
-    "@echo-reader/domain": "workspace:*",
+    "@clio-reader/reader-core": "workspace:*",
+    "@clio-reader/reader-cbz": "workspace:*",
+    "@clio-reader/reader-pdf": "workspace:*",
+    "@clio-reader/reader-epub": "workspace:*",
+    "@clio-reader/reader-session": "workspace:*",
+    "@clio-reader/storage": "workspace:*",
+    "@clio-reader/domain": "workspace:*",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

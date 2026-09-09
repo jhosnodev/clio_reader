@@ -1,67 +1,205 @@
-import { useState, useCallback } from 'react';
+/**
+ * App.tsx — Componente raíz de Clio Reader
+ *
+ * Principios aplicados:
+ * - DIP: Crea y expone el repository (abstracción) que los hijos consumen
+ * - SRP: Solo orquesta la navegación entre vistas, no contiene lógica de negocio
+ * - Explícito: Los datos fluyen de arriba hacia abajo via props
+ */
+
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { LibraryView } from './components/LibraryView';
 import { ReaderView } from './components/ReaderView';
 import { useAppLifecycle } from './bridges/lifecycle';
-import { createDesktopBridge } from './bridges/desktop-bridge';
+import { bridge } from './bridges/bridge-singleton';
+import { LocalRepository } from '@clio-reader/storage';
+import { createElectronKVStore } from './bridges/storage';
+import { importBook, listBooks, removeBook, generateId } from '@clio-reader/library';
+import type { Book, BookFormat } from '@clio-reader/domain';
+import { detectBookFormat } from '@clio-reader/reader-core';
+import {
+  applyTheme,
+  savePalettePreference,
+  loadPalettePreference,
+  getPalette,
+} from './themes';
+
+/* ==========================================================================
+   Dependencias — DIP: se crean una vez y se inyectan
+   ========================================================================== */
+
+const store = createElectronKVStore();
+const repository = new LocalRepository(store);
+
+/* ==========================================================================
+   Componente raíz
+   ========================================================================== */
 
 interface OpenBook {
-  uri: string;
-  name: string;
-  format: string;
+  readonly id: string;
+  readonly uri: string;
+  readonly title: string;
+  readonly format: string;
 }
-
-const bridge = createDesktopBridge();
 
 export function App(): JSX.Element {
   const [openBook, setOpenBook] = useState<OpenBook | null>(null);
+  const [books, setBooks] = useState<readonly Book[]>([]);
 
+  // Theme state: palette ID + dark/light mode
+  const [paletteId, setPaletteId] = useState<string>(() => {
+    const saved = loadPalettePreference();
+    return saved?.id ?? 'clio-0';
+  });
+
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const saved = loadPalettePreference();
+    if (saved) return saved.mode;
+    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  });
+
+  const isLoadingRef = useRef(false);
+
+  // Apply theme to DOM whenever paletteId or theme changes
+  useEffect(() => {
+    applyTheme(paletteId, theme);
+    savePalettePreference(paletteId, theme);
+  }, [paletteId, theme]);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  }, []);
+
+  const setPalette = useCallback((id: string) => {
+    setPaletteId(id);
+  }, []);
+
+  /* ----- Ciclo de vida ----- */
   useAppLifecycle(
     () => {
-      console.log('App suspending...');
+      console.log('App suspendiendo...');
     },
     () => {
-      console.log('App resuming...');
+      console.log('App reanudando...');
     },
   );
 
-  const handleImportBook = useCallback(async () => {
-    console.log('[App] handleImportBook called');
+  /* ----- Cargar libros ----- */
+  const loadBooks = useCallback(async () => {
     try {
-      const fileSource = await bridge.pickFile();
-      console.log('[App] fileSource:', fileSource);
-      if (fileSource) {
-        const ext = fileSource.name.split('.').pop()?.toLowerCase() ?? '';
-        setOpenBook({
-          uri: fileSource.uri,
-          name: fileSource.name,
-          format: ext,
-        });
-      }
+      console.log('[loadBooks] cargando libros...');
+      const loadedBooks = await listBooks(repository, {
+        sortBy: 'addedAt',
+        sortDirection: 'desc',
+      });
+      console.log('[loadBooks] libros cargados:', loadedBooks.length);
+      setBooks(loadedBooks);
     } catch (err) {
-      console.error('[App] import error:', err);
+      console.error('[loadBooks] error:', err);
     }
   }, []);
 
-  const handleOpenBook = useCallback(
-    (book: { id: string; title: string; format: string; uri: string }) => {
-      setOpenBook({
-        uri: book.uri,
-        name: book.title,
-        format: book.format,
-      });
-    },
-    [],
-  );
+  /* ----- Importar libro ----- */
+  const handleImportBook = useCallback(async () => {
+    if (isLoadingRef.current) return;
+    isLoadingRef.current = true;
 
-  const handleCloseBook = useCallback(() => {
-    setOpenBook(null);
+    try {
+      console.log('[import] picker abierto');
+      const fileSource = await bridge.pickFile();
+      console.log('[import] archivo seleccionado:', fileSource);
+      if (!fileSource) {
+        console.log('[import] cancelado por el usuario');
+        return;
+      }
+
+      const format = detectBookFormat(fileSource.name);
+      console.log('[import] archivo:', fileSource.name, 'formato detectado:', format);
+
+      const id = generateId();
+      const title = fileSource.name.replace(/\.[^.]+$/, '');
+
+      console.log('[import] guardando libro:', { id, title, uri: fileSource.uri });
+      await importBook(repository, {
+        id,
+        title,
+        format,
+        uri: fileSource.uri,
+      });
+      console.log('[import] libro guardado');
+
+      await loadBooks();
+      console.log('[import] lista de libros recargada');
+    } catch (err) {
+      console.error('[import] error:', err);
+    } finally {
+      isLoadingRef.current = false;
+    }
+  }, [loadBooks]);
+
+  /* ----- Abrir libro ----- */
+  const handleOpenBook = useCallback((book: Book) => {
+    console.log('[openBook]', book.id, book.title);
+    setOpenBook({
+      id: book.id,
+      uri: book.uri,
+      title: book.title,
+      format: book.format,
+    });
   }, []);
 
+  /* ----- Cerrar libro ----- */
+  const handleCloseBook = useCallback(() => {
+    console.log('[closeBook]');
+    setOpenBook(null);
+    loadBooks();
+  }, [loadBooks]);
+
+  /* ----- Eliminar libro ----- */
+  const handleRemoveBook = useCallback(
+    async (bookId: string, bookTitle: string) => {
+      const confirmed = window.confirm(`¿Estás seguro de que quieres eliminar "${bookTitle}"?`);
+      if (!confirmed) return;
+
+      try {
+        console.log('[removeBook]', bookId, bookTitle);
+        await removeBook(repository, bookId);
+        await loadBooks();
+        console.log('[removeBook] eliminado');
+      } catch (err) {
+        console.error('[removeBook] error:', err);
+      }
+    },
+    [loadBooks],
+  );
+
+  /* ----- Renderizado ----- */
   if (openBook) {
     return (
-      <ReaderView fileUri={openBook.uri} format={openBook.format} onClose={handleCloseBook} />
+      <ReaderView
+        bookId={openBook.id}
+        fileUri={openBook.uri}
+        format={openBook.format}
+        repository={repository}
+        paletteId={paletteId}
+        theme={theme}
+        onClose={handleCloseBook}
+      />
     );
   }
 
-  return <LibraryView onOpenBook={handleOpenBook} onImportBook={handleImportBook} />;
+  return (
+    <LibraryView
+      books={books}
+      theme={theme}
+      paletteId={paletteId}
+      palette={getPalette(paletteId)}
+      onToggleTheme={toggleTheme}
+      onSetPalette={setPalette}
+      onOpenBook={handleOpenBook}
+      onImportBook={handleImportBook}
+      onRemoveBook={handleRemoveBook}
+      onLoadBooks={loadBooks}
+    />
+  );
 }

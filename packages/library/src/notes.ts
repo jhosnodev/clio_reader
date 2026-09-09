@@ -1,4 +1,4 @@
-import type { Note, ReaderLocator } from '@echo-reader/domain';
+import type { Note, ReaderLocator } from '@clio-reader/domain';
 
 import { BookNotFoundError, NoteNotFoundError } from './errors.js';
 import { generateId } from './id.js';

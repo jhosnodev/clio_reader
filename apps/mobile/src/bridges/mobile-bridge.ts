@@ -1,5 +1,5 @@
 import * as DocumentPicker from 'expo-document-picker';
-import type { FileSource } from '@echo-reader/reader-core';
+import type { FileSource } from '@clio-reader/reader-core';
 
 export interface MobileBridge {
   readonly platform: 'mobile';

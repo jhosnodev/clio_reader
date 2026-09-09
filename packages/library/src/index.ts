@@ -11,6 +11,7 @@ export { listBooks } from './list-books.js';
 export { getBook } from './get-book.js';
 export { removeBook } from './remove-book.js';
 export { updateProgress } from './update-progress.js';
+export { generateId } from './id.js';
 export {
   getGlobalPreferences,
   saveGlobalPreferences,

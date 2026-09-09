@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { InMemoryKeyValueStore, LocalRepository } from '@echo-reader/storage';
+import { InMemoryKeyValueStore, LocalRepository } from '@clio-reader/storage';
 
 import { BookNotFoundError } from '../src/errors.js';
 import { getBook } from '../src/get-book.js';

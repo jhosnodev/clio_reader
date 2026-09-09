@@ -1,9 +1,14 @@
-import type { Bookmark, ReaderLocator } from '@echo-reader/domain';
-import type { LibraryRepository } from '@echo-reader/library';
-import { createBookmark, listBookmarks, removeBookmark } from '@echo-reader/library';
-import { BookmarkNotFoundError } from '@echo-reader/library';
+import type { Bookmark, ReaderLocator } from '@clio-reader/domain';
+import type { LibraryRepository } from '@clio-reader/library';
+import { createBookmark, listBookmarks, removeBookmark } from '@clio-reader/library';
+import { BookmarkNotFoundError } from '@clio-reader/library';
 
-import { applyFilter, applySort, type FilterOptions, type SortOptions } from './annotation-filter.js';
+import {
+  applyFilter,
+  applySort,
+  type FilterOptions,
+  type SortOptions,
+} from './annotation-filter.js';
 import { throwIfInvalid, validateBookmarkInput } from './annotation-validator.js';
 import { DuplicateLocatorError } from './errors.js';
 

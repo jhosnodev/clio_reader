@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `@echo-reader/library` package contains the business logic use cases that orchestrate domain entities and storage repositories. It is the core of the application's functionality, sitting between the domain/storage layers and the UI layer.
+The `@clio-reader/library` package contains the business logic use cases that orchestrate domain entities and storage repositories. It is the core of the application's functionality, sitting between the domain/storage layers and the UI layer.
 
 ## Architecture
 
@@ -10,10 +10,10 @@ The `@echo-reader/library` package contains the business logic use cases that or
 UI Layer (apps/desktop, apps/mobile)
         │
         ▼
-Library Use Cases (@echo-reader/library)   ← this package
+Library Use Cases (@clio-reader/library)   ← this package
         │
-        ├──▶ @echo-reader/domain (entities, validation)
-        └──▶ @echo-reader/storage (persistence)
+        ├──▶ @clio-reader/domain (entities, validation)
+        └──▶ @clio-reader/storage (persistence)
 ```
 
 ### Design Principles
@@ -35,10 +35,12 @@ Adds a new book to the library.
 **Output**: `Book`
 
 **Error scenarios**:
+
 - `DuplicateBookError` — A book with the same id already exists.
 - `DomainValidationError` — Invalid id, title, or uri (empty strings).
 
 **Flow**:
+
 1. Check repository for existing book with same id.
 2. Validate via `createBook()` from domain.
 3. Persist via `repo.upsertBook()`.
@@ -67,6 +69,7 @@ Returns a book along with its reading progress and per-book preferences.
 **Output**: `BookDetails` — `{ book, progress, preferences }`
 
 **Error scenarios**:
+
 - `BookNotFoundError` — No book with the given id exists.
 
 ---
@@ -80,6 +83,7 @@ Removes a book and all cascaded data (progress, bookmarks, notes, per-book prefe
 **Output**: `void`
 
 **Error scenarios**:
+
 - `BookNotFoundError` — No book with the given id exists.
 
 **Note**: Cascading is handled by `LocalRepository.removeBook()`. The library use case only validates existence.
@@ -95,6 +99,7 @@ Saves the current reading position for a book.
 **Output**: `ReadingProgress`
 
 **Error scenarios**:
+
 - `BookNotFoundError` — No book with the given id exists.
 - `DomainValidationError` — Invalid percent (non-finite).
 
@@ -106,14 +111,15 @@ Saves the current reading position for a book.
 
 Four functions for global and per-book reader preferences:
 
-| Function | Input | Output |
-|---|---|---|
-| `getGlobalPreferences` | — | `ReaderPreferences` |
-| `saveGlobalPreferences` | `ReaderPreferences` | `void` |
-| `getBookPreferences` | `bookId` | `Partial<ReaderPreferences>` |
-| `saveBookPreferences` | `bookId, Partial<ReaderPreferences>` | `void` |
+| Function                | Input                                | Output                       |
+| ----------------------- | ------------------------------------ | ---------------------------- |
+| `getGlobalPreferences`  | —                                    | `ReaderPreferences`          |
+| `saveGlobalPreferences` | `ReaderPreferences`                  | `void`                       |
+| `getBookPreferences`    | `bookId`                             | `Partial<ReaderPreferences>` |
+| `saveBookPreferences`   | `bookId, Partial<ReaderPreferences>` | `void`                       |
 
 **Error scenarios**:
+
 - `DomainValidationError` — Invalid colors, fontScale (0.8–2), or lineHeight (1–2.5).
 
 **Design**: Per-book preferences are stored as partial overrides. The storage layer merges them with global defaults when needed.
@@ -122,13 +128,14 @@ Four functions for global and per-book reader preferences:
 
 ### 7. Manage Bookmarks
 
-| Function | Input | Output |
-|---|---|---|
-| `createBookmark` | `{ bookId, locator, label? }` | `Bookmark` |
-| `listBookmarks` | `bookId` | `readonly Bookmark[]` |
-| `removeBookmark` | `bookmarkId, bookId` | `void` |
+| Function         | Input                         | Output                |
+| ---------------- | ----------------------------- | --------------------- |
+| `createBookmark` | `{ bookId, locator, label? }` | `Bookmark`            |
+| `listBookmarks`  | `bookId`                      | `readonly Bookmark[]` |
+| `removeBookmark` | `bookmarkId, bookId`          | `void`                |
 
 **Error scenarios**:
+
 - `BookNotFoundError` — Book doesn't exist (on create).
 - `BookmarkNotFoundError` — Bookmark doesn't exist (on remove).
 
@@ -138,14 +145,15 @@ Four functions for global and per-book reader preferences:
 
 ### 8. Manage Notes
 
-| Function | Input | Output |
-|---|---|---|
-| `createNote` | `{ bookId, locator, body, selectedText? }` | `Note` |
-| `listNotes` | `bookId` | `readonly Note[]` |
-| `updateNote` | `{ noteId, bookId, body?, locator?, selectedText? }` | `Note` |
-| `removeNote` | `noteId, bookId` | `void` |
+| Function     | Input                                                | Output            |
+| ------------ | ---------------------------------------------------- | ----------------- |
+| `createNote` | `{ bookId, locator, body, selectedText? }`           | `Note`            |
+| `listNotes`  | `bookId`                                             | `readonly Note[]` |
+| `updateNote` | `{ noteId, bookId, body?, locator?, selectedText? }` | `Note`            |
+| `removeNote` | `noteId, bookId`                                     | `void`            |
 
 **Error scenarios**:
+
 - `BookNotFoundError` — Book doesn't exist (on create).
 - `NoteNotFoundError` — Note doesn't exist (on update/remove).
 - `DomainValidationError` — Empty note body (via storage validation).
@@ -154,13 +162,13 @@ Four functions for global and per-book reader preferences:
 
 ## Error Classes
 
-| Error | Package | When |
-|---|---|---|
-| `BookNotFoundError` | library | Book not found by id |
-| `DuplicateBookError` | library | Import with existing id |
+| Error                   | Package | When                     |
+| ----------------------- | ------- | ------------------------ |
+| `BookNotFoundError`     | library | Book not found by id     |
+| `DuplicateBookError`    | library | Import with existing id  |
 | `BookmarkNotFoundError` | library | Bookmark not found by id |
-| `NoteNotFoundError` | library | Note not found by id |
-| `DomainValidationError` | domain | Invalid entity data |
+| `NoteNotFoundError`     | library | Note not found by id     |
+| `DomainValidationError` | domain  | Invalid entity data      |
 
 ## Repository Interface
 
@@ -186,13 +194,14 @@ interface LibraryRepository {
 }
 ```
 
-`LocalRepository` from `@echo-reader/storage` satisfies this interface structurally (duck typing).
+`LocalRepository` from `@clio-reader/storage` satisfies this interface structurally (duck typing).
 
 ## Testing
 
 Tests use `InMemoryKeyValueStore` + `LocalRepository` as the test double, providing full isolation between tests.
 
 **Test coverage areas**:
+
 - Happy path for each use case
 - Error cases (not found, duplicates, validation)
 - Data isolation between books

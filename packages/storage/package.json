@@ -1,14 +1,21 @@
 {
-  "name": "@echo-reader/storage",
+  "name": "@clio-reader/storage",
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "scripts": {
     "check": "tsc -p tsconfig.json",
     "lint": "tsc -p tsconfig.json --noEmit",
     "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
-    "@echo-reader/domain": "workspace:*"
+    "@clio-reader/domain": "workspace:*"
   }
 }

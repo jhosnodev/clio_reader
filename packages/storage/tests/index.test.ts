@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { createBook, createReadingProgress, createDefaultPreferences } from '@echo-reader/domain';
+import { createBook, createReadingProgress, createDefaultPreferences } from '@clio-reader/domain';
 import { InMemoryKeyValueStore, LocalRepository, PersistenceError } from '../src/index.js';
 
 describe('LocalRepository', () => {
@@ -68,7 +68,7 @@ describe('LocalRepository', () => {
 
   it('reports invalid persisted JSON', async () => {
     const store = new InMemoryKeyValueStore();
-    await store.set('echo-reader.state', '{invalid');
+    await store.set('clio-reader.state', '{invalid');
 
     await expect(new LocalRepository(store).getState()).rejects.toBeInstanceOf(PersistenceError);
   });

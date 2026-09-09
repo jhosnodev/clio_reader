@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import JSZip from 'jszip';
 
-import type { FileSource } from '@echo-reader/reader-core';
+import type { FileSource } from '@clio-reader/reader-core';
 
 import {
   EpubReaderDocument,
@@ -9,7 +9,7 @@ import {
   EpubDocumentNotOpenError,
   EpubNavigationError,
 } from '../src/epub-document.js';
-import type { EpubLocator } from '@echo-reader/domain';
+import type { EpubLocator } from '@clio-reader/domain';
 
 async function createMinimalEpub(
   files: Record<string, string>,
@@ -494,6 +494,226 @@ describe('EpubReaderDocument', () => {
 
       const count = await doc.getChapterCount();
       expect(count).toBe(2);
+
+      await doc.close();
+    });
+  });
+
+  describe('getImageData', () => {
+    it('returns image data for a valid image path', async () => {
+      const pngBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+      const zip = new JSZip();
+      zip.file('mimetype', 'application/epub+zip');
+      zip.file('META-INF/container.xml', `<?xml version="1.0" encoding="UTF-8"?>
+<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0">
+  <rootfiles>
+    <rootfile full-path="content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>`);
+      zip.file('content.opf', `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:title>Test</dc:title><dc:language>en</dc:language><dc:identifier id="uid">test</dc:identifier>
+  </metadata>
+  <manifest>
+    <item id="ch1" href="ch1.xhtml" media-type="application/xhtml+xml"/>
+    <item id="img1" href="images/figure1.png" media-type="image/png"/>
+  </manifest>
+  <spine><itemref idref="ch1"/></spine>
+</package>`);
+      zip.file('toc.ncx', `<?xml version="1.0"?><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><navMap></navMap></ncx>`);
+      zip.file('ch1.xhtml', '<html><body><img src="images/figure1.png"/></body></html>');
+      zip.file('images/figure1.png', pngBytes);
+
+      const epubData = await zip.generateAsync({ type: 'uint8array' });
+      fetchSpy.mockResolvedValue(new Response(new Blob([epubData.buffer as ArrayBuffer])));
+
+      const doc = new EpubReaderDocument({ uri: 'file:///test.epub', name: 'test.epub' });
+      await doc.open();
+
+      const result = await doc.getImageData('images/figure1.png');
+
+      expect(result).not.toBeNull();
+      expect(result!.mimeType).toBe('image/png');
+      expect(result!.data).toBeInstanceOf(Uint8Array);
+      expect(result!.data.byteLength).toBe(pngBytes.byteLength);
+      expect(Array.from(result!.data)).toEqual(Array.from(pngBytes));
+
+      await doc.close();
+    });
+
+    it('returns null for a missing image', async () => {
+      const doc = await setupDocument({
+        'ch1.xhtml': '<html><body><img src="nonexistent.png"/></body></html>',
+      });
+
+      const result = await doc.getImageData('nonexistent.png');
+
+      expect(result).toBeNull();
+
+      await doc.close();
+    });
+
+    it('resolves image path relative to chapter directory', async () => {
+      const pngBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+      const zip = new JSZip();
+      zip.file('mimetype', 'application/epub+zip');
+      zip.file('META-INF/container.xml', `<?xml version="1.0" encoding="UTF-8"?>
+<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0">
+  <rootfiles>
+    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>`);
+      zip.file('OEBPS/content.opf', `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:title>Test</dc:title><dc:language>en</dc:language><dc:identifier id="uid">test</dc:identifier>
+  </metadata>
+  <manifest>
+    <item id="ch1" href="chapter1.xhtml" media-type="application/xhtml+xml"/>
+    <item id="img1" href="images/fig1.png" media-type="image/png"/>
+  </manifest>
+  <spine><itemref idref="ch1"/></spine>
+</package>`);
+      zip.file('toc.ncx', `<?xml version="1.0"?><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><navMap></navMap></ncx>`);
+      zip.file('OEBPS/chapter1.xhtml', '<html><body><img src="images/fig1.png"/></body></html>');
+      zip.file('OEBPS/images/fig1.png', pngBytes);
+
+      const epubData = await zip.generateAsync({ type: 'uint8array' });
+      fetchSpy.mockResolvedValue(new Response(new Blob([epubData.buffer as ArrayBuffer])));
+
+      const doc = new EpubReaderDocument({ uri: 'file:///test.epub', name: 'test.epub' });
+      await doc.open();
+
+      const result = await doc.getImageData('images/fig1.png');
+
+      expect(result).not.toBeNull();
+      expect(result!.mimeType).toBe('image/png');
+      expect(result!.data.byteLength).toBe(pngBytes.byteLength);
+
+      await doc.close();
+    });
+
+    it('returns correct MIME type for JPEG images', async () => {
+      const jpgBytes = new Uint8Array([0xff, 0xd8, 0xff, 0xe0]);
+      const zip = new JSZip();
+      zip.file('mimetype', 'application/epub+zip');
+      zip.file('META-INF/container.xml', `<?xml version="1.0" encoding="UTF-8"?>
+<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0">
+  <rootfiles>
+    <rootfile full-path="content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>`);
+      zip.file('content.opf', `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:title>Test</dc:title><dc:language>en</dc:language><dc:identifier id="uid">test</dc:identifier>
+  </metadata>
+  <manifest>
+    <item id="ch1" href="ch1.xhtml" media-type="application/xhtml+xml"/>
+    <item id="img1" href="photo.jpg" media-type="image/jpeg"/>
+  </manifest>
+  <spine><itemref idref="ch1"/></spine>
+</package>`);
+      zip.file('toc.ncx', `<?xml version="1.0"?><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><navMap></navMap></ncx>`);
+      zip.file('ch1.xhtml', '<html><body><img src="photo.jpg"/></body></html>');
+      zip.file('photo.jpg', jpgBytes);
+
+      const epubData = await zip.generateAsync({ type: 'uint8array' });
+      fetchSpy.mockResolvedValue(new Response(new Blob([epubData.buffer as ArrayBuffer])));
+
+      const doc = new EpubReaderDocument({ uri: 'file:///test.epub', name: 'test.epub' });
+      await doc.open();
+
+      const result = await doc.getImageData('photo.jpg');
+
+      expect(result).not.toBeNull();
+      expect(result!.mimeType).toBe('image/jpeg');
+
+      await doc.close();
+    });
+
+    it('does not re-parse ZIP on multiple getImageData calls', async () => {
+      const pngBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+      const zip = new JSZip();
+      zip.file('mimetype', 'application/epub+zip');
+      zip.file('META-INF/container.xml', `<?xml version="1.0" encoding="UTF-8"?>
+<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0">
+  <rootfiles>
+    <rootfile full-path="content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>`);
+      zip.file('content.opf', `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:title>Test</dc:title><dc:language>en</dc:language><dc:identifier id="uid">test</dc:identifier>
+  </metadata>
+  <manifest>
+    <item id="ch1" href="ch1.xhtml" media-type="application/xhtml+xml"/>
+    <item id="img1" href="a.png" media-type="image/png"/>
+    <item id="img2" href="b.png" media-type="image/png"/>
+  </manifest>
+  <spine><itemref idref="ch1"/></spine>
+</package>`);
+      zip.file('toc.ncx', `<?xml version="1.0"?><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><navMap></navMap></ncx>`);
+      zip.file('ch1.xhtml', '<html><body></body></html>');
+      zip.file('a.png', pngBytes);
+      zip.file('b.png', new Uint8Array([0x89, 0x50, 0x4e, 0x48]));
+
+      const epubData = await zip.generateAsync({ type: 'uint8array' });
+      fetchSpy.mockResolvedValue(new Response(new Blob([epubData.buffer as ArrayBuffer])));
+
+      const loadAsyncSpy = vi.spyOn(JSZip, 'loadAsync');
+
+      const doc = new EpubReaderDocument({ uri: 'file:///test.epub', name: 'test.epub' });
+      await doc.open();
+
+      const callsAfterOpen = loadAsyncSpy.mock.calls.length;
+
+      await doc.getImageData('a.png');
+      await doc.getImageData('b.png');
+
+      expect(loadAsyncSpy.mock.calls.length).toBe(callsAfterOpen);
+
+      loadAsyncSpy.mockRestore();
+      await doc.close();
+    });
+
+    it('falls back to filename-only match when path resolution fails', async () => {
+      const pngBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+      const zip = new JSZip();
+      zip.file('mimetype', 'application/epub+zip');
+      zip.file('META-INF/container.xml', `<?xml version="1.0" encoding="UTF-8"?>
+<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0">
+  <rootfiles>
+    <rootfile full-path="content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>`);
+      zip.file('content.opf', `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:title>Test</dc:title><dc:language>en</dc:language><dc:identifier id="uid">test</dc:identifier>
+  </metadata>
+  <manifest>
+    <item id="ch1" href="ch1.xhtml" media-type="application/xhtml+xml"/>
+    <item id="img1" href="deep/nested/path/figure.png" media-type="image/png"/>
+  </manifest>
+  <spine><itemref idref="ch1"/></spine>
+</package>`);
+      zip.file('toc.ncx', `<?xml version="1.0"?><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><navMap></navMap></ncx>`);
+      zip.file('ch1.xhtml', '<html><body><img src="wrong/path/figure.png"/></body></html>');
+      zip.file('deep/nested/path/figure.png', pngBytes);
+
+      const epubData = await zip.generateAsync({ type: 'uint8array' });
+      fetchSpy.mockResolvedValue(new Response(new Blob([epubData.buffer as ArrayBuffer])));
+
+      const doc = new EpubReaderDocument({ uri: 'file:///test.epub', name: 'test.epub' });
+      await doc.open();
+
+      const result = await doc.getImageData('wrong/path/figure.png');
+
+      expect(result).not.toBeNull();
+      expect(result!.data.byteLength).toBe(pngBytes.byteLength);
 
       await doc.close();
     });

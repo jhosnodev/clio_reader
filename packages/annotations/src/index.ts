@@ -1,9 +1,6 @@
 export type { FilterOptions, SortField, SortOrder, SortOptions } from './annotation-filter.js';
 export type { AnnotationExportData } from './annotation-export.js';
-export type {
-  CreateBookmarkOptions,
-  ListBookmarksOptions,
-} from './bookmark-manager.js';
+export type { CreateBookmarkOptions, ListBookmarksOptions } from './bookmark-manager.js';
 export type { CreateNoteOptions, ListNotesOptions } from './note-manager.js';
 
 export {

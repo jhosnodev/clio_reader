@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { InMemoryKeyValueStore, LocalRepository } from '@echo-reader/storage';
-import { importBook } from '@echo-reader/library';
+import { InMemoryKeyValueStore, LocalRepository } from '@clio-reader/storage';
+import { importBook } from '@clio-reader/library';
 
 import {
   createBookmarkManaged,
@@ -46,10 +46,15 @@ describe('BookmarkManager', () => {
       const repo = createRepo();
       await setupBook(repo);
 
-      const bookmark = await createBookmarkManaged(repo, 'book-1', {
-        format: 'epub',
-        href: 'chapter1.xhtml',
-      }, { label: 'Chapter 1' });
+      const bookmark = await createBookmarkManaged(
+        repo,
+        'book-1',
+        {
+          format: 'epub',
+          href: 'chapter1.xhtml',
+        },
+        { label: 'Chapter 1' },
+      );
 
       expect(bookmark.label).toBe('Chapter 1');
     });

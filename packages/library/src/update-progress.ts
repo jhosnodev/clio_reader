@@ -2,7 +2,7 @@ import {
   createReadingProgress,
   type ReadingProgress,
   type ReaderLocator,
-} from '@echo-reader/domain';
+} from '@clio-reader/domain';
 
 import { BookNotFoundError } from './errors.js';
 import type { LibraryRepository } from './repository.js';

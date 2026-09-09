@@ -13,14 +13,14 @@ if (!existsSync(RESOURCES_DIR)) {
 }
 
 function crc32(buf) {
-  let crc = 0xFFFFFFFF;
+  let crc = 0xffffffff;
   for (let i = 0; i < buf.length; i++) {
     crc ^= buf[i];
     for (let j = 0; j < 8; j++) {
-      crc = crc & 1 ? (crc >>> 1) ^ 0xEDB88320 : crc >>> 1;
+      crc = crc & 1 ? (crc >>> 1) ^ 0xedb88320 : crc >>> 1;
     }
   }
-  return (crc ^ 0xFFFFFFFF) >>> 0;
+  return (crc ^ 0xffffffff) >>> 0;
 }
 
 function createChunk(type, data) {
@@ -33,32 +33,21 @@ function createChunk(type, data) {
 }
 
 function generatePNG() {
-  const w = 256, h = 256;
-  const bgR = 59, bgG = 130, bgB = 246;
+  const w = 256,
+    h = 256;
+  const bgR = 59,
+    bgG = 130,
+    bgB = 246;
 
   const E = [
-    0b1111111111111110,
-    0b1111111111111110,
-    0b1100000000000000,
-    0b1100000000000000,
-    0b1111111111100000,
-    0b1111111111100000,
-    0b1100000000000000,
-    0b1100000000000000,
-    0b1111111111111110,
-    0b1111111111111110,
+    0b1111111111111110, 0b1111111111111110, 0b1100000000000000, 0b1100000000000000,
+    0b1111111111100000, 0b1111111111100000, 0b1100000000000000, 0b1100000000000000,
+    0b1111111111111110, 0b1111111111111110,
   ];
   const R = [
-    0b1111111111111110,
-    0b1111111111111110,
-    0b1100000000011000,
-    0b1100000000011000,
-    0b1111111111110000,
-    0b1111111111111000,
-    0b1100000000110000,
-    0b1100000000011000,
-    0b1100000000001110,
-    0b1100000000001110,
+    0b1111111111111110, 0b1111111111111110, 0b1100000000011000, 0b1100000000011000,
+    0b1111111111110000, 0b1111111111111000, 0b1100000000110000, 0b1100000000011000,
+    0b1100000000001110, 0b1100000000001110,
   ];
 
   const pixelData = new Uint8Array(w * h * 4);
@@ -73,7 +62,8 @@ function generatePNG() {
   }
 
   const scale = 8;
-  const charW = 16, charH = 10;
+  const charW = 16,
+    charH = 10;
   const gap = 3 * scale;
   const totalW = (charW * 2 + gap) * scale;
   const startX = Math.floor((w - totalW) / 2);
@@ -124,7 +114,8 @@ function generatePNG() {
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(w, 0);
   ihdr.writeUInt32BE(h, 4);
-  ihdr[8] = 8; ihdr[9] = 6;
+  ihdr[8] = 8;
+  ihdr[9] = 6;
 
   const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
   return Buffer.concat([
@@ -137,14 +128,14 @@ function generatePNG() {
 
 function generateICO(pngBuffer) {
   const header = Buffer.alloc(6);
-  header.writeUInt16LE(1, 2);  // ICO type
-  header.writeUInt16LE(1, 4);  // 1 image
+  header.writeUInt16LE(1, 2); // ICO type
+  header.writeUInt16LE(1, 4); // 1 image
 
   const dir = Buffer.alloc(16);
-  dir.writeUInt16LE(1, 4);     // planes
-  dir.writeUInt16LE(32, 6);    // bpp
+  dir.writeUInt16LE(1, 4); // planes
+  dir.writeUInt16LE(32, 6); // bpp
   dir.writeUInt32LE(pngBuffer.length, 8);
-  dir.writeUInt32LE(22, 12);   // offset
+  dir.writeUInt32LE(22, 12); // offset
 
   return Buffer.concat([header, dir, pngBuffer]);
 }

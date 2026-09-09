@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { KeyValueStore } from '@echo-reader/storage';
+import type { KeyValueStore } from '@clio-reader/storage';
 
 const mockElectronAPI = {
   readStorage: vi.fn(),

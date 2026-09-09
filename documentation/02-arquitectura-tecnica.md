@@ -2,7 +2,7 @@
 
 | Campo                             | Valor                              |
 | --------------------------------- | ---------------------------------- |
-| **Nombre**                        | echo_reader — Arquitectura técnica |
+| **Nombre**                        | clio_reader — Arquitectura técnica |
 | **Autor**                         | Manus AI                           |
 | **Fecha de creación**             | 28 de agosto de 2026               |
 | **Fecha de última actualización** | 28 de agosto de 2026               |
