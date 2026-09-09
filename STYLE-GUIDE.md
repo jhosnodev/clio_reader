@@ -8,204 +8,200 @@ antes de implementar.
 
 ## 1. Paleta de colores
 
-### Superficies (tema oscuro por defecto)
+### Sistema de temas
 
-| Token         | Valor       | Uso                                      |
-|---------------|-------------|------------------------------------------|
-| `bg`          | `#100f18`   | Fondo principal de la app                |
-| `surface-1`   | `#16141f`   | Rail (sidebar), gradiente inferior       |
-| `surface-2`   | `#1c1a28`   | Chips inactivos, inputs, selects, badges |
-| `surface-3`   | `#232032`   | Tooltips, bordes de cards internos       |
-| `border`      | `#332f47`   | Bordes de todos los elementos            |
+La app soporta **10 paletas de color** × **2 modos** (dark/light) = 20 combinaciones.
+Cada paleta redefine los tokens CSS. El light mode es idéntico para todas.
 
-### Superficies (tema claro — alabastro / piedra)
+### Tokens de paleta (dark mode)
 
-| Token         | Valor       | Uso                                      |
-|---------------|-------------|------------------------------------------|
-| `bg`          | `#eceee9`   | Fondo principal de la app                |
-| `surface-1`   | `#f6f7f3`   | Rail (sidebar)                           |
-| `surface-2`   | `#ffffff`   | Chips inactivos, inputs, selects, badges |
-| `surface-3`   | `#e6e8e1`   | Tooltips, bordes de cards internos       |
-| `border`      | `#e0e3d9`   | Bordes de todos los elementos            |
+| Token | Rol | Ejemplo (clio-3 Forest) |
+|-------|-----|-------------------------|
+| `--ink-950` | Fondo principal | `#0b1412` |
+| `--ink-900` | Rail / sidebar | `#121e19` |
+| `--ink-850` | Chips, inputs, badges | `#1a2b23` |
+| `--ink-800` | Tooltips, bordes internos | `#22362c` |
+| `--ink-700` | Superficie intermedia | `#2b4136` |
+| `--ink-600` | Superficie ligera | `#364f42` |
+| `--ink-500` | Bordes activos | `#476354` |
+| `--line` | Bordes | `#2b3a30` |
+| `--gold` | Acento primario | `#a9ab3a` |
+| `--gold-bright` | Gradiente superior | `#c8c95e` |
+| `--gold-dim` | Acento apagado | `#8a8c2f` |
+| `--verdigris` | Acento secundario | `#85b396` |
+| `--verdigris-dim` | Secundario apagado | `#6d947c` |
+| `--rose` | Acento terciario | `#8f5c3c` |
+| `--tx-hi` | Texto alto contraste | `#efe9dd` |
+| `--tx` | Texto normal | `#cbc4ba` |
+| `--tx-lo` | Texto bajo contraste | `#8b8598` |
+| `--tx-faint` | Texto deshabilitado | `#6a657a` |
+| `--on-gold` | Texto sobre acento | `#0b1412` |
+| `--on-gold-dim` | Texto sobre acento apagado | `#0b1412` |
+| `--accent-strong` | Acento fuerte (CTAs) | `#8a8c2f` |
 
-### Acentos
+### Tokens RGB (para `rgba()` dinámico)
 
-| Token         | Valores                          | Uso                                 |
-|---------------|----------------------------------|-------------------------------------|
-| `earth`       | `#3b392a` / `#655d4a` / `#a46a66` | Botones activos, gradientes, indicadores |
-| `verdigris`   | `#4fa393`                        | Acentos secundarios, progreso       |
-| `verdigris-l` | `#6fd0bf`                        | Gradiente de barra de progreso      |
+| Token | Valor | Uso |
+|-------|-------|-----|
+| `--gold-rgb` | `169,171,58` | `rgba(var(--gold-rgb),.35)` |
+| `--verdigris-rgb` | `133,179,150` | `rgba(var(--verdigris-rgb),.2)` |
+| `--ink950-rgb` | `11,20,18` | `rgba(var(--ink950-rgb),.8)` |
+| `--rose-rgb` | `143,92,60` | `rgba(var(--rose-rgb),.15)` |
 
-### Texto (tema oscuro)
+### Tokens de paleta (light mode — idéntico para todas)
 
-| Token      | Valor     | Uso                                         |
-|------------|-----------|---------------------------------------------|
-| `text-hi`  | `#efe9dd` | Títulos principales, texto en gradientes     |
-| `text-n`   | `#cbc4ba` | Cuerpo de texto, valores de selects          |
-| `text-lo`  | `#8b8598` | Labels secundarios, metadata, chips inactivos |
-| `text-f`   | `#6a657a` | Hints vacíos, counts, texto deshabilitado    |
+| Token | Valor | Uso |
+|-------|-------|-----|
+| `--ink-950` | `#eceee9` | Fondo principal |
+| `--ink-900` | `#f6f7f3` | Rail |
+| `--ink-850` | `#ffffff` | Chips, inputs |
+| `--ink-800` | `#e6e8e1` | Tooltips |
+| `--line` | `#e0e3d9` | Bordes |
+| `--tx-hi` | `#1e2019` | Texto alto |
+| `--tx` | `#474a40` | Texto normal |
+| `--tx-lo` | `#7b7e70` | Texto bajo |
+| `--tx-faint` | `#a6a897` | Texto deshabilitado |
+| `--on-gold` | `#1a1710` | Texto sobre acento |
+| `--accent-strong` | `#8a6d12` | Acento fuerte |
 
-### Texto (tema claro)
+### Paletas disponibles
 
-| Token      | Valor     | Uso                                         |
-|------------|-----------|---------------------------------------------|
-| `text-hi`  | `#1e2019` | Títulos principales, texto en gradientes     |
-| `text-n`   | `#474a40` | Cuerpo de texto, valores de selects          |
-| `text-lo`  | `#7b7e70` | Labels secundarios, metadata, chips inactivos |
-| `text-f`   | `#a6a897` | Hints vacíos, counts, texto deshabilitado    |
-
----
-
-## 2. Temas (dark / light)
-
-La app soporta dos temas controlados por `data-app-theme` en el elemento `.app`.
-El toggle se encuentra en el **Rail (sidebar)** como botón sol/luna.
-
-### Variables CSS
-
-```css
-/* Tema oscuro (default) */
-.app {
-  --ink-950: #100f18;   /* bg */
-  --ink-900: #16141f;   /* surface-1 (rail) */
-  --ink-850: #1c1a28;   /* surface-2 */
-  --ink-800: #232032;   /* surface-3 */
-  --line: #332f47;       /* border */
-  --tx-hi: #efe9dd;     /* text-hi */
-  --tx: #cbc4ba;        /* text-n */
-  --tx-lo: #8b8598;     /* text-lo */
-  --tx-faint: #6a657a;  /* text-f */
-  --on-moss: #1a1710;   /* texto sobre acento */
-  --accent-strong: #e6c874;
-}
-
-/* Tema claro */
-.app[data-app-theme="light"] {
-  --ink-950: #eceee9;   /* bg */
-  --ink-900: #f6f7f3;   /* surface-1 (rail) */
-  --ink-850: #ffffff;   /* surface-2 */
-  --ink-800: #e6e8e1;   /* surface-3 */
-  --line: #e0e3d9;       /* border */
-  --tx-hi: #1e2019;     /* text-hi */
-  --tx: #474a40;        /* text-n */
-  --tx-lo: #7b7e70;     /* text-lo */
-  --tx-faint: #a6a897;  /* text-f */
-  --on-gold: #1a1710;   /* texto sobre oro (constante) */
-  --accent-strong: #8a6d12;
-}
-```
+| ID | Nombre | gold | verdigris | rose |
+|----|--------|------|-----------|------|
+| clio-0 | Teal | #6aae9d | #4f8290 | #9e8e91 |
+| clio-1 | Earth | #8ab0d8 | #7f7397 | #96687f |
+| clio-2 | Plum | #cca87b | #5b7d73 | #9c524e |
+| clio-3 | Forest | #a9ab3a | #85b396 | #8f5c3c |
+| clio-4 | Mauve | #fbb954 | #788a87 | #b0494e |
+| clio-5 | Purple | #c9a24b | #4fa393 | #c17b7b |
+| clio-6 | Slate | #96a2b3 | #7d8aa0 | #8a8f9e |
+| clio-7 | Violet | #8977c9 | #fc9bd3 | #8fd6e8 |
+| clio-8 | Black | #be9585 | #5c7a66 | #966f7a |
+| clio-9 | Neon | #0098db | #ff0546 | #c33a60 |
 
 ### Persistencia
 
-- El tema se persiste en `localStorage` con la key `clio-app-theme`.
-- Valores válidos: `'dark'` | `'light'`.
-- Si no hay valor almacenado, se usa `prefers-color-scheme` del sistema.
-
-### Comportamiento del toggle
-
-- **Rail**: Botón sol/luna al final del sidebar (debajo de la nav).
-- **Iconos**: Sol visible en tema oscuro, luna visible en tema claro.
-- **Color del icono**: `var(--ink)` en tema oscuro, `var(--moss)` en tema claro.
-- **Hover**: Cambia a `var(--dust)` / `var(--wine)` respectivamente.
-- **Tooltip**: Muestra "Tema claro" o "Tema oscuro" según el estado actual.
+- `localStorage` key: `clio-palette`
+- Valor: JSON `{ id: string, mode: 'dark'|'light' }`
+- Default: `{ id: 'clio-3', mode: 'dark' }` (Forest)
 
 ---
 
-## 2. Tipografía
+## 2. Brand
 
-| Familia          | Rol                          | Pesos            |
-|------------------|------------------------------|------------------|
-| **Fraunces**     | Headings, títulos de card    | 500, 600, 700    |
+### Archivo
+
+- **Original**: `apps/desktop/public/refs/clio-brand.svg` (pixel art 64×64, unicolor `#fbf236`)
+- **App**: `apps/desktop/public/brand.svg` (limpio, `fill="currentColor"`)
+
+### Componente
+
+```tsx
+import { BrandIcon } from './BrandIcon';
+
+<BrandIcon color={palette.dark.gold} size={26} />
+```
+
+- Fetch `/brand.svg`, reemplaza `currentColor` con el color del palette
+- Cachea por color para no re-fetchear
+- Container: 46×46, `borderRadius: 13`, `overflow: hidden`
+- SVG: `width="100%" height="100%"`, centrado con `display: grid; placeItems: center`
+
+---
+
+## 3. Tipografía
+
+| Familia | Rol | Pesos |
+|---------|-----|-------|
+| **Fraunces** | Headings, títulos de card | 500, 600, 700 |
 | **Hanken Grotesk** | Cuerpo, UI, chips, selects | 400, 500, 600, 700 |
 
 ### Tamaños de fuente
 
-| Valor  | Uso                                        |
-|--------|--------------------------------------------|
-| `9.5`  | Badge de formato (EPUB, PDF…)              |
-| `10`   | Status tag                                 |
-| `10.5` | Autor en cover de card                     |
-| `11`   | Botón de eliminar, metadata icon           |
-| `11.5` | Metadata (fechas)                          |
-| `12`   | Chips pequeños, labels de filtro           |
-| `12.5` | Tooltip, autor de card                     |
-| `13`   | Chips, selects, subtitulo, section count   |
-| `13.5` | Subtitulo de topbar                        |
-| `14`   | Input de búsqueda, empty hint, empty btn   |
-| `15`   | Título de card                             |
-| `16`   | Título en cover de card                    |
-| `18`   | Empty state title                          |
-| `19`   | Section title                              |
-| `30`   | H1 principal                               |
+| Valor | Uso |
+|-------|-----|
+| `9.5` | Badge de formato (EPUB, PDF…) |
+| `10` | Status tag |
+| `10.5` | Autor en cover de card |
+| `11` | Botón de eliminar, metadata icon |
+| `11.5` | Metadata (fechas) |
+| `12` | Chips pequeños, labels de filtro |
+| `12.5` | Tooltip, autor de card |
+| `13` | Chips, selects, subtitulo, section count |
+| `13.5` | Subtitulo de topbar |
+| `14` | Input de búsqueda, empty hint, empty btn |
+| `15` | Título de card |
+| `16` | Título en cover de card |
+| `18` | Empty state title |
+| `19` | Section title |
+| `30` | H1 principal |
 
 ---
 
-## 3. Espaciado
+## 4. Espaciado
 
 ### Gaps
 
-| Valor | Uso                                              |
-|-------|--------------------------------------------------|
-| `2`   | Star rating entre estrellas                      |
-| `3`   | cardBody gap                                     |
-| `4`   | Nav buttons en rail                              |
-| `5`   | Status tag gap (dot + label)                     |
-| `6`   | Rail padding, cardFooter marginTop               |
-| `7`   | cardMeta gap                                     |
-| `8`   | Chips gap, filterGroup gap, nav brand gap        |
-| `9`   | Search gap                                       |
-| `11`  | Card gap (cover → body)                          |
-| `12`  | Empty state gap                                  |
-| `14`  | Section accent gap, cover padding horizontal     |
-| `16`  | Cover padding top, filterRow gap entre grupos    |
-| `18`  | Rail padding top, topbar gap                     |
-| `20`  | Row gap (horizontal scroll), grid gap cuando `minmax(200px)` |
-| `24`  | Grid gap (collection)                            |
-| `28`  | Chips marginBottom, filterRow marginBottom       |
-| `30`  | Topbar marginBottom                              |
-| `34`  | Wrap padding top, meander marginBottom           |
+| Valor | Uso |
+|-------|-----|
+| `2` | Star rating entre estrellas |
+| `3` | cardBody gap |
+| `4` | Nav buttons en rail |
+| `5` | Status tag gap (dot + label) |
+| `6` | Rail padding, cardFooter marginTop |
+| `7` | cardMeta gap |
+| `8` | Chips gap, filterGroup gap, nav brand gap |
+| `9` | Search gap |
+| `11` | Card gap (cover → body) |
+| `12` | Empty state gap |
+| `14` | Section accent gap, cover padding horizontal |
+| `16` | Cover padding top, filterRow gap entre grupos |
+| `18` | Rail padding top, topbar gap |
+| `20` | Row gap (horizontal scroll), grid gap cuando `minmax(200px)` |
+| `24` | Grid gap (collection) |
+| `28` | Chips marginBottom, filterRow marginBottom |
+| `30` | Topbar marginBottom |
+| `34` | Wrap padding top, meander marginBottom |
 
 ### Paddings de componentes
 
-| Componente        | Padding                          |
-|-------------------|----------------------------------|
-| Chip (normal)     | `8px 14px`                       |
-| Chip (small)      | `8px 14px` (mismo que normal)    |
-| Select            | `8px 14px`                       |
-| Tooltip           | `6px 11px`                       |
-| Empty button      | `10px 20px`                      |
-| Search            | `0 12px`                         |
-| Remove button     | `3px 8px`                        |
-| Status tag        | `4px 8px 4px 6px`                |
-| Doc type badge    | `4px 7px`                        |
-| Cover art         | `16px 14px 14px 18px`            |
-| Wrap (page)       | `34px 40px 60px`                 |
+| Componente | Padding |
+|------------|---------|
+| Chip (normal) | `8px 14px` |
+| Chip (small) | `8px 14px` |
+| Select | `8px 14px` |
+| Tooltip | `6px 11px` |
+| Empty button | `10px 20px` |
+| Search | `0 12px` |
+| Remove button | `3px 8px` |
+| Status tag | `4px 8px 4px 6px` |
+| Doc type badge | `4px 7px` |
+| Cover art | `16px 14px 14px 18px` |
+| Wrap (page) | `34px 40px 60px` |
 
 ---
 
-## 4. Border radius
+## 5. Border radius
 
-| Valor  | Uso                                              |
-|--------|--------------------------------------------------|
-| `6`    | Doc type badge, remove button                    |
-| `8`    | (reservado para uso futuro)                      |
-| `9`    | Tooltip                                          |
-| `10`   | Empty button                                     |
-| `11`   | Search input                                     |
-| `13`   | Rail brand, nav buttons                          |
-| `20`   | Chips (todos los tamaños), selects, status tag   |
+| Valor | Uso |
+|-------|-----|
+| `6` | Doc type badge, remove button |
+| `8` | (reservado) |
+| `9` | Tooltip |
+| `10` | Empty button |
+| `11` | Search input |
+| `13` | Rail brand, nav buttons |
+| `20` | Chips, selects, status tag |
 
-**Regla**: todo botón/chip redondo usa `borderRadius: 20`. Todo badge
-pequeño usa `borderRadius: 6`.
+**Regla**: todo botón/chip redondo usa `borderRadius: 20`. Todo badge pequeño usa `borderRadius: 6`.
 
 ---
 
-## 5. Componentes
+## 6. Componentes
 
 ### Chips (filtro)
 
 ```ts
-// Chip estándar (tamaño normal)
 {
   padding: '8px 14px',
   borderRadius: 20,
@@ -221,15 +217,12 @@ pequeño usa `borderRadius: 6`.
 
 // Chip activo
 {
-  background: 'linear-gradient(180deg, var(--dust), var(--moss))',
-  color: 'var(--on-moss)',
+  background: 'linear-gradient(180deg, var(--gold-bright), var(--gold))',
+  color: 'var(--on-gold)',
   border: '1px solid transparent',
   fontWeight: 600,
 }
 ```
-
-**IMPORTANTE**: Chips de formato y chips de estado usan las **mismas**
-dimensiones y estilos. No crear variaciones de tamaño.
 
 ### Select (dropdown)
 
@@ -251,7 +244,6 @@ dimensiones y estilos. No crear variaciones de tamaño.
 ### Search input
 
 ```ts
-// Contenedor
 {
   display: 'flex', alignItems: 'center', gap: 9,
   background: 'var(--ink-850)',
@@ -262,13 +254,6 @@ dimensiones y estilos. No crear variaciones de tamaño.
   minWidth: 230,
   transition: '.2s',
   color: 'var(--tx-lo)',
-}
-
-// Input
-{
-  background: 'none', border: 'none', outline: 'none',
-  color: 'var(--tx-hi)', fontSize: 14,
-  width: '100%', fontFamily: 'inherit',
 }
 ```
 
@@ -302,15 +287,74 @@ dimensiones y estilos. No crear variaciones de tamaño.
   gap: 6,
 }
 
-// Brand: 46×46, borderRadius: 13
+// Brand: 46×46, borderRadius: 13, overflow: hidden
 // Nav buttons: 48×48, borderRadius: 13
 // Nav indicator: 4×22, borderRadius: '0 4px 4px 0'
 // SVG icons inside nav buttons: 22×22
-// Theme toggle: positionado al final del rail, debajo de la nav
-//   - Mismas dimensiones que nav buttons (48×48, borderRadius: 13)
-//   - Color: var(--ink) en dark, var(--moss) en light
-//   - Hover: var(--dust) en dark, var(--wine) en light
-//   - Icono sol visible en dark, icono luna visible en light
+// Theme toggle: al final del rail, debajo de la nav
+// Palette selector: debajo del theme toggle
+//   - Trigger: 28×28, borderRadius: 50%, border: 1px solid var(--gold-dim)
+//   - Popover: 240×140, grid 5×2, swatches 32×32
+```
+
+### Palette Selector (Popover)
+
+```ts
+// Trigger (botón circular)
+{
+  width: 28, height: 28, borderRadius: '50%',
+  background: `var(--ink-950)`,  // color de la paleta activa
+  border: '1px solid var(--gold-dim)',
+  cursor: 'pointer',
+  display: 'grid', placeItems: 'center',
+}
+
+// Popover
+{
+  position: 'absolute',
+  left: 58, top: 0,
+  width: 240, height: 140,
+  background: 'var(--ink-800)',
+  border: '1px solid var(--line)',
+  borderRadius: 14,
+  padding: 16,
+  boxShadow: '0 24px 64px -12px rgba(0,0,0,.6)',
+  zIndex: 100,
+}
+
+// Grid de swatches
+{
+  display: 'grid',
+  gridTemplateColumns: 'repeat(5, 32px)',
+  gridTemplateRows: 'repeat(2, 32px)',
+  gap: 8,
+  justifyContent: 'center',
+}
+
+// Swatch
+{
+  width: 32, height: 32,
+  borderRadius: 8,
+  background: '<ink-950 de la paleta>',
+  border: '2px solid transparent',
+  cursor: 'pointer',
+  position: 'relative',
+}
+
+// Swatch seleccionado
+{
+  border: '2px solid var(--gold)',
+}
+
+// Punto dorado en centro del swatch
+{
+  width: 6, height: 6,
+  borderRadius: '50%',
+  background: '<gold de la paleta>',
+  position: 'absolute',
+  top: '50%', left: '50%',
+  transform: 'translate(-50%,-50%)',
+}
 ```
 
 ### Book Card
@@ -345,15 +389,12 @@ dimensiones y estilos. No crear variaciones de tamaño.
 ### Empty states
 
 ```ts
-// Contenedor
 {
   display: 'flex', flexDirection: 'column',
   alignItems: 'center', gap: 12,
-  padding: '60px 20px',   // Collection
-  // padding: '80px 20px', // Home, Bookmarks
+  padding: '60px 20px',
 }
 
-// Título
 {
   fontFamily: '"Fraunces", serif',
   color: 'var(--tx)',
@@ -361,7 +402,6 @@ dimensiones y estilos. No crear variaciones de tamaño.
   fontSize: 18,
 }
 
-// Hint
 {
   fontSize: 14,
   color: 'var(--tx-faint)',
@@ -371,8 +411,8 @@ dimensiones y estilos. No crear variaciones de tamaño.
 // Botón de acción
 {
   padding: '10px 20px',
-  background: 'linear-gradient(180deg, var(--dust), var(--moss))',
-  color: 'var(--on-moss)',
+  background: 'linear-gradient(180deg, var(--gold-bright), var(--gold))',
+  color: 'var(--on-gold)',
   border: 'none',
   borderRadius: 10,
   fontSize: 14,
@@ -382,77 +422,76 @@ dimensiones y estilos. No crear variaciones de tamaño.
 
 ---
 
-## 6. Transiciones
+## 7. Transiciones
 
-| Duración | Easing                                          | Uso                        |
-|----------|------------------------------------------------|----------------------------|
-| `.15s`   | default                                         | Remove button              |
-| `.18s`   | default                                         | Chips, filtros             |
-| `.2s`    | default                                         | Search input               |
-| `.22s`   | `cubic-bezier(.22,.61,.36,1)`                  | Nav buttons, cards, cover  |
-
----
-
-## 7. Layout
-
-| Elemento     | Valor                                     |
-|--------------|-------------------------------------------|
-| Rail width   | `76px` fijo                               |
-| Wrap max     | `1180px`, centrado con `margin: 0 auto`  |
-| Grid cards   | `repeat(auto-fill, minmax(190px, 1fr))`  |
-| Row scroll   | `grid-auto-flow: column, grid-auto-columns: 200` |
-| Row gap      | `20px`                                    |
-| Grid gap     | `24px`                                    |
+| Duración | Easing | Uso |
+|----------|--------|-----|
+| `.15s` | default | Remove button |
+| `.18s` | default | Chips, filtros |
+| `.2s` | default | Search input |
+| `.22s` | `cubic-bezier(.22,.61,.36,1)` | Nav buttons, cards, cover |
 
 ---
 
-## 8. Reglas estrictas
+## 8. Layout
 
-1. **Nunca crear un nuevo tamaño de chip.** Todos los chips usan
-   `padding: '8px 14px'`, `borderRadius: 20`, `fontSize: 13`.
+| Elemento | Valor |
+|----------|-------|
+| Rail width | `76px` fijo |
+| Wrap max | `1180px`, centrado con `margin: 0 auto` |
+| Grid cards | `repeat(auto-fill, minmax(190px, 1fr))` |
+| Row scroll | `grid-auto-flow: column, grid-auto-columns: 200` |
+| Row gap | `20px` |
+| Grid gap | `24px` |
 
-2. **Nunca crear un nuevo border radius** sin verificar la tabla en §4.
+---
+
+## 9. Reglas estrictas
+
+1. **Nunca crear un nuevo tamaño de chip.** Todos los chips usan `padding: '8px 14px'`, `borderRadius: 20`, `fontSize: 13`.
+
+2. **Nunca crear un nuevo border radius** sin verificar la tabla en §5.
 
 3. **Los selects heredan el mismo padding y borderRadius que los chips.**
 
-4. **Los labels de filtro** usan `fontSize: 13`, `color: 'var(--tx-lo)'`,
-   `fontWeight: 500`.
+4. **Los labels de filtro** usan `fontSize: 13`, `color: 'var(--tx-lo)'`, `fontWeight: 500`.
 
-5. **Los gaps entre grupos de filtros** son `16px`. Los gaps dentro de un
-   grupo son `8px`.
+5. **Los gaps entre grupos de filtros** son `16px`. Los gaps dentro de un grupo son `8px`.
 
-6. **El margin inferior** de la sección de chips y la sección de filtros
-   es `28px`.
+6. **El margin inferior** de la sección de chips y la sección de filtros es `28px`.
 
 7. **No agregar comentarios** en el código a menos que el usuario lo pida.
 
-8. **Si un estilo nuevo no está documentado aquí**, consultarlo antes de
-   implementarlo.
+8. **Si un estilo nuevo no está documentado aquí**, consultarlo antes de implementarlo.
+
+9. **Usar CSS vars** (`var(--gold)`, `var(--tx-lo)`, etc.) en vez de colores inline. Los colores hardcoded solo en temas/definiciones.
+
+10. **Brand**: Usar `<BrandIcon color={palette.dark.gold} />` en vez de SVG inline.
 
 ---
 
-## 9. Referencias de diseño
+## 10. Referencias de diseño
 
 La referencia visual completa del proyecto se encuentra en:
 
 ```
-apps/desktop/public/refs/clio.html
+apps/desktop/public/refs/clio-0.html  (Teal)
+apps/desktop/public/refs/clio-1.html  (Earth)
+apps/desktop/public/refs/clio-2.html  (Plum)
+apps/desktop/public/refs/clio-3.html  (Forest)
+apps/desktop/public/refs/clio-4.html  (Mauve)
+apps/desktop/public/refs/clio-5.html  (Purple)
+apps/desktop/public/refs/clio-6.html  (Slate)
+apps/desktop/public/refs/clio-7.html  (Violet)
+apps/desktop/public/refs/clio-8.html  (Black)
+apps/desktop/public/refs/clio-9.html  (Neon)
 ```
 
-Este archivo contiene la implementación HTML/CSS/JS de la UI de Clio, incluyendo:
-- Paleta completa con variables CSS
-- Estructura de layout (rail + stage + views)
-- Tarjetas de libro (cover, status, progress)
-- Lector (reader) con transiciones, toolbar, drawer, zen mode
-- Componentes UI (chips, search, tooltip, toast, empty states)
-- Comportamiento de navegación entre vistas
-
-**Regla**: Toda UI nueva debe replicar fielmente los estilos de esta referencia.
-Consultar este archivo antes de implementar cualquier componente nuevo.
+Cada archivo contiene la implementación HTML/CSS/JS de una paleta específica.
 
 ---
 
-## 10. Modelo de dominio
+## 11. Modelo de dominio
 
 ```ts
 type BookFormat = 'epub' | 'pdf' | 'cbz' | 'md';
