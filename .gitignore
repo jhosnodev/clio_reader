@@ -7,3 +7,5 @@ packages/*/src/index.d.ts
 packages/*/src/index.js
 packages/*/dist/
 release/
+__pycache__/
+*.pyc
