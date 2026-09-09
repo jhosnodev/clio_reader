@@ -34,6 +34,31 @@ Cada paleta redefine estos tokens CSS (extraídos de `library.css`):
 | `--tx-lo` | Texto bajo contraste | Texto |
 | `--tx-faint` | Texto deshabilitado | Texto |
 | `--accent-strong` | Acento fuerte (varía por tema) | Acento |
+| `--hl-1` | Highlight 1 (darkest) | Highlight |
+| `--hl-2` | Highlight 2 | Highlight |
+| `--hl-3` | Highlight 3 | Highlight |
+| `--hl-4` | Highlight 4 | Highlight |
+| `--hl-5` | Highlight 5 | Highlight |
+| `--hl-6` | Highlight 6 (lightest) | Highlight |
+
+### Highlights dark mode (paleta Nocturna)
+
+Colores de highlight para texto seleccionado y marcado en tema oscuro. No alteran los fondos de superficie.
+
+| Token | Hex | Rol |
+|-------|-----|-----|
+| `--hl-1` | `#3b392a` | Highlight más oscuro (fondo sutil) |
+| `--hl-2` | `#655d4a` | Highlight medio-oscuro |
+| `--hl-3` | `#6f4143` | Highlight rose oscuro |
+| `--hl-4` | `#a46a66` | Highlight rosa apagado |
+| `--hl-5` | `#a4825d` | Highlight caramelo |
+| `--hl-6` | `#d6baa5` | Highlight más claro (arena) |
+
+**Uso previsto:**
+- `::selection` → `var(--hl-5)` (caramelo, el actual gold apagado)
+- `mark` en reader → `var(--hl-4)` (rosa apagado)
+- Highlights de búsqueda → `var(--hl-6)` (arena)
+- Notas / bookmarks → `var(--hl-3)` (rose oscuro)
 
 ### Reader themes (tokens adicionales)
 
@@ -74,6 +99,14 @@ interface PaletteTokens {
     rose: string;
     accentStrong: string;
   };
+  highlights: {
+    hl1: string;  // --hl-1 (darkest)
+    hl2: string;  // --hl-2
+    hl3: string;  // --hl-3
+    hl4: string;  // --hl-4
+    hl5: string;  // --hl-5
+    hl6: string;  // --hl-6 (lightest)
+  };
   text: {
     hi: string;
     base: string;
@@ -97,6 +130,16 @@ interface PaletteTokens {
 | **Océano** | Azul marino + coral | `#e07a5f` | `#f09a82` | `#a85a44` | `#81b4d8` | `#4a7da3` | `#b87aad` | `#f09a82` |
 | **Lavanda** | Púrpura suave + dorado | `#c9a24b` | `#e6c874` | `#8a7434` | `#9b8ec4` | `#6a5e93` | `#c48b8b` | `#e6c874` |
 | **Carmesí** | Rojo oscuro + crema | `#e8d5b7` | `#f2e4cc` | `#b09a7a` | `#a63d40` | `#6e2829` | `#d4a07a` | `#f2e4cc` |
+
+#### Highlights dark mode por paleta
+
+| Paleta | `hl-1` | `hl-2` | `hl-3` | `hl-4` | `hl-5` | `hl-6` |
+|--------|--------|--------|--------|--------|--------|--------|
+| **Nocturna** | `#3b392a` | `#655d4a` | `#6f4143` | `#a46a66` | `#a4825d` | `#d6baa5` |
+| **Bosque** | `#2e3a28` | `#4a5e3e` | `#5e3a3a` | `#8a6e5a` | `#7a8a5a` | `#c4cfa5` |
+| **Océano** | `#2a3040` | `#3e5060` | `#4a3050` | `#7a6080` | `#5a7a8a` | `#a0c0d0` |
+| **Lavanda** | `#302a3a` | `#504060` | `#5a3858` | `#8a6888` | `#7060a0` | `#b8a8d0` |
+| **Carmesí** | `#3a2828` | `#5a3838` | `#6a3030` | `#9a6060` | `#8a5050` | `#d0a0a0` |
 
 ### Mecanismo de aplicación
 
