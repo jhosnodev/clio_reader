@@ -90,13 +90,13 @@ interface PaletteTokens {
 
 ### Paletas predefinidas
 
-| Paleta | Identidad | Acento primario | Acento secundario |
-|--------|-----------|-----------------|-------------------|
-| **Nocturna** (default) | Tinta + oro viejo | Gold `#c9a24b` | Verdigris `#4fa393` |
-| **Bosque** | Verde profundo + ámbar | Ámbar `#d4a24e` | Sage `#6b9e7a` |
-| **Océano** | Azul marino + coral | Coral `#e07a5f` | Celeste `#81b4d8` |
-| **Lavanda** | Púrpura suave + dorado | Dorado `#c9a24b` | Lavender `#9b8ec4` |
-| **Carmesí** | Rojo oscuro + crema | Crema `#e8d5b7` | Carmesí `#a63d40` |
+| Paleta | Identidad | `gold` | `gold-bright` | `gold-dim` | `verdigris` | `verdigris-dim` | `rose` | `accent-strong` |
+|--------|-----------|--------|---------------|------------|-------------|-----------------|--------|-----------------|
+| **Nocturna** (default) | Tinta + oro viejo | `#c9a24b` | `#e6c874` | `#8a7434` | `#4fa393` | `#2f6d61` | `#c17b7b` | `#e6c874` |
+| **Bosque** | Verde profundo + ámbar | `#d4a24e` | `#e8c06a` | `#9a7a3a` | `#6b9e7a` | `#3d6e4a` | `#c4917a` | `#e8c06a` |
+| **Océano** | Azul marino + coral | `#e07a5f` | `#f09a82` | `#a85a44` | `#81b4d8` | `#4a7da3` | `#b87aad` | `#f09a82` |
+| **Lavanda** | Púrpura suave + dorado | `#c9a24b` | `#e6c874` | `#8a7434` | `#9b8ec4` | `#6a5e93` | `#c48b8b` | `#e6c874` |
+| **Carmesí** | Rojo oscuro + crema | `#e8d5b7` | `#f2e4cc` | `#b09a7a` | `#a63d40` | `#6e2829` | `#d4a07a` | `#f2e4cc` |
 
 ### Mecanismo de aplicación
 
