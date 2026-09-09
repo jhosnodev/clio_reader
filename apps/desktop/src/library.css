@@ -94,3 +94,5 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
   color: var(--tx);
   transition: background .3s var(--ease);
 }
+
+@keyframes spin { to { transform: rotate(360deg); } }
