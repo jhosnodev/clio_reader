@@ -285,7 +285,7 @@ function Rail({ active, onChange, theme, paletteId, palette, onToggleTheme, onSe
           onClick={() => setShowPalettePicker(!showPalettePicker)}
           onMouseEnter={() => setHovered('palette')}
           onMouseLeave={() => setHovered(null)}
-          aria-label="Selector de tema de color"
+          aria-label="Selector de tema"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={palette.dark.gold} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10"/>
@@ -293,11 +293,11 @@ function Rail({ active, onChange, theme, paletteId, palette, onToggleTheme, onSe
           </svg>
         </button>
         {hovered === 'palette' && (
-          <span style={S.tooltip}>Tema de color</span>
+          <span style={S.tooltip}>Tema</span>
         )}
         {showPalettePicker && (
           <div style={S.palettePopover}>
-            <div style={S.palettePopoverTitle}>Tema de color</div>
+            <div style={S.palettePopoverTitle}>Tema</div>
             <div style={S.paletteGrid}>
               {PALETTES.map((p) => (
                 <button
