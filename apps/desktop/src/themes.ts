@@ -255,8 +255,8 @@ export const PALETTE_IDS = THEMES.map((p) => p.id);
  * @param mode       'dark' | 'light'
  */
 export function applyTheme(paletteId: string, mode: 'dark' | 'light'): void {
-  const el = document.querySelector('.app');
-  if (!el) return;
+  // Apply to <html> so variables are available globally (including ReaderView)
+  const html = document.documentElement;
 
   const palette = getPalette(paletteId);
   const src = mode === 'dark' ? palette.dark : LIGHT_DEFAULTS;
@@ -275,11 +275,11 @@ export function applyTheme(paletteId: string, mode: 'dark' | 'light'): void {
     cssVars.push(`--rose-rgb:${palette.dark['rose-rgb']}`);
   }
 
-  el.style.cssText = cssVars.join(';');
+  html.style.cssText = cssVars.join(';');
 
   // Set data attribute for CSS selectors
-  el.setAttribute('data-app-theme', mode);
-  el.setAttribute('data-palette', paletteId);
+  html.setAttribute('data-app-theme', mode);
+  html.setAttribute('data-palette', paletteId);
 }
 
 /**
