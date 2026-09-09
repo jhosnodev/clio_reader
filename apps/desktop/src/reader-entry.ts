@@ -3,7 +3,6 @@
  *
  * Comunicación con el host: el host usa webview.executeJavaScript() para
  * llamar a window.__initFromHost(data) una vez que lee el archivo.
- * No se usa postMessage porque <webview> no es un iframe.
  */
 
 window.addEventListener('error', (e) => {
@@ -37,40 +36,23 @@ const DEFAULT_PREFERENCES: ReaderPreferences = {
 };
 
 /* ==========================================================================
-   Sanitización de HTML (Seguridad: previene XSS desde contenido EPUB)
+   Sanitización de HTML
    ========================================================================== */
 
-const BLOCKED_TAGS = [
-  'script',
-  'iframe',
-  'object',
-  'embed',
-  'form',
-  'input',
-  'textarea',
-  'button',
-  'link',
-];
+const BLOCKED_TAGS = ['script', 'iframe', 'object', 'embed', 'form', 'input', 'textarea', 'button', 'link'];
 const EVENT_HANDLER_REGEX = /\bon\w+\s*=/gi;
 const DANGEROUS_ATTRS = ['srcdoc', 'data', 'codebase', 'formaction'];
 
 function sanitizeHtml(html: string): string {
   let result = html;
-
   for (const tag of BLOCKED_TAGS) {
-    const re = new RegExp(`<${tag}\\b[^>]*>[\\s\\S]*?</${tag}>`, 'gi');
-    result = result.replace(re, '');
-    const selfCloseRe = new RegExp(`<${tag}\\b[^>]*/>`, 'gi');
-    result = result.replace(selfCloseRe, '');
+    result = result.replace(new RegExp(`<${tag}\\b[^>]*>[\\s\\S]*?</${tag}>`, 'gi'), '');
+    result = result.replace(new RegExp(`<${tag}\\b[^>]*/>`, 'gi'), '');
   }
-
   for (const attr of DANGEROUS_ATTRS) {
-    const re = new RegExp(`\\s${attr}\\s*=\\s*["'][^"']*["']`, 'gi');
-    result = result.replace(re, '');
+    result = result.replace(new RegExp(`\\s${attr}\\s*=\\s*["'][^"']*["']`, 'gi'), '');
   }
-
   result = result.replace(EVENT_HANDLER_REGEX, '');
-
   return result;
 }
 
@@ -86,11 +68,7 @@ let previousBlobUrls: string[] = [];
 
 function revokePreviousBlobUrls(): void {
   for (const url of previousBlobUrls) {
-    try {
-      URL.revokeObjectURL(url);
-    } catch {
-      // ignore
-    }
+    try { URL.revokeObjectURL(url); } catch { /* ignore */ }
   }
   previousBlobUrls = [];
 }
@@ -99,165 +77,83 @@ function addFailedImgClass(match: string): string {
   if (match.includes('class=')) {
     return match.replace(/class\s*=\s*["']([^"']*)["']/, `class="$1 ${FAILED_IMG_CLASS}"`);
   }
-  const isImgTag = match.charAt(4) === ' ' || match.charAt(4) === '>';
-  if (isImgTag) {
+  if (match.charAt(4) === ' ' || match.charAt(4) === '>') {
     return match.replace(/<img\b/, `<img class="${FAILED_IMG_CLASS}"`);
   }
   return match.replace(/<image\b/, `<image class="${FAILED_IMG_CLASS}"`);
 }
 
-async function resolveImagesInHtml(
-  readerDoc: ReaderDocument,
-  html: string,
-): Promise<string> {
-  log('[imgs] resolveImagesInHtml() — HTML length:', html.length);
-
+async function resolveImagesInHtml(readerDoc: ReaderDocument, html: string): Promise<string> {
   const allSrcs: string[] = [];
   const srcTypes: Map<string, 'img' | 'svg'> = new Map();
   let m: RegExpExecArray | null;
 
   const srcRegex = new RegExp(IMG_SRC_REGEX.source, 'gi');
   while ((m = srcRegex.exec(html)) !== null) {
-    if (m[2]) {
-      const src = stripFragment(m[2]);
-      allSrcs.push(src);
-      srcTypes.set(src, 'img');
-      log('[imgs] <img> tag encontrado:', m[0].substring(0, 150));
-    }
+    if (m[2]) { const src = stripFragment(m[2]); allSrcs.push(src); srcTypes.set(src, 'img'); }
   }
-
   const svgRegex = new RegExp(SVG_IMAGE_HREF_RE.source, 'gi');
   while ((m = svgRegex.exec(html)) !== null) {
-    if (m[2]) {
-      const src = stripFragment(m[2]);
-      allSrcs.push(src);
-      srcTypes.set(src, 'svg');
-      log('[imgs] <image> SVG tag encontrado:', m[0].substring(0, 150));
-    }
+    if (m[2]) { const src = stripFragment(m[2]); allSrcs.push(src); srcTypes.set(src, 'svg'); }
   }
 
-  log('[imgs] tags de imagen encontrados:', allSrcs.length, '(img:', [...srcTypes.values()].filter(t => t === 'img').length, 'svg:', [...srcTypes.values()].filter(t => t === 'svg').length, ')');
-
   if (allSrcs.length === 0) return html;
-
-  log('[imgs] srcs únicos:', [...new Set(allSrcs)]);
-
   if (!readerDoc.getImageData) return html;
 
   revokePreviousBlobUrls();
   const newBlobUrls: string[] = [];
   const blobUrlCache = new Map<string, string>();
-  let resolvedCount = 0;
-  let failedCount = 0;
 
   const srcsToResolve = [...new Set(allSrcs.filter((s) => !s.startsWith('data:') && !s.startsWith('blob:')))];
-  log('[imgs] srcs a resolver (sin data:/blob:):', srcsToResolve);
-
   for (const src of srcsToResolve) {
     try {
-      log('[imgs] → llamando getImageData para:', JSON.stringify(src));
       const result = await readerDoc.getImageData(src);
       if (result) {
-        log('[imgs] ← getImageData OK — tamaño:', result.data.byteLength, 'mimeType:', result.mimeType);
         const buf = result.data.buffer as ArrayBuffer;
-        const blob = new Blob(
-          [buf.slice(result.data.byteOffset, result.data.byteOffset + result.data.byteLength)],
-          { type: result.mimeType },
-        );
+        const blob = new Blob([buf.slice(result.data.byteOffset, result.data.byteOffset + result.data.byteLength)], { type: result.mimeType });
         const blobUrl = URL.createObjectURL(blob);
-        log('[imgs] blob URL creada:', blobUrl);
         blobUrlCache.set(src, blobUrl);
         newBlobUrls.push(blobUrl);
-        resolvedCount++;
       } else {
-        log('[imgs] ← getImageData retornó NULL para:', JSON.stringify(src));
         blobUrlCache.set(src, '');
-        failedCount++;
       }
-    } catch (err) {
-      log('[imgs] ← getImageData LANZÓ EXCEPCIÓN para:', JSON.stringify(src), 'error:', err);
+    } catch {
       blobUrlCache.set(src, '');
-      failedCount++;
     }
   }
 
-  log('[imgs] === RESUMEN: resolved=', resolvedCount, 'failed=', failedCount, 'total=', allSrcs.length, '===');
-
   previousBlobUrls = newBlobUrls;
-
   let resultHtml = html;
   for (const [src, blobUrl] of blobUrlCache) {
     const safeSrc = escapeRegExp(src);
     if (!blobUrl) {
-      const imgFailRe = new RegExp(
-        `(<img\\b[^>]*?src\\s*=\\s*["']${safeSrc}["'][^>]*?>)`,
-        'gi',
-      );
-      resultHtml = resultHtml.replace(imgFailRe, addFailedImgClass);
-      const svgFailRe = new RegExp(
-        `(<image\\b[^>]*?(?:xlink:)?href\\s*=\\s*["']${safeSrc}["'][^>]*?>)`,
-        'gi',
-      );
-      resultHtml = resultHtml.replace(svgFailRe, addFailedImgClass);
-      log('[imgs] FAILED — clase epub-img-failed agregada para:', JSON.stringify(src));
+      resultHtml = resultHtml.replace(new RegExp(`(<img\\b[^>]*?src\\s*=\\s*["']${safeSrc}["'][^>]*?>)`, 'gi'), addFailedImgClass);
+      resultHtml = resultHtml.replace(new RegExp(`(<image\\b[^>]*?(?:xlink:)?href\\s*=\\s*["']${safeSrc}["'][^>]*?>)`, 'gi'), addFailedImgClass);
       continue;
     }
-    const imgRe = new RegExp(
-      `(<img\\b[^>]*?)src\\s*=\\s*["']${safeSrc}["']([^>]*?>)`,
-      'gi',
-    );
-    resultHtml = resultHtml.replace(imgRe, `$1src="${blobUrl}"$2`);
-    const svgRe = new RegExp(
-      `(<image\\b[^>]*?)(xlink:)?href\\s*=\\s*["']${safeSrc}["']([^>]*?>)`,
-      'gi',
-    );
-    resultHtml = resultHtml.replace(svgRe, (_match, pre, xlinkPrefix, post) => {
-      const prefix = xlinkPrefix ? 'xlink:' : '';
-      return `${pre}${prefix}href="${blobUrl}"${post}`;
+    resultHtml = resultHtml.replace(new RegExp(`(<img\\b[^>]*?)src\\s*=\\s*["']${safeSrc}["']([^>]*?>)`, 'gi'), `$1src="${blobUrl}"$2`);
+    resultHtml = resultHtml.replace(new RegExp(`(<image\\b[^>]*?)(xlink:)?href\\s*=\\s*["']${safeSrc}["']([^>]*?>)`, 'gi'), (_match, pre, xlinkPrefix, post) => {
+      return `${pre}${xlinkPrefix ? 'xlink:' : ''}href="${blobUrl}"${post}`;
     });
-    log('[imgs] REemplazado — src/href de', JSON.stringify(src), '→', blobUrl.substring(0, 40) + '...');
   }
-
-  log('[imgs] HTML resultante (primeros 500 chars):', resultHtml.substring(0, 500));
   return resultHtml;
 }
 
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function stripFragment(href: string): string {
-  const hashIndex = href.indexOf('#');
-  return hashIndex >= 0 ? href.substring(0, hashIndex) : href;
-}
+function escapeRegExp(s: string): string { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function stripFragment(href: string): string { const i = href.indexOf('#'); return i >= 0 ? href.substring(0, i) : href; }
 
 /* ==========================================================================
-   Funciones puras — Query params
+   Query params
    ========================================================================== */
 
-interface QueryParams {
-  readonly uri: string;
-  readonly format: SupportedFormat;
-}
+interface QueryParams { readonly uri: string; readonly format: SupportedFormat; }
 
 function parseQueryParams(): QueryParams {
-  log('parseQueryParams()');
   const params = new URLSearchParams(window.location.search);
   const uri = params.get('uri');
   const format = params.get('format')?.toLowerCase();
-  log('params extraídos:', { uri, format });
-
-  if (!uri) {
-    throw new ReaderError('Falta el parámetro "uri" en la URL');
-  }
-
-  if (!format || !isSupportedFormat(format)) {
-    throw new ReaderError(
-      `Formato no soportado: "${format ?? 'desconocido'}". Formatos válidos: ${SUPPORTED_FORMATS.join(', ')}`,
-    );
-  }
-
-  log('parseQueryParams() OK:', { uri, format });
+  if (!uri) throw new ReaderError('Falta el parámetro "uri" en la URL');
+  if (!format || !isSupportedFormat(format)) throw new ReaderError(`Formato no soportado: "${format ?? 'desconocido'}"`);
   return { uri, format };
 }
 
@@ -265,64 +161,44 @@ function isSupportedFormat(value: string): value is SupportedFormat {
   return (SUPPORTED_FORMATS as readonly string[]).includes(value);
 }
 
-/* ==========================================================================
-   Errores personalizados
-   ========================================================================== */
-
 class ReaderError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ReaderError';
-  }
+  constructor(message: string) { super(message); this.name = 'ReaderError'; }
 }
 
 /* ==========================================================================
-   Gestión de estado de UI
+   UI State
    ========================================================================== */
 
-type UIState =
-  | { readonly type: 'loading' }
-  | { readonly type: 'error'; readonly message: string }
-  | { readonly type: 'content' };
-
-const ELEMENT_IDS = [
-  'reader-loading',
-  'reader-error',
-  'reader-content',
-  'reader-controls',
-] as const;
+type UIState = { readonly type: 'loading' } | { readonly type: 'error'; readonly message: string } | { readonly type: 'content' };
 
 function setUIState(state: UIState): void {
-  const visibility: Record<string, boolean> = {
-    'reader-loading': false,
-    'reader-error': false,
-    'reader-content': false,
-    'reader-controls': false,
-  };
+  const reader = document.getElementById('reader');
+  const loading = document.getElementById('reader-loading');
+  const error = document.getElementById('reader-error');
+  const page = document.getElementById('page');
+  const bar = document.getElementById('r-bar');
+  const foot = document.getElementById('r-foot');
 
-  switch (state.type) {
-    case 'loading':
-      visibility['reader-loading'] = true;
-      break;
-    case 'error':
-      visibility['reader-error'] = true;
-      break;
-    case 'content':
-      visibility['reader-content'] = true;
-      visibility['reader-controls'] = true;
-      break;
-  }
-
-  for (const id of ELEMENT_IDS) {
-    const el = document.getElementById(id);
-    if (el) {
-      el.style.display = visibility[id] ? (id === 'reader-controls' ? 'flex' : 'block') : 'none';
+  // Show/hide the reader container (adds .open to slide it in)
+  if (reader) {
+    if (state.type === 'content') {
+      reader.classList.add('open');
+      reader.removeAttribute('aria-hidden');
+    } else {
+      reader.classList.remove('open');
+      reader.setAttribute('aria-hidden', 'true');
     }
   }
 
+  if (loading) loading.style.display = state.type === 'loading' ? 'flex' : 'none';
+  if (error) error.style.display = state.type === 'error' ? 'flex' : 'none';
+  if (page) page.style.display = state.type === 'content' ? 'block' : 'none';
+  if (bar) bar.style.display = state.type === 'content' ? 'flex' : 'none';
+  if (foot) foot.style.display = state.type === 'content' ? 'flex' : 'none';
+
   if (state.type === 'error') {
-    const errorMessage = document.getElementById('reader-error-message');
-    if (errorMessage) errorMessage.textContent = state.message;
+    const msg = document.getElementById('reader-error-message');
+    if (msg) msg.textContent = state.message;
   }
 }
 
@@ -330,99 +206,42 @@ function setUIState(state: UIState): void {
    Renderizado de capítulo
    ========================================================================== */
 
-async function renderChapter(
-  readerDoc: ReaderDocument,
-  preferences: ReaderPreferences,
-): Promise<void> {
-  log('renderChapter()');
-  const contentEl = document.getElementById('reader-content');
-  const chapterInfo = document.getElementById('chapter-info');
-  const btnPrev = document.getElementById('btn-prev') as HTMLButtonElement | null;
-  const btnNext = document.getElementById('btn-next') as HTMLButtonElement | null;
+async function renderChapter(readerDoc: ReaderDocument, preferences: ReaderPreferences): Promise<void> {
+  const contentEl = document.getElementById('page');
+  if (!contentEl) return;
+  if (!readerDoc.getCurrentChapterContent) throw new ReaderError('El formato no soporta renderizado de contenido');
 
-  if (!contentEl) {
-    log('ERROR: reader-content element no encontrado');
-    return;
-  }
-
-  if (!readerDoc.getCurrentChapterContent) {
-    throw new ReaderError('El formato no soporta renderizado de contenido');
-  }
-
-  log('obteniendo contenido del capítulo...');
   const htmlContent = await readerDoc.getCurrentChapterContent();
-  log('contenido obtenido, tamaño:', htmlContent.length, 'caracteres');
-
-  log('resolviendo recursos (imágenes)...');
   const resolvedHtml = await resolveImagesInHtml(readerDoc, htmlContent);
-
-  log('sanitizando HTML...');
   contentEl.innerHTML = sanitizeHtml(resolvedHtml);
-  log('HTML sanitizado e inyectado');
-
-  const injectedImages = contentEl.querySelectorAll('img');
-  log('[imgs] <img> en DOM después de inyección:', injectedImages.length);
-  injectedImages.forEach((img, i) => {
-    const src = img.getAttribute('src') ?? '(sin src)';
-    const isBlob = src.startsWith('blob:');
-    log(`[imgs] img[${i}] src:`, src.substring(0, 100), '| isBlob:', isBlob);
-
-    img.addEventListener('load', () => {
-      log(`[imgs] img[${i}] ONLOAD — naturalWidth:`, img.naturalWidth, 'naturalHeight:', img.naturalHeight);
-    });
-    img.addEventListener('error', () => {
-      log(`[imgs] img[${i}] ONERROR — src:`, src.substring(0, 100));
-      if (!img.classList.contains(FAILED_IMG_CLASS)) {
-        img.classList.add(FAILED_IMG_CLASS);
-      }
-    });
-  });
-
-  const svgImages = contentEl.querySelectorAll('image');
-  log('[imgs] <image> SVG en DOM después de inyección:', svgImages.length);
-  svgImages.forEach((svgImg, i) => {
-    const href = svgImg.getAttribute('href') ?? svgImg.getAttributeNS('http://www.w3.org/1999/xlink', 'href') ?? '(sin href)';
-    const isBlob = href.startsWith('blob:');
-    log(`[imgs] svg-image[${i}] href:`, href.substring(0, 100), '| isBlob:', isBlob);
-
-    svgImg.addEventListener('load', () => {
-      log(`[imgs] svg-image[${i}] ONLOAD`);
-    });
-    svgImg.addEventListener('error', () => {
-      log(`[imgs] svg-image[${i}] ONERROR — href:`, href.substring(0, 100));
-      if (!svgImg.classList.contains(FAILED_IMG_CLASS)) {
-        svgImg.classList.add(FAILED_IMG_CLASS);
-      }
-    });
-  });
 
   if (readerDoc.applyPreferences) {
     const existingStyle = contentEl.querySelector('style');
     if (existingStyle) existingStyle.remove();
-
     const styleEl = document.createElement('style');
-    log('aplicando preferencias/tema...');
     const css = await readerDoc.applyPreferences(preferences);
     styleEl.textContent = css;
     contentEl.prepend(styleEl);
-    log('tema aplicado');
   }
+
+  updateChapterInfo(readerDoc);
+
+  const scroll = document.getElementById('r-scroll');
+  if (scroll) scroll.scrollTop = 0;
+}
+
+async function updateChapterInfo(readerDoc: ReaderDocument): Promise<void> {
+  const pct = document.getElementById('pct');
+  const btnPrev = document.getElementById('prev-page') as HTMLButtonElement | null;
+  const btnNext = document.getElementById('next-page') as HTMLButtonElement | null;
 
   if (readerDoc.getCurrentChapterIndex && readerDoc.getChapterCount) {
     const currentIndex = await readerDoc.getCurrentChapterIndex();
     const totalChapters = await readerDoc.getChapterCount();
-    log('capítulo:', currentIndex + 1, 'de', totalChapters);
-
-    if (chapterInfo) {
-      chapterInfo.textContent = `Capítulo ${currentIndex + 1} de ${totalChapters}`;
-    }
-
+    if (pct) pct.textContent = `Cap. ${currentIndex + 1} de ${totalChapters}`;
     if (btnPrev) btnPrev.disabled = currentIndex <= 0;
     if (btnNext) btnNext.disabled = currentIndex >= totalChapters - 1;
   }
-
-  contentEl.scrollTop = 0;
-  log('renderChapter() completado');
 }
 
 /* ==========================================================================
@@ -430,35 +249,234 @@ async function renderChapter(
    ========================================================================== */
 
 function setupNavigation(readerDoc: ReaderDocument, preferences: ReaderPreferences): void {
-  const btnPrev = document.getElementById('btn-prev');
-  const btnNext = document.getElementById('btn-next');
+  const btnPrev = document.getElementById('prev-page');
+  const btnNext = document.getElementById('next-page');
+  if (btnPrev) btnPrev.addEventListener('click', () => navigateChapter(readerDoc, preferences, 'previous'));
+  if (btnNext) btnNext.addEventListener('click', () => navigateChapter(readerDoc, preferences, 'next'));
+}
 
-  if (btnPrev) {
-    btnPrev.addEventListener('click', () => navigateChapter(readerDoc, preferences, 'previous'));
-  }
-
-  if (btnNext) {
-    btnNext.addEventListener('click', () => navigateChapter(readerDoc, preferences, 'next'));
+async function navigateChapter(readerDoc: ReaderDocument, preferences: ReaderPreferences, direction: 'next' | 'previous'): Promise<void> {
+  try {
+    if (direction === 'next') await readerDoc.goNext();
+    else await readerDoc.goPrevious();
+    await renderChapter(readerDoc, preferences);
+  } catch (error) {
+    if (error instanceof Error && error.name === 'EpubNavigationError') return;
+    throw error;
   }
 }
 
-async function navigateChapter(
-  readerDoc: ReaderDocument,
-  preferences: ReaderPreferences,
-  direction: 'next' | 'previous',
-): Promise<void> {
+/* ==========================================================================
+   Drawer system
+   ========================================================================== */
+
+let currentPanel: string | null = null;
+
+function openDrawer(panelId: string, title: string): void {
+  const scrim = document.getElementById('scrim');
+  const drawer = document.getElementById('drawer');
+  const drawerTitle = document.getElementById('drawer-title');
+  if (!scrim || !drawer) return;
+
+  if (drawerTitle) drawerTitle.textContent = title;
+  currentPanel = panelId;
+
+  document.querySelectorAll('.panel').forEach((p) => p.classList.remove('active'));
+  const panel = document.getElementById(`panel-${panelId}`);
+  if (panel) panel.classList.add('active');
+
+  document.querySelectorAll('.r-btn[data-panel]').forEach((btn) => {
+    btn.classList.toggle('on', (btn as HTMLElement).dataset.panel === panelId);
+  });
+
+  scrim.classList.add('show');
+  drawer.classList.add('show');
+}
+
+function closeDrawer(): void {
+  const scrim = document.getElementById('scrim');
+  const drawer = document.getElementById('drawer');
+  if (scrim) scrim.classList.remove('show');
+  if (drawer) drawer.classList.remove('show');
+  document.querySelectorAll('.r-btn[data-panel]').forEach((btn) => btn.classList.remove('on'));
+  currentPanel = null;
+}
+
+function setupDrawer(): void {
+  const scrim = document.getElementById('scrim');
+  const drawerX = document.getElementById('drawer-x');
+  if (scrim) scrim.addEventListener('click', closeDrawer);
+  if (drawerX) drawerX.addEventListener('click', closeDrawer);
+
+  document.querySelectorAll('.r-btn[data-panel]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const panelId = (btn as HTMLElement).dataset.panel;
+      if (!panelId) return;
+      if (currentPanel === panelId) { closeDrawer(); return; }
+      const titles: Record<string, string> = {
+        info: 'Información', toc: 'Índice', search: 'Buscar', notes: 'Notas', settings: 'Ajustes de lectura',
+      };
+      openDrawer(panelId, titles[panelId] ?? panelId);
+    });
+  });
+}
+
+/* ==========================================================================
+   Zen mode
+   ========================================================================== */
+
+function setupZen(): void {
+  const zenBtn = document.getElementById('r-zen');
+  const zenExit = document.getElementById('zen-exit');
+  const reader = document.getElementById('reader');
+  if (!reader) return;
+
+  const toggleZen = () => reader.classList.toggle('zen');
+  if (zenBtn) zenBtn.addEventListener('click', toggleZen);
+  if (zenExit) zenExit.addEventListener('click', toggleZen);
+}
+
+/* ==========================================================================
+   Settings: theme, font, size, line-height
+   ========================================================================== */
+
+function setupSettings(preferences: ReaderPreferences): void {
+  const reader = document.getElementById('reader');
+  const page = document.getElementById('page');
+  if (!reader || !page) return;
+
+  let currentSize = 19;
+  let currentLh = 1.75;
+
+  // Theme swatches
+  document.querySelectorAll('.sw[data-t]').forEach((sw) => {
+    sw.addEventListener('click', () => {
+      document.querySelectorAll('.sw[data-t]').forEach((s) => s.classList.remove('sel'));
+      sw.classList.add('sel');
+      reader.setAttribute('data-theme', (sw as HTMLElement).dataset.t ?? 'paper');
+    });
+  });
+
+  // Font segmented
+  document.querySelectorAll('#sw-font button[data-f]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#sw-font button').forEach((b) => b.classList.remove('sel'));
+      btn.classList.add('sel');
+      reader.setAttribute('data-font', (btn as HTMLElement).dataset.f ?? 'serif');
+    });
+  });
+
+  // Size stepper
+  const sizeVal = document.getElementById('size-val');
+  const sizeDown = document.getElementById('size-down');
+  const sizeUp = document.getElementById('size-up');
+  const updateSize = (delta: number) => {
+    currentSize = Math.max(14, Math.min(28, currentSize + delta));
+    if (sizeVal) sizeVal.textContent = `${currentSize} px`;
+    page.style.setProperty('--read-size', `${currentSize}px`);
+  };
+  if (sizeDown) sizeDown.addEventListener('click', () => updateSize(-1));
+  if (sizeUp) sizeUp.addEventListener('click', () => updateSize(1));
+
+  // Line height segmented
+  document.querySelectorAll('#sw-lh button[data-lh]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#sw-lh button').forEach((b) => b.classList.remove('sel'));
+      btn.classList.add('sel');
+      currentLh = parseFloat((btn as HTMLElement).dataset.lh ?? '1.75');
+      page.style.setProperty('--read-lh', String(currentLh));
+    });
+  });
+}
+
+/* ==========================================================================
+   TOC rendering
+   ========================================================================== */
+
+async function renderTOC(readerDoc: ReaderDocument): Promise<void> {
+  const tocPanel = document.getElementById('panel-toc');
+  if (!tocPanel) return;
+
+  // Check if the document supports TOC via capabilities or optional methods
+  const doc = readerDoc as unknown as Record<string, unknown>;
+  const getTOC = doc.getTOC as (() => Promise<Array<{ title: string; href?: string }>>) | undefined;
+  if (!getTOC) {
+    tocPanel.innerHTML = '<p style="color:var(--read-tx-lo);font-size:14px">No hay índice disponible.</p>';
+    return;
+  }
+
   try {
-    if (direction === 'next') {
-      await readerDoc.goNext();
-    } else {
-      await readerDoc.goPrevious();
-    }
-    await renderChapter(readerDoc, preferences);
-  } catch (error) {
-    if (error instanceof Error && error.name === 'EpubNavigationError') {
+    const toc = await getTOC();
+    if (!toc || toc.length === 0) {
+      tocPanel.innerHTML = '<p style="color:var(--read-tx-lo);font-size:14px">No hay índice disponible.</p>';
       return;
     }
-    throw error;
+
+    const getCurrentIdx = doc.getCurrentChapterIndex as (() => Promise<number>) | undefined;
+    const currentIndex = getCurrentIdx ? await getCurrentIdx() : -1;
+
+    tocPanel.innerHTML = toc.map((item: { title: string; href?: string }, i: number) => {
+      const isCurrent = i === currentIndex;
+      return `<button class="toc-item${isCurrent ? ' current' : ''}" data-chapter="${i}">
+        <span class="n">${i + 1}</span>
+        <span class="t">${item.title}</span>
+      </button>`;
+    }).join('');
+
+    const goToChapter = doc.goToChapter as ((idx: number) => Promise<void>) | undefined;
+    tocPanel.querySelectorAll('.toc-item').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const idx = parseInt((btn as HTMLElement).dataset.chapter ?? '0', 10);
+        if (goToChapter) {
+          await goToChapter(idx);
+          await renderChapter(readerDoc, currentPreferences);
+          closeDrawer();
+        }
+      });
+    });
+  } catch {
+    tocPanel.innerHTML = '<p style="color:var(--read-tx-lo);font-size:14px">Error al cargar el índice.</p>';
+  }
+}
+
+/* ==========================================================================
+   Toast
+   ========================================================================== */
+
+function showToast(message: string): void {
+  const toast = document.getElementById('toast');
+  const toastTx = document.getElementById('toast-tx');
+  if (!toast || !toastTx) return;
+  toastTx.textContent = message;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
+/* ==========================================================================
+   Bookmark
+   ========================================================================== */
+
+function setupBookmark(): void {
+  const markBtn = document.getElementById('r-mark');
+  if (markBtn) {
+    markBtn.addEventListener('click', () => {
+      markBtn.classList.toggle('on');
+      const isOn = markBtn.classList.contains('on');
+      showToast(isOn ? 'Marcador añadido' : 'Marcador eliminado');
+    });
+  }
+}
+
+/* ==========================================================================
+   Back button
+   ========================================================================== */
+
+function setupBack(): void {
+  const backBtn = document.getElementById('r-back');
+  if (backBtn) {
+    backBtn.addEventListener('click', () => {
+      window.location.href = '/';
+    });
   }
 }
 
@@ -466,19 +484,11 @@ async function navigateChapter(
    Carga de documento
    ========================================================================== */
 
-async function loadDocument(
-  uri: string,
-  format: SupportedFormat,
-  preloadedData?: Uint8Array,
-): Promise<ReaderDocument> {
-  log('loadDocument() format:', format, 'preloadedData:', preloadedData ? `${preloadedData.byteLength} bytes` : 'undefined');
+async function loadDocument(uri: string, format: SupportedFormat, preloadedData?: Uint8Array): Promise<ReaderDocument> {
   switch (format) {
     case 'epub': {
-      log('creando EpubReaderDocument...');
       const doc = new EpubReaderDocument({ uri, name: '' });
-      log('abriendo documento EPUB...');
       await doc.open(preloadedData);
-      log('documento EPUB abierto exitosamente');
       return doc;
     }
     default:
@@ -487,77 +497,69 @@ async function loadDocument(
 }
 
 /* ==========================================================================
-   Punto de entrada principal
+   Entry point
    ========================================================================== */
 
 let currentReaderDoc: ReaderDocument | null = null;
 let currentPreferences: ReaderPreferences = DEFAULT_PREFERENCES;
 
-function log(...args: unknown[]): void {
-  console.log('[reader-entry]', ...args);
-}
+function log(...args: unknown[]): void { console.log('[reader-entry]', ...args); }
 
 async function main(): Promise<void> {
-  log('main() iniciado');
   setUIState({ type: 'loading' });
 
   try {
     const { uri, format } = parseQueryParams();
-    log('query params parseados:', { uri, format });
 
-    // Exponer función global para que el host pueda enviar datos
     (window as unknown as Record<string, unknown>).__initFromHost = async (data: {
       preferences: ReaderPreferences;
-      fileData: Array<number> | Uint8Array;
+      fileDataB64: string;
     }) => {
-      log('__initFromHost() llamado');
       try {
-        // Convertir Array a Uint8Array si es necesario
-        const fileData = data.fileData instanceof Uint8Array
-          ? data.fileData
-          : new Uint8Array(data.fileData);
-        log('fileData convertido, tamaño:', fileData.byteLength);
+        const binary = atob(data.fileDataB64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
 
         currentPreferences = data.preferences;
-        log('preferences cargadas, tema:', currentPreferences.theme);
-
-        log('iniciando loadDocument()...');
-        currentReaderDoc = await loadDocument(uri, format, fileData);
-        log('loadDocument() completado');
+        currentReaderDoc = await loadDocument(uri, format, bytes);
 
         setUIState({ type: 'content' });
-        log('estado UI cambiado a content');
-
-        log('iniciando renderChapter()...');
         await renderChapter(currentReaderDoc, currentPreferences);
-        log('renderChapter() completado');
-
         setupNavigation(currentReaderDoc, currentPreferences);
-        log('navegación configurada');
+        setupDrawer();
+        setupZen();
+        setupSettings(currentPreferences);
+        setupBookmark();
+        setupBack();
+        await renderTOC(currentReaderDoc);
 
-        log('=== LIBRO CARGADO EXITOSAMENTE ===');
+        // Apply initial theme from preferences
+        const reader = document.getElementById('reader');
+        if (reader) {
+          const themeMap: Record<string, string> = { light: 'paper', dark: 'night' };
+          const theme = themeMap[currentPreferences.theme] ?? 'paper';
+          reader.setAttribute('data-theme', theme);
+          document.querySelectorAll('.sw[data-t]').forEach((sw) => {
+            sw.classList.toggle('sel', (sw as HTMLElement).dataset.t === theme);
+          });
+        }
       } catch (error) {
-        log('ERROR en __initFromHost:', error);
         const message = error instanceof Error ? error.message : 'Error al abrir el libro';
         setUIState({ type: 'error', message });
       }
     };
 
-    log('__initFromHost expuesto en window, esperando datos del host...');
-
-    // Retry
     const retryBtn = document.getElementById('reader-error-retry');
     if (retryBtn) {
       retryBtn.addEventListener('click', () => {
-        log('botón reintentar presionado');
         currentReaderDoc = null;
         main();
       });
     }
   } catch (error) {
-    log('ERROR en main():', error);
-    const message =
-      error instanceof Error ? error.message : 'Error desconocido al abrir el libro';
+    const message = error instanceof Error ? error.message : 'Error desconocido al abrir el libro';
     setUIState({ type: 'error', message });
   }
 }

@@ -3,38 +3,152 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lector — Echo Reader</title>
+    <title>Lector — Clio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/src/reader.css" />
   </head>
   <body>
-    <div id="reader-loading" class="reader-state" role="status" aria-live="polite">
-      <div class="spinner" aria-hidden="true"></div>
-      <p>Cargando libro...</p>
-    </div>
+    <section class="reader" id="reader" data-theme="paper" data-font="serif" aria-hidden="true">
 
-    <div id="reader-error" class="reader-state" style="display: none" role="alert">
-      <p id="reader-error-message"></p>
-      <button id="reader-error-retry" class="reader-button reader-button--primary">
-        Reintentar
-      </button>
-    </div>
+      <!-- toolbar -->
+      <header class="r-bar" id="r-bar">
+        <button class="r-btn" id="r-back" title="Volver a la biblioteca">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+        </button>
+        <div class="r-title" id="r-title">Título<small id="r-author">Autor</small></div>
+        <div style="flex:1"></div>
+        <div class="r-tools">
+          <button class="r-btn" data-panel="info" title="Información">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+          </button>
+          <button class="r-btn" data-panel="toc" title="Índice">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h12M8 12h12M8 18h12"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>
+          </button>
+          <button class="r-btn" data-panel="search" title="Buscar en el documento">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          </button>
+          <button class="r-btn" data-panel="notes" title="Notas">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11l-4 4H4z"/><path d="M16 20v-4h4"/><path d="M8 9h8M8 13h5"/></svg>
+          </button>
+          <button class="r-btn" id="r-mark" title="Añadir marcador">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12v16l-6-4-6 4z"/></svg>
+          </button>
+          <span class="r-sep"></span>
+          <button class="r-btn" data-panel="settings" title="Ajustes de lectura">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2.3"/><circle cx="8" cy="17" r="2.3"/></svg>
+          </button>
+          <button class="r-btn" id="r-zen" title="Modo Zen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"/></svg>
+          </button>
+        </div>
+      </header>
 
-    <div id="reader-content" class="epub-content" style="display: none" role="document"></div>
+      <!-- zona de lectura -->
+      <div class="r-scroll" id="r-scroll">
+        <button class="zen-exit" id="zen-exit" title="Salir de Zen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+        <article class="page" id="page"></article>
+      </div>
 
-    <nav
-      id="reader-controls"
-      class="reader-controls"
-      aria-label="Navegación del libro"
-      style="display: none"
-    >
-      <button id="btn-prev" class="reader-controls__button" aria-label="Capítulo anterior">
-        ← Anterior
-      </button>
-      <span id="chapter-info" class="reader-controls__info" aria-live="polite"></span>
-      <button id="btn-next" class="reader-controls__button" aria-label="Capítulo siguiente">
-        Siguiente →
-      </button>
-    </nav>
+      <!-- navegación inferior -->
+      <footer class="r-foot" id="r-foot">
+        <button class="pg-btn" id="prev-page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>Anterior
+        </button>
+        <div class="r-progress">
+          <div class="track" id="track"><i id="track-fill"></i></div>
+          <span class="pct" id="pct">Cap. 1</span>
+        </div>
+        <button class="pg-btn" id="next-page">
+          Siguiente <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+      </footer>
+
+      <!-- toast -->
+      <div class="toast" id="toast">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12v18l-6-4-6 4z"/></svg>
+        <span id="toast-tx">Marcador añadido</span>
+      </div>
+
+      <!-- drawer -->
+      <div class="drawer-scrim" id="scrim"></div>
+      <aside class="drawer" id="drawer">
+        <div class="drawer-head">
+          <h3 id="drawer-title">Índice</h3>
+          <button class="x" id="drawer-x">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="drawer-body">
+          <!-- índice -->
+          <div class="panel" id="panel-toc"></div>
+          <!-- buscar -->
+          <div class="panel" id="panel-search">
+            <div class="dsearch">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+              <input id="doc-search" placeholder="Buscar palabra o frase…">
+            </div>
+            <div id="doc-results"></div>
+          </div>
+          <!-- notas -->
+          <div class="panel" id="panel-notes">
+            <textarea class="note-add" id="note-input" placeholder="Escribe una nota sobre esta página…"></textarea>
+            <button class="note-save" id="note-save">Guardar nota</button>
+            <div id="notes-list"></div>
+          </div>
+          <!-- info -->
+          <div class="panel" id="panel-info"></div>
+          <!-- ajustes de lectura -->
+          <div class="panel" id="panel-settings">
+            <div class="set-group">
+              <label>Tema</label>
+              <div class="swatches" id="sw-theme">
+                <button class="sw sel" data-t="paper" title="Papel"></button>
+                <button class="sw" data-t="sepia" title="Sepia"></button>
+                <button class="sw" data-t="night" title="Noche"></button>
+              </div>
+            </div>
+            <div class="set-group">
+              <label>Tipografía</label>
+              <div class="seg" id="sw-font">
+                <button class="sel" data-f="serif">Serif</button>
+                <button data-f="sans">Sans</button>
+              </div>
+            </div>
+            <div class="set-group">
+              <label>Tamaño de letra</label>
+              <div class="stepper">
+                <button id="size-down">−</button>
+                <span class="val" id="size-val">19 px</span>
+                <button id="size-up">+</button>
+              </div>
+            </div>
+            <div class="set-group">
+              <label>Interlineado</label>
+              <div class="seg" id="sw-lh">
+                <button data-lh="1.55">Compacto</button>
+                <button class="sel" data-lh="1.75">Normal</button>
+                <button data-lh="2">Amplio</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- loading / error (overlay dentro del reader) -->
+      <div class="reader-overlay" id="reader-loading">
+        <div class="spinner" aria-hidden="true"></div>
+        <p>Cargando libro…</p>
+      </div>
+      <div class="reader-overlay" id="reader-error" style="display:none" role="alert">
+        <p id="reader-error-message"></p>
+        <button id="reader-error-retry" class="r-action-btn">Reintentar</button>
+      </div>
+
+    </section>
 
     <script type="module" src="/src/reader-entry.ts"></script>
   </body>

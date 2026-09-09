@@ -3,6 +3,7 @@
 interface ElectronAPI {
   pickFile(): Promise<Array<{ uri: string; name: string; filePath: string }> | null>;
   readFile(uri: string): Promise<ArrayBuffer>;
+  writeFileTemp(buffer: ArrayBuffer, ext: string): Promise<string>;
   readStorage(key: string): Promise<string | undefined>;
   writeStorage(key: string, value: string): Promise<void>;
   deleteStorage(key: string): Promise<void>;
