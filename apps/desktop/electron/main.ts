@@ -1,8 +1,10 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { readFile, writeFile, mkdir, access, constants } from 'fs/promises';
+import { readFile, writeFile, mkdir, access, constants, unlink } from 'fs/promises';
 import { existsSync } from 'fs';
+import { tmpdir } from 'os';
+import { randomUUID } from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -106,6 +108,17 @@ if (!gotTheLock) {
       return buffer;
     });
 
+    ipcMain.handle('write-file-temp', async (_event, buffer: ArrayBuffer, ext: string) => {
+      const tempDir = join(tmpdir(), 'clio-reader');
+      if (!existsSync(tempDir)) {
+        await mkdir(tempDir, { recursive: true });
+      }
+      const fileName = `${randomUUID()}.${ext}`;
+      const tempPath = join(tempDir, fileName);
+      await writeFile(tempPath, Buffer.from(buffer));
+      return tempPath;
+    });
+
     ipcMain.handle('read-storage', async (_event, key: string) => {
       await ensureDataDir();
       const filePath = join(getDataPath(), `${key}.json`);
@@ -126,7 +139,6 @@ if (!gotTheLock) {
       await ensureDataDir();
       const filePath = join(getDataPath(), `${key}.json`);
       if (existsSync(filePath)) {
-        const { unlink } = await import('fs/promises');
         await unlink(filePath);
       }
     });

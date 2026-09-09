@@ -9,6 +9,10 @@ const electronAPI = {
     return ipcRenderer.invoke('read-file', uri);
   },
 
+  writeFileTemp: (buffer: ArrayBuffer, ext: string): Promise<string> => {
+    return ipcRenderer.invoke('write-file-temp', buffer, ext);
+  },
+
   readStorage: (key: string): Promise<string | undefined> => {
     return ipcRenderer.invoke('read-storage', key);
   },
