@@ -181,6 +181,8 @@ export function App(): JSX.Element {
         fileUri={openBook.uri}
         format={openBook.format}
         repository={repository}
+        paletteId={paletteId}
+        theme={theme}
         onClose={handleCloseBook}
       />
     );

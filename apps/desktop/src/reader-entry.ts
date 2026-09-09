@@ -551,6 +551,17 @@ async function main(): Promise<void> {
       }
     };
 
+    /* --- Palette injection from host --- */
+    (window as unknown as Record<string, unknown>).__applyPalette = (cssVars: string) => {
+      let style = document.getElementById('palette-injected') as HTMLStyleElement | null;
+      if (!style) {
+        style = document.createElement('style');
+        style.id = 'palette-injected';
+        document.head.appendChild(style);
+      }
+      style.textContent = `:root { ${cssVars} }`;
+    };
+
     const retryBtn = document.getElementById('reader-error-retry');
     if (retryBtn) {
       retryBtn.addEventListener('click', () => {

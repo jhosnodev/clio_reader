@@ -11,6 +11,7 @@ import { bridge } from '../bridges/bridge-singleton';
 import type { LibraryRepository } from '@clio-reader/library';
 import type { ReaderPreferences } from '@clio-reader/domain';
 import { createDefaultPreferences } from '@clio-reader/domain';
+import { getPalette, LIGHT_DEFAULTS } from '../themes';
 
 /* ==========================================================================
    Props
@@ -21,6 +22,8 @@ interface ReaderViewProps {
   readonly fileUri: string;
   readonly format: string;
   readonly repository: LibraryRepository;
+  readonly paletteId: string;
+  readonly theme: 'dark' | 'light';
   readonly onClose: () => void;
 }
 
@@ -37,6 +40,27 @@ type FileStatus = 'checking' | 'found' | 'not-found';
 const PROGRESS_DEBOUNCE_MS = 800;
 
 /* ==========================================================================
+   Helper: build palette CSS string for webview injection
+   ========================================================================== */
+
+function buildPaletteCss(paletteId: string, mode: 'dark' | 'light'): string {
+  const palette = getPalette(paletteId);
+  const src = mode === 'dark' ? palette.dark : LIGHT_DEFAULTS;
+  const vars: string[] = [];
+  for (const [key, val] of Object.entries(src)) {
+    vars.push(`--${key}:${val}`);
+  }
+  // RGB decompositions always from dark palette
+  if (mode === 'light') {
+    vars.push(`--gold-rgb:${palette.dark['gold-rgb']}`);
+    vars.push(`--verdigris-rgb:${palette.dark['verdigris-rgb']}`);
+    vars.push(`--ink950-rgb:${palette.dark['ink950-rgb']}`);
+    vars.push(`--rose-rgb:${palette.dark['rose-rgb']}`);
+  }
+  return vars.join(';');
+}
+
+/* ==========================================================================
    Componente
    ========================================================================== */
 
@@ -45,6 +69,8 @@ export function ReaderView({
   fileUri,
   format,
   repository,
+  paletteId,
+  theme,
   onClose,
 }: ReaderViewProps): JSX.Element {
   const [fileStatus, setFileStatus] = useState<FileStatus>('checking');
@@ -139,14 +165,20 @@ export function ReaderView({
         const initData = { preferences, fileDataB64: b64 };
         const initCode = `window.__initFromHost(${JSON.stringify(initData)})`;
 
-        await (webviewRef.current as unknown as { executeJavaScript: (code: string) => Promise<unknown> })?.executeJavaScript(initCode);
+        const wv = webviewRef.current as unknown as { executeJavaScript: (code: string) => Promise<unknown> } | null;
+        await wv?.executeJavaScript(initCode);
+
+        // Inject palette CSS variables into the webview
+        const paletteCss = buildPaletteCss(paletteId, theme);
+        await wv?.executeJavaScript(`window.__applyPalette(${JSON.stringify(paletteCss)})`);
+
         setWebviewLoaded(true);
       } catch (err) {
         console.error('[reader] error inyectando datos en webview:', err);
         setWebviewLoaded(true);
       }
     };
-  }, [loadPreferences, fileUri]);
+  }, [loadPreferences, fileUri, paletteId, theme]);
 
   /* ----- Cleanup del listener en unmount ----- */
   useEffect(() => {

@@ -63,7 +63,6 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
   background: var(--read-bg); color: var(--read-tx);
   transform: translateY(100%); pointer-events: none;
   transition: transform .42s var(--ease);
-  --ink-800: #28362d; --tx-hi: #efe9dd;
 }
 .reader.open { transform: none; pointer-events: auto; }
 
