@@ -1,12 +1,9 @@
 /**
  * ReaderView.tsx — Vista del lector de libros
  *
- * Principios aplicados:
- * - SRP: Gestiona webview, verificación de archivos, progreso y preferencias
- * - DIP: Recibe repository via props, no lo crea
- * - Fallback: Verifica existencia del archivo antes de cargar
- * - UI en español
- * - Accesibilidad
+ * El toolbar y controles están dentro del webview (reader.html).
+ * Este componente solo gestiona: webview, verificación de archivos,
+ * inyección de datos, progreso y preferencias.
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -52,22 +49,20 @@ export function ReaderView({
 }: ReaderViewProps): JSX.Element {
   const [fileStatus, setFileStatus] = useState<FileStatus>('checking');
   const [isRelocating, setIsRelocating] = useState(false);
+  const [webviewLoaded, setWebviewLoaded] = useState(false);
   const webviewRef = useRef<HTMLElement | null>(null);
   const progressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  /* ----- Handler estable para did-finish-load (ref para evitar stale closures) ----- */
+  /* ----- Handler estable para did-finish-load ----- */
   const handleFinishLoadRef = useRef<(() => Promise<void>) | null>(null);
 
   /* ----- Verificar existencia del archivo ----- */
   const checkFile = useCallback(async () => {
     setFileStatus('checking');
-    console.log('[reader] verificando archivo:', fileUri);
     try {
       const exists = await bridge.checkFileExists(fileUri);
-      console.log('[reader] archivo', exists ? 'encontrado' : 'no encontrado');
       setFileStatus(exists ? 'found' : 'not-found');
-    } catch (err) {
-      console.error('[reader] error verificando archivo:', err);
+    } catch {
       setFileStatus('not-found');
     }
   }, [fileUri]);
@@ -86,14 +81,6 @@ export function ReaderView({
       return { ...globalPrefs, ...bookPrefs };
     } catch {
       return createDefaultPreferences();
-    }
-  }, [repository, bookId]);
-
-  const loadProgress = useCallback(async () => {
-    try {
-      return await repository.getProgress(bookId);
-    } catch {
-      return undefined;
     }
   }, [repository, bookId]);
 
@@ -132,35 +119,31 @@ export function ReaderView({
   /* ----- Actualizar el handler del webview cuando cambian las dependencias ----- */
   useEffect(() => {
     handleFinishLoadRef.current = async (): Promise<void> => {
-      console.log('[reader] did-finish-load disparado, inyectando datos...');
       try {
         const [preferences, fileData] = await Promise.all([
           loadPreferences(),
           bridge.readFile(fileUri),
         ]);
 
-        console.log('[reader] datos cargados:', {
-          archivoTamanio: fileData.byteLength,
-          esUint8Array: fileData instanceof Uint8Array,
-          preferenciasTema: preferences.theme,
-        });
-
         if (!fileData || fileData.byteLength === 0) {
-          console.error('[reader] ERROR: archivo leído está vacío o es inválido');
+          console.error('[reader] archivo leído está vacío o es inválido');
           return;
         }
 
-        const fileArray = Array.from(fileData);
-        console.log('[reader] array serializado, longitud:', fileArray.length);
+        let binary = '';
+        for (let i = 0; i < fileData.byteLength; i++) {
+          binary += String.fromCharCode(fileData[i]!);
+        }
+        const b64 = btoa(binary);
 
-        const initData = { preferences, fileData: fileArray };
+        const initData = { preferences, fileDataB64: b64 };
         const initCode = `window.__initFromHost(${JSON.stringify(initData)})`;
-        console.log('[reader] ejecutando __initFromHost, tamaño del código:', initCode.length);
 
         await (webviewRef.current as unknown as { executeJavaScript: (code: string) => Promise<unknown> })?.executeJavaScript(initCode);
-        console.log('[reader] datos inyectados en webview exitosamente');
+        setWebviewLoaded(true);
       } catch (err) {
-        console.error('[reader] ERROR inyectando datos en webview:', err);
+        console.error('[reader] error inyectando datos en webview:', err);
+        setWebviewLoaded(true);
       }
     };
   }, [loadPreferences, fileUri]);
@@ -179,7 +162,6 @@ export function ReaderView({
   const webviewCallbackRef = useCallback((el: HTMLElement | null) => {
     const prevEl = webviewRef.current;
 
-    // Limpiar listener del elemento anterior si existe
     if (prevEl && handleFinishLoadRef.current) {
       (prevEl as HTMLElement & { removeEventListener: (event: string, handler: () => void) => void })
         .removeEventListener('did-finish-load', handleFinishLoadRef.current);
@@ -188,20 +170,29 @@ export function ReaderView({
     webviewRef.current = el;
 
     if (el) {
-      console.log('[reader] webview elemento creado, adjuntando listener did-finish-load');
+      setWebviewLoaded(false);
       (el as HTMLElement & { addEventListener: (event: string, handler: () => void) => void })
         .addEventListener('did-finish-load', handleFinishLoadRef.current!);
-      (el as HTMLElement & { addEventListener: (event: string, handler: () => void) => void })
-        .addEventListener('dom-ready', () => {
-          console.log('[reader] webview dom-ready, abriendo devtools...');
-          try {
-            (el as unknown as { openDevTools: () => void }).openDevTools();
-          } catch (e) {
-            console.error('[reader] error abriendo devtools:', e);
-          }
-        });
     }
   }, []);
+
+  /* ----- Interceptar navegación a "/" del webview (back button) ----- */
+  useEffect(() => {
+    const webview = webviewRef.current as (HTMLElement & { addEventListener: (event: string, handler: (...args: unknown[]) => void) => void; removeEventListener: (event: string, handler: (...args: unknown[]) => void) => void }) | null;
+    if (!webview) return;
+
+    const handleNavigate = (...args: unknown[]): void => {
+      const event = args[0] as { href?: string } | undefined;
+      if (event?.href === '/' || event?.href === '') {
+        onClose();
+      }
+    };
+
+    webview.addEventListener('did-navigate', handleNavigate);
+    return () => {
+      webview.removeEventListener('did-navigate', handleNavigate);
+    };
+  }, [onClose]);
 
   /* ----- Guardar progreso al cerrar la ventana ----- */
   useEffect(() => {
@@ -234,32 +225,30 @@ export function ReaderView({
   /* ----- Renderizado ----- */
   return (
     <div style={styles.container}>
-      <header style={styles.header}>
-        <button style={styles.backButton} onClick={onClose} aria-label="Volver a la biblioteca">
-          ← Volver
-        </button>
-        <span style={styles.title}>Leyendo</span>
-        <div style={styles.spacer} />
-      </header>
-
-      <main style={styles.content}>
-        {fileStatus === 'checking' && <LoadingState />}
-        {fileStatus === 'not-found' && (
-          <FileNotFoundState
-            fileUri={fileUri}
-            onRelocate={handleRelocate}
-            isRelocating={isRelocating}
-          />
-        )}
-        {fileStatus === 'found' && (
+      {fileStatus === 'checking' && <LoadingState />}
+      {fileStatus === 'not-found' && (
+        <FileNotFoundState
+          fileUri={fileUri}
+          onRelocate={handleRelocate}
+          isRelocating={isRelocating}
+        />
+      )}
+      {fileStatus === 'found' && (
+        <>
           <webview
             ref={webviewCallbackRef}
             src={readerUrl}
             style={styles.webview}
             partition="persist:reader"
           />
-        )}
-      </main>
+          {!webviewLoaded && (
+            <div style={styles.loadingOverlay} role="status" aria-busy="true" aria-label="Abriendo libro">
+              <div style={styles.spinner} aria-hidden="true" />
+              <p style={styles.loadingText}>Abriendo libro…</p>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
@@ -270,9 +259,9 @@ export function ReaderView({
 
 function LoadingState(): JSX.Element {
   return (
-    <div style={styles.stateContainer}>
+    <div style={styles.loadingOverlay}>
       <div style={styles.spinner} aria-hidden="true" />
-      <p style={styles.stateText}>Verificando archivo...</p>
+      <p style={styles.loadingText}>Verificando archivo…</p>
     </div>
   );
 }
@@ -290,6 +279,7 @@ function FileNotFoundState({
 }: FileNotFoundStateProps): JSX.Element {
   return (
     <div style={styles.stateContainer}>
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6a657a" strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
       <p style={styles.errorTitle}>Archivo no encontrado</p>
       <p style={styles.errorDetail}>El archivo no se encuentra en la ubicación original:</p>
       <p style={styles.errorPath}>{fileUri}</p>
@@ -300,7 +290,7 @@ function FileNotFoundState({
         disabled={isRelocating}
         aria-label="Localizar archivo en otra ubicación"
       >
-        {isRelocating ? 'Buscando...' : 'Localizar archivo'}
+        {isRelocating ? 'Buscando…' : 'Localizar archivo'}
       </button>
     </div>
   );
@@ -315,40 +305,37 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     height: '100vh',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-  },
-  header: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: '8px 16px',
-    borderBottom: '1px solid #e5e7eb',
-    backgroundColor: '#ffffff',
-  },
-  backButton: {
-    padding: '6px 12px',
-    backgroundColor: 'transparent',
-    border: '1px solid #d1d5db',
-    borderRadius: '4px',
-    fontSize: '14px',
-    cursor: 'pointer',
-  },
-  title: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: '14px',
-    fontWeight: 500,
-    color: '#374151',
-  },
-  spacer: {
-    width: '60px',
-  },
-  content: {
-    flex: 1,
-    display: 'flex',
+    background: '#100f18',
+    fontFamily: '"Hanken Grotesk", system-ui, sans-serif',
+    position: 'relative',
   },
   webview: {
     flex: 1,
     border: 'none',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    inset: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+    background: '#100f18',
+    zIndex: 10,
+  },
+  spinner: {
+    width: 36,
+    height: 36,
+    border: '3px solid #332f47',
+    borderTopColor: '#655d4a',
+    borderRadius: '50%',
+    animation: 'spin 0.8s linear infinite',
+  },
+  loadingText: {
+    fontSize: 15,
+    color: '#8b8598',
+    letterSpacing: '.01em',
   },
   stateContainer: {
     display: 'flex',
@@ -356,57 +343,50 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
     height: '100%',
-    gap: '12px',
-    padding: '24px',
+    gap: 16,
+    padding: 24,
     textAlign: 'center',
-  },
-  spinner: {
-    width: '32px',
-    height: '32px',
-    border: '3px solid #e5e7eb',
-    borderTopColor: '#2563eb',
-    borderRadius: '50%',
-    animation: 'spin 0.8s linear infinite',
-  },
-  stateText: {
-    fontSize: '16px',
-    color: '#6b7280',
+    background: '#100f18',
+    color: '#8b8598',
   },
   errorTitle: {
-    fontSize: '18px',
+    fontFamily: '"Fraunces", serif',
+    fontSize: 18,
     fontWeight: 600,
-    color: '#1f2937',
+    color: '#efe9dd',
     margin: 0,
   },
   errorDetail: {
-    fontSize: '14px',
-    color: '#6b7280',
+    fontSize: 14,
+    color: '#8b8598',
     margin: 0,
   },
   errorPath: {
-    fontSize: '13px',
+    fontSize: 13,
     fontFamily: 'monospace',
-    color: '#374151',
-    backgroundColor: '#f3f4f6',
+    color: '#cbc4ba',
+    background: '#1c1a28',
     padding: '8px 12px',
-    borderRadius: '4px',
+    borderRadius: 8,
+    border: '1px solid #332f47',
     wordBreak: 'break-all',
     margin: 0,
   },
   errorHint: {
-    fontSize: '13px',
-    color: '#9ca3af',
+    fontSize: 13,
+    color: '#6a657a',
     margin: 0,
   },
   relocateButton: {
-    padding: '8px 16px',
-    backgroundColor: '#2563eb',
-    color: '#ffffff',
+    padding: '10px 20px',
+    background: 'linear-gradient(180deg, #a4825d, #655d4a)',
+    color: '#100f18',
     border: 'none',
-    borderRadius: '6px',
-    fontSize: '14px',
-    fontWeight: 500,
+    borderRadius: 10,
+    fontSize: 14,
+    fontWeight: 600,
     cursor: 'pointer',
-    marginTop: '8px',
+    marginTop: 8,
+    fontFamily: 'inherit',
   },
 };

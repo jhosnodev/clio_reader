@@ -65,8 +65,8 @@ function getReadingStatus(book: Book): ReadingStatus {
 }
 
 const STATUS_CFG: Record<ReadingStatus, { label: string; dot: string }> = {
-  unread: { label: 'Sin leer', dot: '#c17b7b' },
-  opened: { label: 'Abierto', dot: '#c9a24b' },
+  unread: { label: 'Sin leer', dot: '#6f4143' },
+  opened: { label: 'Abierto', dot: '#655d4a' },
   reading: { label: 'Leyendo', dot: '#4fa393' },
 };
 
@@ -230,11 +230,11 @@ function Rail({ active, onChange, theme, onToggleTheme }: { readonly active: Vie
     <aside style={S.rail}>
       <div style={S.brand} title="Clio">
         <svg viewBox="0 0 24 24" fill="none" width="26" height="26">
-          <path d="M12 3c-2.4 1.6-3.4 4-3.4 6.4M12 3c2.4 1.6 3.4 4 3.4 6.4" stroke="#e6c874" strokeWidth="1.3" strokeLinecap="round"/>
+          <path d="M12 3c-2.4 1.6-3.4 4-3.4 6.4M12 3c2.4 1.6 3.4 4 3.4 6.4" stroke="#a4825d" strokeWidth="1.3" strokeLinecap="round"/>
           <path d="M9 6.2c-1.6.3-2.6 1.3-3 2.7M15 6.2c1.6.3 2.6 1.3 3 2.7" stroke="#4fa393" strokeWidth="1.2" strokeLinecap="round"/>
-          <rect x="10.4" y="9.5" width="3.2" height="9" rx=".4" fill="#c9a24b"/>
-          <path d="M8.5 18.5h7" stroke="#e6c874" strokeWidth="1.4" strokeLinecap="round"/>
-          <path d="M9.2 21h5.6" stroke="#8a7434" strokeWidth="1.3" strokeLinecap="round"/>
+          <rect x="10.4" y="9.5" width="3.2" height="9" rx=".4" fill="#655d4a"/>
+          <path d="M8.5 18.5h7" stroke="#a4825d" strokeWidth="1.4" strokeLinecap="round"/>
+          <path d="M9.2 21h5.6" stroke="#3b392a" strokeWidth="1.3" strokeLinecap="round"/>
         </svg>
       </div>
 
@@ -266,7 +266,7 @@ function Rail({ active, onChange, theme, onToggleTheme }: { readonly active: Vie
         className="theme-toggle"
         style={{
           ...S.navBtn,
-          color: theme === 'dark' ? '#8a7434' : '#c9a24b',
+          color: theme === 'dark' ? '#3b392a' : '#655d4a',
         }}
         onClick={onToggleTheme}
         onMouseEnter={() => setHovered('theme')}
@@ -610,7 +610,7 @@ function BookCard({ book, onOpen, onRemove }: BookCardProps): JSX.Element {
             ...S.dot,
             backgroundColor: cfg.dot,
             boxShadow: status === 'reading' ? '0 0 0 3px rgba(79,163,147,.25)'
-              : status === 'opened' ? '0 0 0 3px rgba(201,162,75,.25)' : 'none',
+              : status === 'opened' ? '0 0 0 3px rgba(101,93,74,.25)' : 'none',
           }} />
           {cfg.label}
         </span>
@@ -669,7 +669,7 @@ function BookCard({ book, onOpen, onRemove }: BookCardProps): JSX.Element {
 const S: Record<string, React.CSSProperties> = {
   app: {
     display: 'flex', height: '100vh',
-    background: 'radial-gradient(1200px 600px at 80% -10%, rgba(79,163,147,.06), transparent 60%), radial-gradient(1000px 500px at -5% 110%, rgba(201,162,75,.06), transparent 55%), var(--ink-950)',
+    background: 'radial-gradient(1200px 600px at 80% -10%, rgba(79,163,147,.06), transparent 60%), radial-gradient(1000px 500px at -5% 110%, rgba(101,93,74,.06), transparent 55%), var(--ink-950)',
     fontFamily: '"Hanken Grotesk", system-ui, sans-serif', color: 'var(--tx)',
     transition: 'background .3s var(--ease)',
   },
@@ -686,8 +686,8 @@ const S: Record<string, React.CSSProperties> = {
     width: 46, height: 46, borderRadius: 13,
     display: 'grid', placeItems: 'center', marginBottom: 18,
     background: 'radial-gradient(120% 120% at 30% 20%, #2b2740, #17141f)',
-    border: '1px solid var(--gold-dim)',
-    boxShadow: 'inset 0 1px 0 rgba(230,200,116,.25), 0 6px 18px -8px rgba(0,0,0,.8)',
+    border: '1px solid var(--ink)',
+    boxShadow: 'inset 0 1px 0 rgba(164,130,93,.25), 0 6px 18px -8px rgba(0,0,0,.8)',
     position: 'relative',
   },
   nav: { display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center', flex: 1 },
@@ -698,12 +698,12 @@ const S: Record<string, React.CSSProperties> = {
     cursor: 'pointer', background: 'none', border: 'none', padding: 0,
   },
   navBtnActive: {
-    color: 'var(--on-gold)',
-    background: 'linear-gradient(180deg, var(--gold-bright), var(--gold))',
+    color: 'var(--on-moss)',
+    background: 'linear-gradient(180deg, var(--caramel), var(--moss))',
   },
   navIndicator: {
     position: 'absolute', left: -18, top: '50%', transform: 'translateY(-50%)',
-    width: 4, height: 22, borderRadius: '0 4px 4px 0', background: 'var(--gold-bright)',
+    width: 4, height: 22, borderRadius: '0 4px 4px 0', background: 'var(--caramel)',
   },
   tooltip: {
     position: 'absolute', left: 58, top: '50%', transform: 'translateY(-50%)',
@@ -739,7 +739,7 @@ const S: Record<string, React.CSSProperties> = {
   /* --- Meander --- */
   meander: {
     height: 8, width: '100%', marginBottom: 34,
-    backgroundImage: 'repeating-linear-gradient(90deg, rgba(201,162,75,.55) 0 2px, transparent 2px 14px)',
+    backgroundImage: 'repeating-linear-gradient(90deg, rgba(101,93,74,.55) 0 2px, transparent 2px 14px)',
     WebkitMask: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'8\' viewBox=\'0 0 24 8\'%3E%3Cpath d=\'M0 7h4V3h4v4h4V1h4v6h4\' fill=\'none\' stroke=\'%23000\' stroke-width=\'1.4\'/%3E%3C/svg%3E") repeat-x',
     mask: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'8\' viewBox=\'0 0 24 8\'%3E%3Cpath d=\'M0 7h4V3h4v4h4V1h4v6h4\' fill=\'none\' stroke=\'%23000\' stroke-width=\'1.4\'/%3E%3C/svg%3E") repeat-x',
     opacity: 0.7,
@@ -747,7 +747,7 @@ const S: Record<string, React.CSSProperties> = {
 
   /* --- Section headers --- */
   sectionHead: { display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 16 },
-  sectionAccent: { width: 26, height: 2, background: 'var(--gold)', borderRadius: 2, alignSelf: 'center', opacity: 0.8, flexShrink: 0 },
+  sectionAccent: { width: 26, height: 2, background: 'var(--moss)', borderRadius: 2, alignSelf: 'center', opacity: 0.8, flexShrink: 0 },
   sectionTitle: { fontFamily: '"Fraunces", serif', fontWeight: 600, color: 'var(--tx-hi)', fontSize: 19, letterSpacing: '-.01em', margin: 0 },
   sectionCount: { color: 'var(--tx-faint)', fontSize: 13 },
 
@@ -768,8 +768,8 @@ const S: Record<string, React.CSSProperties> = {
     transition: '.18s', cursor: 'pointer', fontFamily: 'inherit',
   },
   chipActive: {
-    background: 'linear-gradient(180deg, var(--gold-bright), var(--gold))',
-    color: 'var(--on-gold)', border: '1px solid transparent', fontWeight: 600,
+    background: 'linear-gradient(180deg, var(--caramel), var(--moss))',
+    color: 'var(--on-moss)', border: '1px solid transparent', fontWeight: 600,
   },
 
   /* --- Filter row (format / language / sort) --- */
@@ -790,8 +790,8 @@ const S: Record<string, React.CSSProperties> = {
     transition: '.18s', cursor: 'pointer', fontFamily: 'inherit',
   },
   chipSmActive: {
-    background: 'linear-gradient(180deg, var(--gold-bright), var(--gold))',
-    color: 'var(--on-gold)', border: '1px solid transparent', fontWeight: 600,
+    background: 'linear-gradient(180deg, var(--caramel), var(--moss))',
+    color: 'var(--on-moss)', border: '1px solid transparent', fontWeight: 600,
   },
   select: {
     padding: '8px 14px', borderRadius: 20, fontSize: 13,
@@ -817,8 +817,8 @@ const S: Record<string, React.CSSProperties> = {
   emptyHint: { fontSize: 14, color: 'var(--tx-faint)', margin: 0, maxWidth: 340 },
   emptyBtn: {
     marginTop: 8, padding: '10px 20px',
-    background: 'linear-gradient(180deg, var(--gold-bright), var(--gold))',
-    color: 'var(--on-gold)', border: 'none', borderRadius: 10,
+    background: 'linear-gradient(180deg, var(--caramel), var(--moss))',
+    color: 'var(--on-moss)', border: 'none', borderRadius: 10,
     fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
   },
 

@@ -1,6 +1,6 @@
 /* ==========================================================================
    Clio Reader — Estilos de la biblioteca (Shell principal)
-   Identidad: tinta nocturna + oro viejo + verdigrís
+   Identidad: tinta nocturna + tierra + verdigrís
    Tipos: Fraunces + Hanken Grotesk
    ========================================================================== */
 
@@ -15,12 +15,14 @@
   --line: #332f47;
 
   /* --- Acentos de identidad --- */
-  --gold: #c9a24b;
-  --gold-bright: #e6c874;
-  --gold-dim: #8a7434;
+  --ink: #3b392a;
+  --moss: #655d4a;
+  --caramel: #a4825d;
+  --dust: #a46a66;
+  --wine: #6f4143;
+  --sand: #d6baa5;
   --verdigris: #4fa393;
   --verdigris-dim: #2f6d61;
-  --rose: #c17b7b;
 
   /* --- Texto --- */
   --tx-hi: #efe9dd;
@@ -30,12 +32,12 @@
 
   /* --- Constantes --- */
   --ease: cubic-bezier(.22,.61,.36,1);
-  --on-gold: #1a1710;
-  --accent-strong: #e6c874;
+  --on-moss: #1a1710;
+  --accent-strong: var(--dust);
 }
 
 /* ==========================================================================
-   TEMA CLARO (alabastro / piedra, no crema genérico)
+   TEMA CLARO (alabastro / piedra)
    Se activa con data-app-theme="light" en .app
    ========================================================================== */
 .app[data-app-theme="light"] {
@@ -50,7 +52,7 @@
   --tx: #474a40;
   --tx-lo: #7b7e70;
   --tx-faint: #a6a897;
-  --accent-strong: #8a6d12;
+  --accent-strong: var(--moss);
 }
 
 /* --- Theme toggle: iconos según el tema activo --- */
@@ -71,7 +73,7 @@ body {
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
 }
-::selection { background: rgba(201,162,75,.35); color: var(--tx-hi); }
+::selection { background: var(--caramel); color: var(--tx-hi); }
 button { font-family: inherit; cursor: pointer; color: inherit; background: none; border: none; }
 
 /* ==========================================================================
@@ -82,7 +84,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
   height: 100vh;
   background:
     radial-gradient(1200px 600px at 80% -10%, rgba(79,163,147,.06), transparent 60%),
-    radial-gradient(1000px 500px at -5% 110%, rgba(201,162,75,.06), transparent 55%),
+    radial-gradient(1000px 500px at -5% 110%, rgba(101,93,74,.06), transparent 55%),
     var(--ink-950);
   font-family: "Hanken Grotesk", system-ui, sans-serif;
   color: var(--tx);
