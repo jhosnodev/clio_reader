@@ -78,6 +78,8 @@ type ViewId = 'home' | 'collection' | 'bookmarks';
 
 interface LibraryViewProps {
   readonly books: readonly Book[];
+  readonly theme: 'dark' | 'light';
+  readonly onToggleTheme: () => void;
   readonly onOpenBook: (book: Book) => void;
   readonly onImportBook: () => void;
   readonly onRemoveBook: (bookId: string, bookTitle: string) => void;
@@ -90,6 +92,8 @@ interface LibraryViewProps {
 
 export function LibraryView({
   books,
+  theme,
+  onToggleTheme,
   onOpenBook,
   onImportBook,
   onRemoveBook,
@@ -157,8 +161,8 @@ export function LibraryView({
   };
 
   return (
-    <div style={S.app}>
-      <Rail active={activeView} onChange={setActiveView} />
+    <div style={S.app} className="app" data-app-theme={theme}>
+      <Rail active={activeView} onChange={setActiveView} theme={theme} onToggleTheme={onToggleTheme} />
       <main style={S.stage}>
         {activeView === 'home' && (
           <HomeView
@@ -204,7 +208,7 @@ export function LibraryView({
    Rail (sidebar de navegación)
    ========================================================================== */
 
-function Rail({ active, onChange }: { readonly active: ViewId; readonly onChange: (v: ViewId) => void }): JSX.Element {
+function Rail({ active, onChange, theme, onToggleTheme }: { readonly active: ViewId; readonly onChange: (v: ViewId) => void; readonly theme: 'dark' | 'light'; readonly onToggleTheme: () => void }): JSX.Element {
   const [hovered, setHovered] = useState<string | null>(null);
 
   const items: { id: ViewId; label: string; icon: JSX.Element }[] = [
@@ -257,6 +261,31 @@ function Rail({ active, onChange }: { readonly active: ViewId; readonly onChange
           );
         })}
       </nav>
+
+      <button
+        className="theme-toggle"
+        style={{
+          ...S.navBtn,
+          color: theme === 'dark' ? '#8a7434' : '#c9a24b',
+        }}
+        onClick={onToggleTheme}
+        onMouseEnter={() => setHovered('theme')}
+        onMouseLeave={() => setHovered(null)}
+        aria-label={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+      >
+        <svg className="i-sun" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="4.2"/>
+          <path d="M12 2.5v2.4M12 19.1v2.4M4.4 4.4l1.7 1.7M17.9 17.9l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.4 19.6l1.7-1.7M17.9 6.1l1.7-1.7"/>
+        </svg>
+        <svg className="i-moon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 14.5A8 8 0 1 1 9.5 4a6.3 6.3 0 0 0 10.5 10.5z"/>
+        </svg>
+        {hovered === 'theme' && (
+          <span style={S.tooltip}>
+            {theme === 'dark' ? 'Tema claro' : 'Tema oscuro'}
+          </span>
+        )}
+      </button>
     </aside>
   );
 }
@@ -640,15 +669,16 @@ function BookCard({ book, onOpen, onRemove }: BookCardProps): JSX.Element {
 const S: Record<string, React.CSSProperties> = {
   app: {
     display: 'flex', height: '100vh',
-    background: 'radial-gradient(1200px 600px at 80% -10%, rgba(79,163,147,.06), transparent 60%), radial-gradient(1000px 500px at -5% 110%, rgba(201,162,75,.06), transparent 55%), #100f18',
-    fontFamily: '"Hanken Grotesk", system-ui, sans-serif', color: '#cbc4ba',
+    background: 'radial-gradient(1200px 600px at 80% -10%, rgba(79,163,147,.06), transparent 60%), radial-gradient(1000px 500px at -5% 110%, rgba(201,162,75,.06), transparent 55%), var(--ink-950)',
+    fontFamily: '"Hanken Grotesk", system-ui, sans-serif', color: 'var(--tx)',
+    transition: 'background .3s var(--ease)',
   },
 
   /* --- Rail --- */
   rail: {
     width: 76, flexShrink: 0,
-    background: 'linear-gradient(180deg, #16141f, #100f18)',
-    borderRight: '1px solid #332f47',
+    background: 'linear-gradient(180deg, var(--ink-900), var(--ink-950))',
+    borderRight: '1px solid var(--line)',
     display: 'flex', flexDirection: 'column', alignItems: 'center',
     padding: '18px 0', gap: 6, position: 'relative', zIndex: 20,
   },
@@ -656,28 +686,28 @@ const S: Record<string, React.CSSProperties> = {
     width: 46, height: 46, borderRadius: 13,
     display: 'grid', placeItems: 'center', marginBottom: 18,
     background: 'radial-gradient(120% 120% at 30% 20%, #2b2740, #17141f)',
-    border: '1px solid #8a7434',
+    border: '1px solid var(--gold-dim)',
     boxShadow: 'inset 0 1px 0 rgba(230,200,116,.25), 0 6px 18px -8px rgba(0,0,0,.8)',
     position: 'relative',
   },
   nav: { display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center', flex: 1 },
   navBtn: {
     width: 48, height: 48, borderRadius: 13,
-    display: 'grid', placeItems: 'center', color: '#8b8598',
+    display: 'grid', placeItems: 'center', color: 'var(--tx-lo)',
     position: 'relative', transition: '.22s cubic-bezier(.22,.61,.36,1)',
     cursor: 'pointer', background: 'none', border: 'none', padding: 0,
   },
   navBtnActive: {
-    color: '#100f18',
-    background: 'linear-gradient(180deg, #e6c874, #c9a24b)',
+    color: 'var(--on-gold)',
+    background: 'linear-gradient(180deg, var(--gold-bright), var(--gold))',
   },
   navIndicator: {
     position: 'absolute', left: -18, top: '50%', transform: 'translateY(-50%)',
-    width: 4, height: 22, borderRadius: '0 4px 4px 0', background: '#e6c874',
+    width: 4, height: 22, borderRadius: '0 4px 4px 0', background: 'var(--gold-bright)',
   },
   tooltip: {
     position: 'absolute', left: 58, top: '50%', transform: 'translateY(-50%)',
-    background: '#232032', color: '#efe9dd', border: '1px solid #332f47',
+    background: 'var(--ink-800)', color: 'var(--tx-hi)', border: '1px solid var(--line)',
     padding: '6px 11px', borderRadius: 9, fontSize: 12.5, whiteSpace: 'nowrap',
     zIndex: 40, boxShadow: '0 18px 50px -20px rgba(0,0,0,.7)', fontWeight: 500,
   },
@@ -692,17 +722,17 @@ const S: Record<string, React.CSSProperties> = {
   /* --- Topbar --- */
   topbar: { display: 'flex', alignItems: 'center', gap: 18, marginBottom: 30 },
   h1: {
-    fontFamily: '"Fraunces", serif', fontWeight: 600, color: '#efe9dd',
+    fontFamily: '"Fraunces", serif', fontWeight: 600, color: 'var(--tx-hi)',
     fontSize: 30, letterSpacing: '-.01em', lineHeight: 1.1, margin: 0,
   },
-  sub: { color: '#8b8598', fontSize: 13.5, marginTop: 2 },
+  sub: { color: 'var(--tx-lo)', fontSize: 13.5, marginTop: 2 },
   search: {
-    display: 'flex', alignItems: 'center', gap: 9, background: '#1c1a28',
-    border: '1px solid #332f47', borderRadius: 11, padding: '0 12px', height: 42,
-    minWidth: 230, transition: '.2s', color: '#8b8598',
+    display: 'flex', alignItems: 'center', gap: 9, background: 'var(--ink-850)',
+    border: '1px solid var(--line)', borderRadius: 11, padding: '0 12px', height: 42,
+    minWidth: 230, transition: '.2s', color: 'var(--tx-lo)',
   },
   searchInput: {
-    background: 'none', border: 'none', outline: 'none', color: '#efe9dd',
+    background: 'none', border: 'none', outline: 'none', color: 'var(--tx-hi)',
     fontSize: 14, width: '100%', fontFamily: 'inherit',
   } as React.CSSProperties,
 
@@ -717,9 +747,9 @@ const S: Record<string, React.CSSProperties> = {
 
   /* --- Section headers --- */
   sectionHead: { display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 16 },
-  sectionAccent: { width: 26, height: 2, background: '#c9a24b', borderRadius: 2, alignSelf: 'center', opacity: 0.8, flexShrink: 0 },
-  sectionTitle: { fontFamily: '"Fraunces", serif', fontWeight: 600, color: '#efe9dd', fontSize: 19, letterSpacing: '-.01em', margin: 0 },
-  sectionCount: { color: '#6a657a', fontSize: 13 },
+  sectionAccent: { width: 26, height: 2, background: 'var(--gold)', borderRadius: 2, alignSelf: 'center', opacity: 0.8, flexShrink: 0 },
+  sectionTitle: { fontFamily: '"Fraunces", serif', fontWeight: 600, color: 'var(--tx-hi)', fontSize: 19, letterSpacing: '-.01em', margin: 0 },
+  sectionCount: { color: 'var(--tx-faint)', fontSize: 13 },
 
   /* --- Rows / Grid --- */
   row: {
@@ -734,12 +764,12 @@ const S: Record<string, React.CSSProperties> = {
   chips: { display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 28 },
   chip: {
     padding: '8px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500,
-    background: '#1c1a28', border: '1px solid #332f47', color: '#8b8598',
+    background: 'var(--ink-850)', border: '1px solid var(--line)', color: 'var(--tx-lo)',
     transition: '.18s', cursor: 'pointer', fontFamily: 'inherit',
   },
   chipActive: {
-    background: 'linear-gradient(180deg, #e6c874, #c9a24b)',
-    color: '#100f18', border: '1px solid transparent', fontWeight: 600,
+    background: 'linear-gradient(180deg, var(--gold-bright), var(--gold))',
+    color: 'var(--on-gold)', border: '1px solid transparent', fontWeight: 600,
   },
 
   /* --- Filter row (format / language / sort) --- */
@@ -751,21 +781,21 @@ const S: Record<string, React.CSSProperties> = {
     display: 'flex', alignItems: 'center', gap: 8,
   },
   filterLabel: {
-    fontSize: 13, color: '#8b8598', fontWeight: 500, letterSpacing: '.02em',
+    fontSize: 13, color: 'var(--tx-lo)', fontWeight: 500, letterSpacing: '.02em',
   },
   chipsSmall: { display: 'flex', gap: 8 },
   chipSm: {
     padding: '8px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500,
-    background: '#1c1a28', border: '1px solid #332f47', color: '#8b8598',
+    background: 'var(--ink-850)', border: '1px solid var(--line)', color: 'var(--tx-lo)',
     transition: '.18s', cursor: 'pointer', fontFamily: 'inherit',
   },
   chipSmActive: {
-    background: 'linear-gradient(180deg, #e6c874, #c9a24b)',
-    color: '#100f18', border: '1px solid transparent', fontWeight: 600,
+    background: 'linear-gradient(180deg, var(--gold-bright), var(--gold))',
+    color: 'var(--on-gold)', border: '1px solid transparent', fontWeight: 600,
   },
   select: {
     padding: '8px 14px', borderRadius: 20, fontSize: 13,
-    background: '#1c1a28', border: '1px solid #332f47', color: '#cbc4ba',
+    background: 'var(--ink-850)', border: '1px solid var(--line)', color: 'var(--tx)',
     fontFamily: 'inherit', cursor: 'pointer', outline: 'none',
     appearance: 'auto' as const,
   },
@@ -773,22 +803,22 @@ const S: Record<string, React.CSSProperties> = {
   /* --- Empty states --- */
   empty: {
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
-    padding: '80px 20px', color: '#8b8598', textAlign: 'center',
+    padding: '80px 20px', color: 'var(--tx-lo)', textAlign: 'center',
   },
   emptyCol: {
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
-    padding: '60px 20px', color: '#8b8598', textAlign: 'center',
+    padding: '60px 20px', color: 'var(--tx-lo)', textAlign: 'center',
   },
   emptyBookmarks: {
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
-    padding: '80px 20px', color: '#8b8598', textAlign: 'center',
+    padding: '80px 20px', color: 'var(--tx-lo)', textAlign: 'center',
   },
-  emptyTitle: { fontFamily: '"Fraunces", serif', color: '#cbc4ba', fontWeight: 600, fontSize: 18, margin: 0 },
-  emptyHint: { fontSize: 14, color: '#6a657a', margin: 0, maxWidth: 340 },
+  emptyTitle: { fontFamily: '"Fraunces", serif', color: 'var(--tx)', fontWeight: 600, fontSize: 18, margin: 0 },
+  emptyHint: { fontSize: 14, color: 'var(--tx-faint)', margin: 0, maxWidth: 340 },
   emptyBtn: {
     marginTop: 8, padding: '10px 20px',
-    background: 'linear-gradient(180deg, #e6c874, #c9a24b)',
-    color: '#100f18', border: 'none', borderRadius: 10,
+    background: 'linear-gradient(180deg, var(--gold-bright), var(--gold))',
+    color: 'var(--on-gold)', border: 'none', borderRadius: 10,
     fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
   },
 
@@ -846,27 +876,27 @@ const S: Record<string, React.CSSProperties> = {
   },
   cardBody: { display: 'flex', flexDirection: 'column', gap: 3, padding: '0 2px' },
   cardTitle: {
-    fontFamily: '"Fraunces", serif', fontWeight: 600, color: '#efe9dd',
+    fontFamily: '"Fraunces", serif', fontWeight: 600, color: 'var(--tx-hi)',
     fontSize: 15, lineHeight: 1.25, letterSpacing: '-.005em',
     display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
   } as React.CSSProperties,
   cardAuthor: {
-    color: '#8b8598', fontSize: 12.5,
+    color: 'var(--tx-lo)', fontSize: 12.5,
     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
   },
   cardMeta: {
     display: 'flex', alignItems: 'center', gap: 7, marginTop: 5,
-    color: '#6a657a', fontSize: 11.5,
+    color: 'var(--tx-faint)', fontSize: 11.5,
   },
   cardFooter: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    marginTop: 6, paddingTop: 8, borderTop: '1px solid #232032',
+    marginTop: 6, paddingTop: 8, borderTop: '1px solid var(--ink-800)',
   },
   starRating: { display: 'flex', gap: 2 },
   removeBtn: {
     padding: '3px 8px', background: 'transparent',
-    border: '1px solid #332f47', borderRadius: 6,
-    color: '#6a657a', cursor: 'pointer', display: 'grid', placeItems: 'center',
+    border: '1px solid var(--line)', borderRadius: 6,
+    color: 'var(--tx-faint)', cursor: 'pointer', display: 'grid', placeItems: 'center',
     fontFamily: 'inherit', transition: '.15s',
   },
 };

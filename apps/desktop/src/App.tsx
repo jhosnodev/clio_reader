@@ -7,7 +7,7 @@
  * - Explícito: Los datos fluyen de arriba hacia abajo via props
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { LibraryView } from './components/LibraryView';
 import { ReaderView } from './components/ReaderView';
 import { useAppLifecycle } from './bridges/lifecycle';
@@ -17,6 +17,9 @@ import { createElectronKVStore } from './bridges/storage';
 import { importBook, listBooks, removeBook, generateId } from '@clio-reader/library';
 import type { Book, BookFormat } from '@clio-reader/domain';
 import { detectBookFormat } from '@clio-reader/reader-core';
+
+type Theme = 'dark' | 'light';
+const THEME_KEY = 'clio-app-theme';
 
 /* ==========================================================================
    Dependencias — DIP: se crean una vez y se inyectan
@@ -39,7 +42,21 @@ interface OpenBook {
 export function App(): JSX.Element {
   const [openBook, setOpenBook] = useState<OpenBook | null>(null);
   const [books, setBooks] = useState<readonly Book[]>([]);
+  const [theme, setTheme] = useState<Theme>(() => {
+    const stored = localStorage.getItem(THEME_KEY);
+    if (stored === 'dark' || stored === 'light') return stored;
+    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  });
   const isLoadingRef = useRef(false);
+
+  useEffect(() => {
+    localStorage.setItem(THEME_KEY, theme);
+    document.querySelector('.app')?.setAttribute('data-app-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  }, []);
 
   /* ----- Ciclo de vida ----- */
   useAppLifecycle(
@@ -119,7 +136,8 @@ export function App(): JSX.Element {
   const handleCloseBook = useCallback(() => {
     console.log('[closeBook]');
     setOpenBook(null);
-  }, []);
+    loadBooks();
+  }, [loadBooks]);
 
   /* ----- Eliminar libro ----- */
   const handleRemoveBook = useCallback(
@@ -155,6 +173,8 @@ export function App(): JSX.Element {
   return (
     <LibraryView
       books={books}
+      theme={theme}
+      onToggleTheme={toggleTheme}
       onOpenBook={handleOpenBook}
       onImportBook={handleImportBook}
       onRemoveBook={handleRemoveBook}

@@ -8,7 +8,7 @@ antes de implementar.
 
 ## 1. Paleta de colores
 
-### Superficies
+### Superficies (tema oscuro por defecto)
 
 | Token         | Valor       | Uso                                      |
 |---------------|-------------|------------------------------------------|
@@ -18,6 +18,16 @@ antes de implementar.
 | `surface-3`   | `#232032`   | Tooltips, bordes de cards internos       |
 | `border`      | `#332f47`   | Bordes de todos los elementos            |
 
+### Superficies (tema claro — alabastro / piedra)
+
+| Token         | Valor       | Uso                                      |
+|---------------|-------------|------------------------------------------|
+| `bg`          | `#eceee9`   | Fondo principal de la app                |
+| `surface-1`   | `#f6f7f3`   | Rail (sidebar)                           |
+| `surface-2`   | `#ffffff`   | Chips inactivos, inputs, selects, badges |
+| `surface-3`   | `#e6e8e1`   | Tooltips, bordes de cards internos       |
+| `border`      | `#e0e3d9`   | Bordes de todos los elementos            |
+
 ### Acentos
 
 | Token         | Valores                          | Uso                                 |
@@ -26,7 +36,7 @@ antes de implementar.
 | `verdigris`   | `#4fa393`                        | Acentos secundarios, progreso       |
 | `verdigris-l` | `#6fd0bf`                        | Gradiente de barra de progreso      |
 
-### Texto
+### Texto (tema oscuro)
 
 | Token      | Valor     | Uso                                         |
 |------------|-----------|---------------------------------------------|
@@ -34,6 +44,70 @@ antes de implementar.
 | `text-n`   | `#cbc4ba` | Cuerpo de texto, valores de selects          |
 | `text-lo`  | `#8b8598` | Labels secundarios, metadata, chips inactivos |
 | `text-f`   | `#6a657a` | Hints vacíos, counts, texto deshabilitado    |
+
+### Texto (tema claro)
+
+| Token      | Valor     | Uso                                         |
+|------------|-----------|---------------------------------------------|
+| `text-hi`  | `#1e2019` | Títulos principales, texto en gradientes     |
+| `text-n`   | `#474a40` | Cuerpo de texto, valores de selects          |
+| `text-lo`  | `#7b7e70` | Labels secundarios, metadata, chips inactivos |
+| `text-f`   | `#a6a897` | Hints vacíos, counts, texto deshabilitado    |
+
+---
+
+## 2. Temas (dark / light)
+
+La app soporta dos temas controlados por `data-app-theme` en el elemento `.app`.
+El toggle se encuentra en el **Rail (sidebar)** como botón sol/luna.
+
+### Variables CSS
+
+```css
+/* Tema oscuro (default) */
+.app {
+  --ink-950: #100f18;   /* bg */
+  --ink-900: #16141f;   /* surface-1 (rail) */
+  --ink-850: #1c1a28;   /* surface-2 */
+  --ink-800: #232032;   /* surface-3 */
+  --line: #332f47;       /* border */
+  --tx-hi: #efe9dd;     /* text-hi */
+  --tx: #cbc4ba;        /* text-n */
+  --tx-lo: #8b8598;     /* text-lo */
+  --tx-faint: #6a657a;  /* text-f */
+  --on-gold: #1a1710;   /* texto sobre oro */
+  --accent-strong: #e6c874;
+}
+
+/* Tema claro */
+.app[data-app-theme="light"] {
+  --ink-950: #eceee9;   /* bg */
+  --ink-900: #f6f7f3;   /* surface-1 (rail) */
+  --ink-850: #ffffff;   /* surface-2 */
+  --ink-800: #e6e8e1;   /* surface-3 */
+  --line: #e0e3d9;       /* border */
+  --tx-hi: #1e2019;     /* text-hi */
+  --tx: #474a40;        /* text-n */
+  --tx-lo: #7b7e70;     /* text-lo */
+  --tx-faint: #a6a897;  /* text-f */
+  --on-gold: #1a1710;   /* texto sobre oro (constante) */
+  --accent-strong: #8a6d12;
+}
+```
+
+### Persistencia
+
+- El tema se persiste en `localStorage` con la key `clio-app-theme`.
+- Valores válidos: `'dark'` | `'light'`.
+- Si no hay valor almacenado, se usa `prefers-color-scheme` del sistema.
+
+### Comportamiento del toggle
+
+- **Rail**: Botón sol/luna al final del sidebar (debajo de la nav).
+- **Iconos**: Sol visible en tema oscuro, luna visible en tema claro.
+- **Color del icono**: `var(--gold-dim)` en tema oscuro, `var(--gold)` en tema claro.
+- **Hover**: Cambia a `var(--gold-bright)` / `var(--gold-dim)` respectivamente.
+- **Tooltip**: Muestra "Tema claro" o "Tema oscuro" según el estado actual.
 
 ---
 
@@ -137,9 +211,9 @@ pequeño usa `borderRadius: 6`.
   borderRadius: 20,
   fontSize: 13,
   fontWeight: 500,
-  background: '#1c1a28',
-  border: '1px solid #332f47',
-  color: '#8b8598',
+  background: 'var(--ink-850)',
+  border: '1px solid var(--line)',
+  color: 'var(--tx-lo)',
   transition: '.18s',
   cursor: 'pointer',
   fontFamily: 'inherit',
@@ -147,8 +221,8 @@ pequeño usa `borderRadius: 6`.
 
 // Chip activo
 {
-  background: 'linear-gradient(180deg, #e6c874, #c9a24b)',
-  color: '#100f18',
+  background: 'linear-gradient(180deg, var(--gold-bright), var(--gold))',
+  color: 'var(--on-gold)',
   border: '1px solid transparent',
   fontWeight: 600,
 }
@@ -164,9 +238,9 @@ dimensiones y estilos. No crear variaciones de tamaño.
   padding: '8px 14px',
   borderRadius: 20,
   fontSize: 13,
-  background: '#1c1a28',
-  border: '1px solid #332f47',
-  color: '#cbc4ba',
+  background: 'var(--ink-850)',
+  border: '1px solid var(--line)',
+  color: 'var(--tx)',
   fontFamily: 'inherit',
   cursor: 'pointer',
   outline: 'none',
@@ -180,20 +254,20 @@ dimensiones y estilos. No crear variaciones de tamaño.
 // Contenedor
 {
   display: 'flex', alignItems: 'center', gap: 9,
-  background: '#1c1a28',
-  border: '1px solid #332f47',
+  background: 'var(--ink-850)',
+  border: '1px solid var(--line)',
   borderRadius: 11,
   padding: '0 12px',
   height: 42,
   minWidth: 230,
   transition: '.2s',
-  color: '#8b8598',
+  color: 'var(--tx-lo)',
 }
 
 // Input
 {
   background: 'none', border: 'none', outline: 'none',
-  color: '#efe9dd', fontSize: 14,
+  color: 'var(--tx-hi)', fontSize: 14,
   width: '100%', fontFamily: 'inherit',
 }
 ```
@@ -204,9 +278,9 @@ dimensiones y estilos. No crear variaciones de tamaño.
 {
   position: 'absolute',
   left: 58, top: '50%', transform: 'translateY(-50%)',
-  background: '#232032',
-  color: '#efe9dd',
-  border: '1px solid #332f47',
+  background: 'var(--ink-800)',
+  color: 'var(--tx-hi)',
+  border: '1px solid var(--line)',
   padding: '6px 11px',
   borderRadius: 9,
   fontSize: 12.5,
@@ -222,8 +296,8 @@ dimensiones y estilos. No crear variaciones de tamaño.
 ```ts
 {
   width: 76,
-  background: 'linear-gradient(180deg, #16141f, #100f18)',
-  borderRight: '1px solid #332f47',
+  background: 'linear-gradient(180deg, var(--ink-900), var(--ink-950))',
+  borderRight: '1px solid var(--line)',
   padding: '18px 0',
   gap: 6,
 }
@@ -232,6 +306,11 @@ dimensiones y estilos. No crear variaciones de tamaño.
 // Nav buttons: 48×48, borderRadius: 13
 // Nav indicator: 4×22, borderRadius: '0 4px 4px 0'
 // SVG icons inside nav buttons: 22×22
+// Theme toggle: positionado al final del rail, debajo de la nav
+//   - Mismas dimensiones que nav buttons (48×48, borderRadius: 13)
+//   - Color: var(--gold-dim) en dark, var(--gold) en light
+//   - Hover: var(--gold-bright) en dark, var(--gold-dim) en light
+//   - Icono sol visible en dark, icono luna visible en light
 ```
 
 ### Book Card
@@ -251,13 +330,14 @@ dimensiones y estilos. No crear variaciones de tamaño.
   fontSize: 15,
   lineHeight: 1.25,
   letterSpacing: '-.005em',
+  color: 'var(--tx-hi)',
   WebkitLineClamp: 2,
 }
 
 // Metadata
 {
   fontSize: 11.5,
-  color: '#6a657a',
+  color: 'var(--tx-faint)',
   gap: 7,
 }
 ```
@@ -276,7 +356,7 @@ dimensiones y estilos. No crear variaciones de tamaño.
 // Título
 {
   fontFamily: '"Fraunces", serif',
-  color: '#cbc4ba',
+  color: 'var(--tx)',
   fontWeight: 600,
   fontSize: 18,
 }
@@ -284,15 +364,15 @@ dimensiones y estilos. No crear variaciones de tamaño.
 // Hint
 {
   fontSize: 14,
-  color: '#6a657a',
+  color: 'var(--tx-faint)',
   maxWidth: 340,
 }
 
 // Botón de acción
 {
   padding: '10px 20px',
-  background: 'linear-gradient(180deg, #e6c874, #c9a24b)',
-  color: '#100f18',
+  background: 'linear-gradient(180deg, var(--gold-bright), var(--gold))',
+  color: 'var(--on-gold)',
   border: 'none',
   borderRadius: 10,
   fontSize: 14,
@@ -335,7 +415,7 @@ dimensiones y estilos. No crear variaciones de tamaño.
 
 3. **Los selects heredan el mismo padding y borderRadius que los chips.**
 
-4. **Los labels de filtro** usan `fontSize: 13`, `color: '#8b8598'`,
+4. **Los labels de filtro** usan `fontSize: 13`, `color: 'var(--tx-lo)'`,
    `fontWeight: 500`.
 
 5. **Los gaps entre grupos de filtros** son `16px`. Los gaps dentro de un

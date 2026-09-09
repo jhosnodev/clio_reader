@@ -1,0 +1,90 @@
+/* ==========================================================================
+   Clio Reader — Estilos de la biblioteca (Shell principal)
+   Identidad: tinta nocturna + oro viejo + verdigrís
+   Tipos: Fraunces + Hanken Grotesk
+   ========================================================================== */
+
+:root {
+  /* --- Tinta nocturna (chrome de la app) --- */
+  --ink-950: #100f18;
+  --ink-900: #16141f;
+  --ink-850: #1c1a28;
+  --ink-800: #232032;
+  --ink-700: #2e2a40;
+  --ink-600: #3b3652;
+  --line: #332f47;
+
+  /* --- Acentos de identidad --- */
+  --gold: #c9a24b;
+  --gold-bright: #e6c874;
+  --gold-dim: #8a7434;
+  --verdigris: #4fa393;
+  --verdigris-dim: #2f6d61;
+  --rose: #c17b7b;
+
+  /* --- Texto --- */
+  --tx-hi: #efe9dd;
+  --tx: #cbc4ba;
+  --tx-lo: #8b8598;
+  --tx-faint: #6a657a;
+
+  /* --- Constantes --- */
+  --ease: cubic-bezier(.22,.61,.36,1);
+  --on-gold: #1a1710;
+  --accent-strong: #e6c874;
+}
+
+/* ==========================================================================
+   TEMA CLARO (alabastro / piedra, no crema genérico)
+   Se activa con data-app-theme="light" en .app
+   ========================================================================== */
+.app[data-app-theme="light"] {
+  --ink-950: #eceee9;
+  --ink-900: #f6f7f3;
+  --ink-850: #ffffff;
+  --ink-800: #e6e8e1;
+  --ink-700: #d7dace;
+  --ink-600: #c2c6b6;
+  --line: #e0e3d9;
+  --tx-hi: #1e2019;
+  --tx: #474a40;
+  --tx-lo: #7b7e70;
+  --tx-faint: #a6a897;
+  --accent-strong: #8a6d12;
+}
+
+/* --- Theme toggle: iconos según el tema activo --- */
+.theme-toggle .i-moon { display: none; }
+.theme-toggle .i-sun { display: block; }
+.app[data-app-theme="light"] .theme-toggle .i-sun { display: none; }
+.app[data-app-theme="light"] .theme-toggle .i-moon { display: block; }
+
+/* ==========================================================================
+   Reset y base
+   ========================================================================== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body, #root { height: 100%; }
+body {
+  font-family: "Hanken Grotesk", system-ui, sans-serif;
+  background: var(--ink-950);
+  color: var(--tx);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+::selection { background: rgba(201,162,75,.35); color: var(--tx-hi); }
+button { font-family: inherit; cursor: pointer; color: inherit; background: none; border: none; }
+
+/* ==========================================================================
+   App layout
+   ========================================================================== */
+.app {
+  display: flex;
+  height: 100vh;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(79,163,147,.06), transparent 60%),
+    radial-gradient(1000px 500px at -5% 110%, rgba(201,162,75,.06), transparent 55%),
+    var(--ink-950);
+  font-family: "Hanken Grotesk", system-ui, sans-serif;
+  color: var(--tx);
+  transition: background .3s var(--ease);
+}
