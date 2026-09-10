@@ -147,6 +147,10 @@ export class LocalRepository {
     await this.saveState(state);
   }
 
+  async listAllBookmarks(): Promise<readonly Bookmark[]> {
+    return (await this.getState()).bookmarks;
+  }
+
   async listBookmarks(bookId: string): Promise<readonly Bookmark[]> {
     return (await this.getState()).bookmarks.filter((item) => item.bookId === bookId);
   }
@@ -166,6 +170,10 @@ export class LocalRepository {
     const state = await this.getState();
     state.bookmarks = state.bookmarks.filter((item) => item.id !== bookmarkId);
     await this.saveState(state);
+  }
+
+  async listAllProgress(): Promise<readonly ReadingProgress[]> {
+    return (await this.getState()).progress;
   }
 
   async listNotes(bookId: string): Promise<readonly Note[]> {

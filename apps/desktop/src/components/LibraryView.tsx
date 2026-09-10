@@ -4,12 +4,13 @@
  * Tipos: Fraunces + Hanken Grotesk
  */
 
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import type { Book, ReadingStatus, Rank, ReadingProgress } from '@clio-reader/domain';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import type { Book, Bookmark, ReadingStatus, Rank, ReadingProgress } from '@clio-reader/domain';
 import type { LibraryRepository } from '@clio-reader/library';
 import type { ThemePalette } from '../themes';
 import { PALETTES } from '../themes';
 import { BrandIcon } from './BrandIcon';
+import type { ImportProgress } from '../App';
 
 /* ==========================================================================
    Paletas de portada
@@ -86,10 +87,13 @@ interface LibraryViewProps {
   readonly paletteId: string;
   readonly palette: ThemePalette;
   readonly repository: LibraryRepository;
+  readonly importProgress: ImportProgress | null;
   readonly onToggleTheme: () => void;
   readonly onSetPalette: (id: string) => void;
   readonly onOpenBook: (book: Book) => void;
   readonly onImportBook: () => void;
+  readonly onImportFiles: () => void;
+  readonly onImportFolder: () => void;
   readonly onRemoveBook: (bookId: string, bookTitle: string) => void;
   readonly onLoadBooks: () => void;
 }
@@ -104,10 +108,13 @@ export function LibraryView({
   paletteId,
   palette,
   repository,
+  importProgress,
   onToggleTheme,
   onSetPalette,
   onOpenBook,
   onImportBook,
+  onImportFiles,
+  onImportFolder,
   onRemoveBook,
   onLoadBooks,
 }: LibraryViewProps): JSX.Element {
@@ -125,16 +132,16 @@ export function LibraryView({
   // Load progress for all books
   useEffect(() => {
     const loadProgress = async () => {
-      const map = new Map<string, ReadingProgress>();
-      await Promise.all(
-        books.map(async (book) => {
-          const progress = await repository.getProgress(book.id);
-          if (progress) {
-            map.set(book.id, progress);
-          }
-        }),
-      );
-      setProgressMap(map);
+      try {
+        const allProgress = await repository.listAllProgress();
+        const map = new Map<string, ReadingProgress>();
+        for (const progress of allProgress) {
+          map.set(progress.bookId, progress);
+        }
+        setProgressMap(map);
+      } catch (err) {
+        console.error('Error cargando progreso:', err);
+      }
     };
     loadProgress();
   }, [books, repository]);
@@ -209,11 +216,14 @@ export function LibraryView({
             readingCount={readingCount}
             searchValue={homeSearch}
             progressMap={progressMap}
+            importProgress={importProgress}
             onSearchChange={setHomeSearch}
             onSearchFocus={handleHomeSearchFocus}
             onOpen={onOpenBook}
             onRemove={onRemoveBook}
             onImport={onImportBook}
+            onImportFiles={onImportFiles}
+            onImportFolder={onImportFolder}
             onSaveRank={handleSaveRank}
           />
         )}
@@ -239,7 +249,13 @@ export function LibraryView({
             onSaveRank={handleSaveRank}
           />
         )}
-        {activeView === 'bookmarks' && <BookmarksView />}
+        {activeView === 'bookmarks' && (
+          <BookmarksView
+            books={books}
+            repository={repository}
+            onOpen={onOpenBook}
+          />
+        )}
       </main>
     </div>
   );
@@ -388,8 +404,8 @@ function Rail({ active, onChange, theme, paletteId, palette, onToggleTheme, onSe
 
 function HomeView({
   books, recentBooks, addedBooks, readingCount,
-  searchValue, progressMap, onSearchChange, onSearchFocus,
-  onOpen, onRemove, onImport, onSaveRank,
+  searchValue, progressMap, importProgress, onSearchChange, onSearchFocus,
+  onOpen, onRemove, onImportFiles, onImportFolder, onSaveRank,
 }: {
   books: readonly Book[];
   recentBooks: readonly Book[];
@@ -397,11 +413,13 @@ function HomeView({
   readingCount: number;
   searchValue: string;
   progressMap: Map<string, ReadingProgress>;
+  importProgress: ImportProgress | null;
   onSearchChange: (v: string) => void;
   onSearchFocus: () => void;
   onOpen: (b: Book) => void;
   onRemove: (id: string, title: string) => void;
-  onImport: () => void;
+  onImportFiles: () => void;
+  onImportFolder: () => void;
   onSaveRank: (bookId: string, rank: Rank) => void;
 }): JSX.Element {
   const h = new Date().getHours();
@@ -414,16 +432,69 @@ function HomeView({
           <div><h1 style={S.h1}>{greeting}</h1><div style={S.sub}>Tu biblioteca bajo la mirada de Clio</div></div>
         </header>
         <div style={S.meander} />
-        <EmptyState onImport={onImport} />
+        <EmptyState onImportFiles={onImportFiles} onImportFolder={onImportFolder} />
       </div>
     );
   }
+
+  const [showImportMenu, setShowImportMenu] = useState(false);
+  const importMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (importMenuRef.current && !importMenuRef.current.contains(event.target as Node)) {
+        setShowImportMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <div style={S.wrap}>
       <header style={S.topbar}>
         <div><h1 style={S.h1}>{greeting}</h1><div style={S.sub}>Tu biblioteca bajo la mirada de Clio</div></div>
         <div style={{ flex: 1 }} />
+        <div style={{ position: 'relative' }} ref={importMenuRef}>
+          <button
+            style={S.importBtn}
+            onClick={() => setShowImportMenu(!showImportMenu)}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            Importar
+          </button>
+          {showImportMenu && (
+            <div style={S.importMenu}>
+              <button
+                style={S.importMenuItem}
+                onClick={() => {
+                  setShowImportMenu(false);
+                  onImportFiles();
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                Importar archivo(s)
+              </button>
+              <button
+                style={S.importMenuItem}
+                onClick={() => {
+                  setShowImportMenu(false);
+                  onImportFolder();
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
+                Importar carpeta
+              </button>
+            </div>
+          )}
+        </div>
         <label style={S.search}>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
           <input
@@ -435,6 +506,22 @@ function HomeView({
           />
         </label>
       </header>
+      {importProgress && (
+        <div style={S.importProgress}>
+          <div style={S.importProgressBar}>
+            <div
+              style={{
+                ...S.importProgressFill,
+                width: `${((importProgress.imported + importProgress.skipped) / importProgress.total) * 100}%`,
+              }}
+            />
+          </div>
+          <div style={S.importProgressText}>
+            Importando: {importProgress.current} ({importProgress.imported + importProgress.skipped}/{importProgress.total})
+            {importProgress.skipped > 0 && <span style={{ color: 'var(--gold)', marginLeft: 8 }}>({importProgress.skipped} omitidos)</span>}
+          </div>
+        </div>
+      )}
       <div style={S.meander} />
 
       {recentBooks.length > 0 && (
@@ -630,22 +717,127 @@ function CollectionView({
 }
 
 /* ==========================================================================
-   Bookmarks View (empty state)
+   Bookmarks View
    ========================================================================== */
 
-function BookmarksView(): JSX.Element {
+function BookmarksView({
+  books,
+  repository,
+  onOpen,
+}: {
+  books: readonly Book[];
+  repository: LibraryRepository;
+  onOpen: (book: Book) => void;
+}): JSX.Element {
+  const [bookmarks, setBookmarks] = useState<(Bookmark & { bookTitle?: string })[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadBookmarks = async () => {
+      try {
+        const allBookmarks = await repository.listAllBookmarks();
+        const bookmarksWithTitle = allBookmarks.map((b) => ({
+          ...b,
+          bookTitle: books.find((book) => book.id === b.bookId)?.title ?? 'Libro desconocido',
+        }));
+        setBookmarks(bookmarksWithTitle.sort((a, b) => b.createdAt - a.createdAt));
+      } catch (err) {
+        console.error('Error cargando marcadores:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadBookmarks();
+  }, [repository, books]);
+
+  const handleDelete = useCallback(async (bookmarkId: string) => {
+    try {
+      await repository.removeBookmark(bookmarkId);
+      setBookmarks((prev) => prev.filter((b) => b.id !== bookmarkId));
+    } catch (err) {
+      console.error('Error eliminando marcador:', err);
+    }
+  }, [repository]);
+
+  const handleOpenBook = useCallback((bookId: string) => {
+    const book = books.find((b) => b.id === bookId);
+    if (book) onOpen(book);
+  }, [books, onOpen]);
+
+  if (loading) {
+    return (
+      <div style={S.wrap}>
+        <header style={S.topbar}>
+          <div><h1 style={S.h1}>Marcadores</h1><div style={S.sub}>Páginas que guardaste para volver</div></div>
+        </header>
+        <div style={S.meander} />
+        <div style={S.emptyBookmarks}>
+          <div style={{ ...S.spinner, width: 24, height: 24 }} aria-hidden="true" />
+          <p style={S.emptyHint}>Cargando marcadores…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (bookmarks.length === 0) {
+    return (
+      <div style={S.wrap}>
+        <header style={S.topbar}>
+          <div><h1 style={S.h1}>Marcadores</h1><div style={S.sub}>Páginas que guardaste para volver</div></div>
+        </header>
+        <div style={S.meander} />
+        <div style={S.emptyBookmarks}>
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--tx-faint)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 4h12v16l-6-4-6 4z"/>
+          </svg>
+          <h3 style={S.emptyTitle}>Aún no hay marcadores</h3>
+          <p style={S.emptyHint}>Mientras lees, toca el marcador para guardar la página actual.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={S.wrap}>
       <header style={S.topbar}>
-        <div><h1 style={S.h1}>Marcadores</h1><div style={S.sub}>Páginas que guardaste para volver</div></div>
+        <div><h1 style={S.h1}>Marcadores</h1><div style={S.sub}>{bookmarks.length} marcador{bookmarks.length !== 1 ? 'es' : ''}</div></div>
       </header>
       <div style={S.meander} />
-      <div style={S.emptyBookmarks}>
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--tx-faint)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M6 4h12v16l-6-4-6 4z"/>
-        </svg>
-        <h3 style={S.emptyTitle}>Aún no hay marcadores</h3>
-        <p style={S.emptyHint}>Mientras lees, toca el marcador para guardar la página actual.</p>
+      <div style={S.bookmarksList}>
+        {bookmarks.map((bookmark) => (
+          <div key={bookmark.id} style={S.bookmarkItem}>
+            <div
+              style={S.bookmarkContent}
+              onClick={() => handleOpenBook(bookmark.bookId)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleOpenBook(bookmark.bookId); }}
+              role="button"
+              tabIndex={0}
+            >
+              <div style={S.bookmarkIcon}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 4h12v16l-6-4-6 4z"/>
+                </svg>
+              </div>
+              <div style={S.bookmarkInfo}>
+                <div style={S.bookmarkTitle}>{bookmark.bookTitle}</div>
+                <div style={S.bookmarkMeta}>
+                  {bookmark.title && <span>{bookmark.title}</span>}
+                  {bookmark.title && <span style={S.bookmarkDot}>·</span>}
+                  <span>{fmtDate(bookmark.createdAt)}</span>
+                </div>
+              </div>
+            </div>
+            <button
+              style={S.bookmarkDelete}
+              onClick={() => handleDelete(bookmark.id)}
+              aria-label={`Eliminar marcador de ${bookmark.bookTitle}`}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+              </svg>
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -655,15 +847,64 @@ function BookmarksView(): JSX.Element {
    Subcomponentes compartidos
    ========================================================================== */
 
-function EmptyState({ onImport }: { readonly onImport: () => void }): JSX.Element {
+function EmptyState({ onImportFiles, onImportFolder }: { readonly onImportFiles: () => void; readonly onImportFolder: () => void }): JSX.Element {
+  const [showImportMenu, setShowImportMenu] = useState(false);
+  const importMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (importMenuRef.current && !importMenuRef.current.contains(event.target as Node)) {
+        setShowImportMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   return (
     <div style={S.empty}>
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--tx-faint)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
       </svg>
       <h3 style={S.emptyTitle}>No hay libros importados</h3>
-      <p style={S.emptyHint}>Haz clic en &quot;Importar libro&quot; para agregar tu primer libro.</p>
-      <button style={S.emptyBtn} onClick={onImport}>Importar libro</button>
+      <p style={S.emptyHint}>Importa tu primer libro para comenzar a leer.</p>
+      <div style={{ position: 'relative' }} ref={importMenuRef}>
+        <button
+          style={S.emptyBtn}
+          onClick={() => setShowImportMenu(!showImportMenu)}
+        >
+          Importar libro
+        </button>
+        {showImportMenu && (
+          <div style={S.importMenu}>
+            <button
+              style={S.importMenuItem}
+              onClick={() => {
+                setShowImportMenu(false);
+                onImportFiles();
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              Importar archivo(s)
+            </button>
+            <button
+              style={S.importMenuItem}
+              onClick={() => {
+                setShowImportMenu(false);
+                onImportFolder();
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+              </svg>
+              Importar carpeta
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -978,6 +1219,46 @@ const S: Record<string, React.CSSProperties> = {
     appearance: 'auto' as const,
   },
 
+  /* --- Import button & menu --- */
+  importBtn: {
+    display: 'flex', alignItems: 'center', gap: 8,
+    padding: '9px 16px', borderRadius: 10, fontSize: 13.5, fontWeight: 600,
+    background: 'linear-gradient(180deg, var(--gold-bright), var(--gold))',
+    color: 'var(--on-gold)', border: 'none', cursor: 'pointer',
+    fontFamily: 'inherit', transition: '.18s',
+  },
+  importMenu: {
+    position: 'absolute', top: '100%', right: 0, marginTop: 6,
+    background: 'var(--ink-800)', border: '1px solid var(--line)',
+    borderRadius: 10, padding: 6, zIndex: 50,
+    boxShadow: '0 18px 50px -20px rgba(0,0,0,.7)',
+    minWidth: 200,
+  },
+  importMenuItem: {
+    display: 'flex', alignItems: 'center', gap: 10,
+    width: '100%', padding: '10px 14px', borderRadius: 8,
+    background: 'none', border: 'none', color: 'var(--tx)',
+    fontSize: 13.5, cursor: 'pointer', fontFamily: 'inherit',
+    transition: '.15s', textAlign: 'left',
+  },
+  importProgress: {
+    marginBottom: 20, padding: '14px 16px',
+    background: 'var(--ink-850)', border: '1px solid var(--line)',
+    borderRadius: 10,
+  },
+  importProgressBar: {
+    height: 6, background: 'var(--ink-800)', borderRadius: 4,
+    overflow: 'hidden', marginBottom: 10,
+  },
+  importProgressFill: {
+    display: 'block', height: '100%',
+    background: 'linear-gradient(90deg, var(--verdigris), var(--gold-bright))',
+    borderRadius: 4, transition: 'width .3s',
+  },
+  importProgressText: {
+    fontSize: 13, color: 'var(--tx-lo)',
+  },
+
   /* --- Empty states --- */
   empty: {
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
@@ -990,6 +1271,40 @@ const S: Record<string, React.CSSProperties> = {
   emptyBookmarks: {
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
     padding: '80px 20px', color: 'var(--tx-lo)', textAlign: 'center',
+  },
+  bookmarksList: {
+    display: 'flex', flexDirection: 'column', gap: 8,
+  },
+  bookmarkItem: {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    padding: '12px 16px', borderRadius: 10,
+    background: 'var(--ink-850)', border: '1px solid var(--line)',
+    transition: '.15s',
+  },
+  bookmarkContent: {
+    display: 'flex', alignItems: 'center', gap: 12, flex: 1, cursor: 'pointer',
+  },
+  bookmarkIcon: {
+    width: 32, height: 32, borderRadius: 8,
+    display: 'grid', placeItems: 'center',
+    background: 'rgba(var(--gold-rgb),.12)',
+  },
+  bookmarkInfo: { flex: 1, minWidth: 0 },
+  bookmarkTitle: {
+    fontFamily: '"Fraunces", serif', fontWeight: 600, color: 'var(--tx-hi)',
+    fontSize: 14, lineHeight: 1.3, marginBottom: 2,
+    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+  },
+  bookmarkMeta: {
+    display: 'flex', alignItems: 'center', gap: 6,
+    color: 'var(--tx-faint)', fontSize: 12,
+  },
+  bookmarkDot: { opacity: 0.5 },
+  bookmarkDelete: {
+    padding: '6px 8px', background: 'transparent',
+    border: '1px solid transparent', borderRadius: 6,
+    color: 'var(--tx-faint)', cursor: 'pointer', display: 'grid', placeItems: 'center',
+    fontFamily: 'inherit', transition: '.15s', flexShrink: 0,
   },
   emptyTitle: { fontFamily: '"Fraunces", serif', color: 'var(--tx)', fontWeight: 600, fontSize: 18, margin: 0 },
   emptyHint: { fontSize: 14, color: 'var(--tx-faint)', margin: 0, maxWidth: 340 },

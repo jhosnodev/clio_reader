@@ -27,13 +27,19 @@ export async function updateProgress(
   input: UpdateProgressInput,
 ): Promise<ReadingProgress> {
   const books = await repo.listBooks();
-  const exists = books.some((b) => b.id === input.bookId);
+  const book = books.find((b) => b.id === input.bookId);
 
-  if (!exists) {
+  if (!book) {
     throw new BookNotFoundError(input.bookId);
   }
 
   const progress = createReadingProgress(input);
   await repo.saveProgress(progress);
+
+  await repo.upsertBook({
+    ...book,
+    lastOpenedAt: Date.now(),
+  });
+
   return progress;
 }

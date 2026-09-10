@@ -12,6 +12,7 @@ export interface ImportBookInput {
   readonly addedAt?: number | undefined;
   readonly rank?: Rank | undefined;
   readonly coverImage?: string | undefined;
+  readonly language?: string | undefined;
 }
 
 export async function importBook(repo: LibraryRepository, input: ImportBookInput): Promise<Book> {
