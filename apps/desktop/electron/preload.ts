@@ -5,6 +5,14 @@ const electronAPI = {
     return ipcRenderer.invoke('pick-file');
   },
 
+  pickFolder: (): Promise<string | null> => {
+    return ipcRenderer.invoke('pick-folder');
+  },
+
+  readFolderBooks: (folderPath: string): Promise<Array<{ uri: string; name: string; filePath: string }>> => {
+    return ipcRenderer.invoke('read-folder-books', folderPath);
+  },
+
   readFile: (uri: string): Promise<ArrayBuffer> => {
     return ipcRenderer.invoke('read-file', uri);
   },
