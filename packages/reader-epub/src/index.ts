@@ -5,7 +5,7 @@ export {
   EpubDocumentNotOpenError,
   EpubNavigationError,
 } from './epub-document.js';
-export { parseEpub, readChapterContent, EpubParseError } from './epub-parser.js';
+export { parseEpub, readChapterContent, extractCoverImage, EpubParseError } from './epub-parser.js';
 export type {
   OpfPackage,
   OpfManifestItem,

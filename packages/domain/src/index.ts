@@ -1,19 +1,22 @@
 export type BookFormat = 'epub' | 'pdf' | 'cbz' | 'md';
 export type BookId = string;
 export type ReadingStatus = 'unread' | 'opened' | 'reading';
+export type Rank = 0 | 0.5 | 1 | 1.5 | 2 | 2.5 | 3 | 3.5 | 4 | 4.5 | 5;
 
 export interface Book {
   readonly id: BookId;
   readonly title: string;
-  readonly author?: string;
+  readonly author?: string | undefined;
   readonly format: BookFormat;
   readonly uri: string;
-  readonly fileHash?: string;
+  readonly fileHash?: string | undefined;
   readonly addedAt: number;
-  readonly lastOpenedAt?: number;
-  readonly readingStatus?: ReadingStatus;
-  readonly language?: string;
+  readonly lastOpenedAt?: number | undefined;
+  readonly readingStatus?: ReadingStatus | undefined;
+  readonly language?: string | undefined;
   readonly status: 'available' | 'missing';
+  readonly rank?: Rank | undefined;
+  readonly coverImage?: string | undefined;
 }
 
 export interface EpubLocator {
@@ -103,12 +106,13 @@ export const DEFAULT_READER_PREFERENCES: ReaderPreferences = {
 };
 
 export function createBook(
-  input: Omit<Book, 'addedAt' | 'status'> & { addedAt?: number; status?: Book['status'] },
+  input: Omit<Book, 'addedAt' | 'status'> & { addedAt?: number | undefined; status?: Book['status'] | undefined },
 ): Book {
   const book: Book = {
     ...input,
     addedAt: input.addedAt ?? Date.now(),
     status: input.status ?? 'available',
+    ...(input.rank !== undefined && { rank: normalizeRank(input.rank) }),
   };
 
   assertNonEmpty(book.id, 'Book id');
@@ -141,6 +145,15 @@ export function normalizePercent(percent: number): number {
   }
 
   return Math.min(1, Math.max(0, percent));
+}
+
+export function normalizeRank(rank: number): Rank {
+  if (!Number.isFinite(rank)) {
+    throw new DomainValidationError('rank must be a finite number');
+  }
+
+  const clamped = Math.min(5, Math.max(0, rank));
+  return Math.round(clamped * 2) / 2 as Rank;
 }
 
 export function createReadingProgress(

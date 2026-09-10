@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 
 type ReadingStatus = 'unread' | 'opened' | 'reading';
+type Rank = 0 | 0.5 | 1 | 1.5 | 2 | 2.5 | 3 | 3.5 | 4 | 4.5 | 5;
 
 interface BookCardProps {
   title: string;
@@ -10,6 +11,9 @@ interface BookCardProps {
   addedAt?: number | undefined;
   lastOpenedAt?: number | undefined;
   readingStatus?: ReadingStatus | undefined;
+  coverImage?: string | undefined;
+  rank?: Rank | undefined;
+  progressPercent?: number | undefined;
   onPress: () => void;
 }
 
@@ -87,17 +91,33 @@ export function BookCard({
   addedAt,
   lastOpenedAt,
   readingStatus,
+  coverImage,
+  rank,
+  progressPercent,
   onPress,
 }: BookCardProps): JSX.Element {
   const status = getStatus(readingStatus, lastOpenedAt);
   const statusCfg = STATUS_CONFIG[status];
-  const [c1, c2] = getCoverColors(title);
+  const [c1] = getCoverColors(title);
   const glyph = getGlyph(title);
   const authorLast = getAuthorLast(author);
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       <View style={[styles.cover, { backgroundColor: c1 }]}>
+        {coverImage ? (
+          <Image
+            source={{ uri: coverImage }}
+            style={styles.coverImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.coverArt}>
+            <Text style={styles.coverAuthor}>{authorLast}</Text>
+            <Text style={styles.coverTitle} numberOfLines={3}>{title}</Text>
+            <Text style={styles.coverGlyph}>{glyph}</Text>
+          </View>
+        )}
         <View style={styles.docTypeBadge}>
           <Text style={styles.docTypeText}>{format.toUpperCase()}</Text>
         </View>
@@ -105,11 +125,11 @@ export function BookCard({
           <View style={[styles.dot, { backgroundColor: statusCfg.dotColor }]} />
           <Text style={styles.statusText}>{statusCfg.label}</Text>
         </View>
-        <View style={styles.coverArt}>
-          <Text style={styles.coverAuthor}>{authorLast}</Text>
-          <Text style={styles.coverTitle} numberOfLines={3}>{title}</Text>
-          <Text style={styles.coverGlyph}>{glyph}</Text>
-        </View>
+        {status === 'reading' && progressPercent !== undefined && progressPercent > 0 && (
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
+          </View>
+        )}
       </View>
       <View style={styles.cardBody}>
         <Text style={styles.cardTitle} numberOfLines={2}>{title}</Text>
@@ -120,7 +140,22 @@ export function BookCard({
           ) : addedAt ? (
             <Text style={styles.metaText}>Añadido {relativeDate(addedAt)}</Text>
           ) : null}
+          {progressPercent !== undefined && progressPercent > 0 && (
+            <Text style={[styles.metaText, { color: '#4fa393' }]}>{progressPercent}% leído</Text>
+          )}
         </View>
+        {rank !== undefined && rank > 0 && (
+          <View style={styles.rankContainer}>
+            {[1, 2, 3, 4, 5].map((s) => (
+              <Text
+                key={s}
+                style={[styles.rankStar, s <= rank ? styles.rankStarFilled : styles.rankStarEmpty]}
+              >
+                ★
+              </Text>
+            ))}
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -142,6 +177,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.85,
     shadowRadius: 30,
     elevation: 8,
+  },
+  coverImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
   },
   docTypeBadge: {
     position: 'absolute',
@@ -240,5 +282,31 @@ const styles = StyleSheet.create({
   metaText: {
     fontSize: 11,
     color: '#6a657a',
+  },
+  progressBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 4,
+    backgroundColor: 'rgba(255,255,255,.2)',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#4fa393',
+  },
+  rankContainer: {
+    flexDirection: 'row',
+    marginTop: 4,
+  },
+  rankStar: {
+    fontSize: 12,
+    marginRight: 1,
+  },
+  rankStarFilled: {
+    color: '#c9a24b',
+  },
+  rankStarEmpty: {
+    color: '#3a3548',
   },
 });

@@ -1,4 +1,4 @@
-import { createBook, type Book, type BookFormat } from '@clio-reader/domain';
+import { createBook, type Book, type BookFormat, type Rank } from '@clio-reader/domain';
 
 import { DuplicateBookError } from './errors.js';
 import type { LibraryRepository } from './repository.js';
@@ -6,10 +6,12 @@ import type { LibraryRepository } from './repository.js';
 export interface ImportBookInput {
   readonly id: string;
   readonly title: string;
-  readonly author?: string;
+  readonly author?: string | undefined;
   readonly format: BookFormat;
   readonly uri: string;
-  readonly addedAt?: number;
+  readonly addedAt?: number | undefined;
+  readonly rank?: Rank | undefined;
+  readonly coverImage?: string | undefined;
 }
 
 export async function importBook(repo: LibraryRepository, input: ImportBookInput): Promise<Book> {

@@ -4,8 +4,9 @@
  * Tipos: Fraunces + Hanken Grotesk
  */
 
-import React, { useEffect, useState, useMemo } from 'react';
-import type { Book, ReadingStatus } from '@clio-reader/domain';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import type { Book, ReadingStatus, Rank, ReadingProgress } from '@clio-reader/domain';
+import type { LibraryRepository } from '@clio-reader/library';
 import type { ThemePalette } from '../themes';
 import { PALETTES } from '../themes';
 import { BrandIcon } from './BrandIcon';
@@ -84,6 +85,7 @@ interface LibraryViewProps {
   readonly theme: 'dark' | 'light';
   readonly paletteId: string;
   readonly palette: ThemePalette;
+  readonly repository: LibraryRepository;
   readonly onToggleTheme: () => void;
   readonly onSetPalette: (id: string) => void;
   readonly onOpenBook: (book: Book) => void;
@@ -101,6 +103,7 @@ export function LibraryView({
   theme,
   paletteId,
   palette,
+  repository,
   onToggleTheme,
   onSetPalette,
   onOpenBook,
@@ -115,8 +118,33 @@ export function LibraryView({
   const [colSort, setColSort] = useState<string>('title');
   const [colQuery, setColQuery] = useState('');
   const [homeSearch, setHomeSearch] = useState('');
+  const [progressMap, setProgressMap] = useState<Map<string, ReadingProgress>>(new Map());
 
   useEffect(() => { onLoadBooks(); }, [onLoadBooks]);
+
+  // Load progress for all books
+  useEffect(() => {
+    const loadProgress = async () => {
+      const map = new Map<string, ReadingProgress>();
+      await Promise.all(
+        books.map(async (book) => {
+          const progress = await repository.getProgress(book.id);
+          if (progress) {
+            map.set(book.id, progress);
+          }
+        }),
+      );
+      setProgressMap(map);
+    };
+    loadProgress();
+  }, [books, repository]);
+
+  const handleSaveRank = useCallback(async (bookId: string, rank: Rank) => {
+    const book = books.find((b) => b.id === bookId);
+    if (!book) return;
+    await repository.upsertBook({ ...book, rank });
+    onLoadBooks();
+  }, [books, repository, onLoadBooks]);
 
   const recentBooks = useMemo(
     () => [...books].filter((b) => b.lastOpenedAt).sort((a, b) => (b.lastOpenedAt ?? 0) - (a.lastOpenedAt ?? 0)).slice(0, 5),
@@ -180,11 +208,13 @@ export function LibraryView({
             addedBooks={addedBooks}
             readingCount={readingCount}
             searchValue={homeSearch}
+            progressMap={progressMap}
             onSearchChange={setHomeSearch}
             onSearchFocus={handleHomeSearchFocus}
             onOpen={onOpenBook}
             onRemove={onRemoveBook}
             onImport={onImportBook}
+            onSaveRank={handleSaveRank}
           />
         )}
         {activeView === 'collection' && (
@@ -198,6 +228,7 @@ export function LibraryView({
             sort={colSort}
             query={colQuery}
             availableLanguages={availableLanguages}
+            progressMap={progressMap}
             onStatusFilterChange={setColStatusFilter}
             onFormatFilterChange={setColFormatFilter}
             onLanguageFilterChange={setColLanguageFilter}
@@ -205,6 +236,7 @@ export function LibraryView({
             onQueryChange={setColQuery}
             onOpen={onOpenBook}
             onRemove={onRemoveBook}
+            onSaveRank={handleSaveRank}
           />
         )}
         {activeView === 'bookmarks' && <BookmarksView />}
@@ -356,19 +388,21 @@ function Rail({ active, onChange, theme, paletteId, palette, onToggleTheme, onSe
 
 function HomeView({
   books, recentBooks, addedBooks, readingCount,
-  searchValue, onSearchChange, onSearchFocus,
-  onOpen, onRemove, onImport,
+  searchValue, progressMap, onSearchChange, onSearchFocus,
+  onOpen, onRemove, onImport, onSaveRank,
 }: {
   books: readonly Book[];
   recentBooks: readonly Book[];
   addedBooks: readonly Book[];
   readingCount: number;
   searchValue: string;
+  progressMap: Map<string, ReadingProgress>;
   onSearchChange: (v: string) => void;
   onSearchFocus: () => void;
   onOpen: (b: Book) => void;
   onRemove: (id: string, title: string) => void;
   onImport: () => void;
+  onSaveRank: (bookId: string, rank: Rank) => void;
 }): JSX.Element {
   const h = new Date().getHours();
   const greeting = h < 6 ? 'Buenas noches' : h < 13 ? 'Buenos días' : h < 20 ? 'Buenas tardes' : 'Buenas noches';
@@ -407,7 +441,16 @@ function HomeView({
         <section style={{ marginBottom: 44 }}>
           <SectionHead title="Continuar leyendo" count={`${readingCount} en curso`} />
           <div style={S.row}>
-            {recentBooks.map((b) => <BookCard key={b.id} book={b} onOpen={onOpen} onRemove={onRemove} />)}
+            {recentBooks.map((b) => (
+              <BookCard
+                key={b.id}
+                book={b}
+                progress={progressMap.get(b.id)}
+                onOpen={onOpen}
+                onRemove={onRemove}
+                onSaveRank={onSaveRank}
+              />
+            ))}
           </div>
         </section>
       )}
@@ -415,7 +458,16 @@ function HomeView({
       <section>
         <SectionHead title="Añadidos recientemente" count="últimos 6" />
         <div style={S.row}>
-          {addedBooks.map((b) => <BookCard key={b.id} book={b} onOpen={onOpen} onRemove={onRemove} />)}
+          {addedBooks.map((b) => (
+            <BookCard
+              key={b.id}
+              book={b}
+              progress={progressMap.get(b.id)}
+              onOpen={onOpen}
+              onRemove={onRemove}
+              onSaveRank={onSaveRank}
+            />
+          ))}
         </div>
       </section>
     </div>
@@ -451,9 +503,9 @@ const SORT_OPTIONS: { key: string; label: string }[] = [
 function CollectionView({
   books, totalCount, readingCount,
   statusFilter, formatFilter, languageFilter, sort, query,
-  availableLanguages,
+  availableLanguages, progressMap,
   onStatusFilterChange, onFormatFilterChange, onLanguageFilterChange, onSortChange,
-  onQueryChange, onOpen, onRemove,
+  onQueryChange, onOpen, onRemove, onSaveRank,
 }: {
   books: readonly Book[];
   totalCount: number;
@@ -464,6 +516,7 @@ function CollectionView({
   sort: string;
   query: string;
   availableLanguages: readonly string[];
+  progressMap: Map<string, ReadingProgress>;
   onStatusFilterChange: (f: 'all' | ReadingStatus) => void;
   onFormatFilterChange: (f: string) => void;
   onLanguageFilterChange: (f: string) => void;
@@ -471,6 +524,7 @@ function CollectionView({
   onQueryChange: (q: string) => void;
   onOpen: (b: Book) => void;
   onRemove: (id: string, title: string) => void;
+  onSaveRank: (bookId: string, rank: Rank) => void;
 }): JSX.Element {
   return (
     <div style={S.wrap}>
@@ -559,7 +613,16 @@ function CollectionView({
         </div>
       ) : (
         <div style={S.grid}>
-          {books.map((b) => <BookCard key={b.id} book={b} onOpen={onOpen} onRemove={onRemove} />)}
+          {books.map((b) => (
+            <BookCard
+              key={b.id}
+              book={b}
+              progress={progressMap.get(b.id)}
+              onOpen={onOpen}
+              onRemove={onRemove}
+              onSaveRank={onSaveRank}
+            />
+          ))}
         </div>
       )}
     </div>
@@ -621,18 +684,22 @@ function SectionHead({ title, count }: { readonly title: string; readonly count:
 
 interface BookCardProps {
   readonly book: Book;
+  readonly progress?: ReadingProgress | undefined;
   readonly onOpen: (book: Book) => void;
   readonly onRemove: (bookId: string, bookTitle: string) => void;
+  readonly onSaveRank: (bookId: string, rank: Rank) => void;
 }
 
-function BookCard({ book, onOpen, onRemove }: BookCardProps): JSX.Element {
+function BookCard({ book, progress, onOpen, onRemove, onSaveRank }: BookCardProps): JSX.Element {
   const [hovered, setHovered] = useState(false);
+  const [hoverRank, setHoverRank] = useState<number | null>(null);
   const isMissing = book.status === 'missing';
   const status = getReadingStatus(book);
   const cfg = STATUS_CFG[status];
   const [c1, c2] = getCoverColors(book.id);
   const glyph = getGlyph(book.id);
   const authorLast = getAuthorLast(book.author);
+  const progressPercent = progress ? Math.round(progress.percent * 100) : 0;
 
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(book); }
@@ -640,6 +707,11 @@ function BookCard({ book, onOpen, onRemove }: BookCardProps): JSX.Element {
   const handleRemove = (e: React.MouseEvent) => {
     e.stopPropagation();
     onRemove(book.id, book.title);
+  };
+
+  const handleRankClick = (e: React.MouseEvent, rank: number) => {
+    e.stopPropagation();
+    onSaveRank(book.id, rank as Rank);
   };
 
   return (
@@ -659,11 +731,31 @@ function BookCard({ book, onOpen, onRemove }: BookCardProps): JSX.Element {
     >
       <div style={{
         ...S.cover,
-        background: `linear-gradient(150deg, ${c1}, ${c2})`,
+        background: book.coverImage ? undefined : `linear-gradient(150deg, ${c1}, ${c2})`,
         boxShadow: hovered
           ? '0 22px 46px -16px rgba(0,0,0,.9), inset 0 0 0 1px rgba(230,200,116,.35)'
           : '0 12px 30px -14px rgba(0,0,0,.85), inset 0 0 0 1px rgba(255,255,255,.05)',
       }}>
+        {book.coverImage ? (
+          <img
+            src={book.coverImage}
+            alt={book.title}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+            }}
+          />
+        ) : (
+          <div style={S.coverArt}>
+            <div style={S.coverAuthor}>{authorLast}</div>
+            <div style={S.coverTitle}>{book.title}</div>
+            <div style={S.coverGlyph}>{glyph}</div>
+          </div>
+        )}
         <span style={S.docType}>{book.format.toUpperCase()}</span>
         <span style={S.statusTag}>
           <span style={{
@@ -674,14 +766,9 @@ function BookCard({ book, onOpen, onRemove }: BookCardProps): JSX.Element {
           }} />
           {cfg.label}
         </span>
-        <div style={S.coverArt}>
-          <div style={S.coverAuthor}>{authorLast}</div>
-          <div style={S.coverTitle}>{book.title}</div>
-          <div style={S.coverGlyph}>{glyph}</div>
-        </div>
-        {status === 'reading' && (
+        {status === 'reading' && progressPercent > 0 && (
           <div style={S.coverProgress}>
-            <div style={{ ...S.coverProgressFill, width: '38%' }} />
+            <div style={{ ...S.coverProgressFill, width: `${progressPercent}%` }} />
           </div>
         )}
       </div>
@@ -704,14 +791,43 @@ function BookCard({ book, onOpen, onRemove }: BookCardProps): JSX.Element {
               Añadido {relDate(book.addedAt)}
             </>
           )}
+          {progressPercent > 0 && (
+            <span style={{ marginLeft: 8, color: 'var(--verdigris)' }}>
+              {progressPercent}% leído
+            </span>
+          )}
         </div>
         <div style={S.cardFooter}>
-          <div style={S.starRating} aria-label="Calificación pendiente">
-            {[1, 2, 3, 4, 5].map((s) => (
-              <svg key={s} width="12" height="12" viewBox="0 0 24 24" fill="var(--line)" stroke="none">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-              </svg>
-            ))}
+          <div
+            style={S.starRating}
+            onMouseLeave={() => setHoverRank(null)}
+          >
+            {[1, 2, 3, 4, 5].map((s) => {
+              const currentRank = book.rank ?? 0;
+              const displayRank = hoverRank ?? currentRank;
+              const isHalf = displayRank >= s - 0.5 && displayRank < s;
+              const isFull = displayRank >= s;
+              return (
+                <span
+                  key={s}
+                  style={{ cursor: 'pointer', display: 'inline-flex' }}
+                  onMouseEnter={() => setHoverRank(s)}
+                  onClick={(e) => handleRankClick(e, isHalf ? s - 0.5 : s)}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill={isFull ? 'var(--gold)' : isHalf ? 'url(#halfStar)' : 'var(--line)'} stroke="none">
+                    {isHalf && (
+                      <defs>
+                        <linearGradient id="halfStar">
+                          <stop offset="50%" stopColor="var(--gold)" />
+                          <stop offset="50%" stopColor="var(--line)" />
+                        </linearGradient>
+                      </defs>
+                    )}
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  </svg>
+                </span>
+              );
+            })}
           </div>
           <button style={S.removeBtn} onClick={handleRemove} aria-label={`Eliminar ${book.title}`}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>

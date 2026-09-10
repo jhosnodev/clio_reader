@@ -15,8 +15,9 @@ import { bridge } from './bridges/bridge-singleton';
 import { LocalRepository } from '@clio-reader/storage';
 import { createElectronKVStore } from './bridges/storage';
 import { importBook, listBooks, removeBook, generateId } from '@clio-reader/library';
-import type { Book, BookFormat } from '@clio-reader/domain';
+import type { Book } from '@clio-reader/domain';
 import { detectBookFormat } from '@clio-reader/reader-core';
+import { parseEpub, extractCoverImage } from '@clio-reader/reader-epub';
 import {
   applyTheme,
   savePalettePreference,
@@ -117,14 +118,58 @@ export function App(): JSX.Element {
       console.log('[import] archivo:', fileSource.name, 'formato detectado:', format);
 
       const id = generateId();
-      const title = fileSource.name.replace(/\.[^.]+$/, '');
+      let title = fileSource.name.replace(/\.[^.]+$/, '');
+      let author: string | undefined;
+      let coverImage: string | undefined;
 
-      console.log('[import] guardando libro:', { id, title, uri: fileSource.uri });
+      // Extract metadata from EPUB files
+      if (format === 'epub') {
+        try {
+          console.log('[import] extrayendo metadata del EPUB...');
+          const response = await fetch(fileSource.uri);
+          const arrayBuffer = await response.arrayBuffer();
+          const rawData = new Uint8Array(arrayBuffer);
+
+          const parsed = await parseEpub(rawData);
+
+          // Use real title from OPF if available
+          if (parsed.opf.metadata.title) {
+            title = parsed.opf.metadata.title;
+            console.log('[import] título real del EPUB:', title);
+          }
+
+          // Use real author from OPF if available
+          if (parsed.opf.metadata.creator) {
+            author = parsed.opf.metadata.creator;
+            console.log('[import] autor real del EPUB:', author);
+          }
+
+          // Extract cover image
+          const coverResult = await extractCoverImage(rawData, parsed);
+          if (coverResult) {
+            const base64 = btoa(
+              Array.from(coverResult.data)
+                .map((byte) => String.fromCharCode(byte))
+                .join(''),
+            );
+            coverImage = `data:${coverResult.mimeType};base64,${base64}`;
+            console.log('[import] portada extraída, tamaño base64:', coverImage.length);
+          } else {
+            console.log('[import] no se encontró portada en el EPUB');
+          }
+        } catch (epubError) {
+          console.warn('[import] error extrayendo metadata del EPUB, usando filename:', epubError);
+        }
+      }
+
+      console.log('[import] guardando libro:', { id, title, author, uri: fileSource.uri });
       await importBook(repository, {
         id,
         title,
+        author,
         format,
         uri: fileSource.uri,
+        coverImage,
       });
       console.log('[import] libro guardado');
 
@@ -194,6 +239,7 @@ export function App(): JSX.Element {
       theme={theme}
       paletteId={paletteId}
       palette={getPalette(paletteId)}
+      repository={repository}
       onToggleTheme={toggleTheme}
       onSetPalette={setPalette}
       onOpenBook={handleOpenBook}

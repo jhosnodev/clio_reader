@@ -17,6 +17,7 @@ export interface OpfMetadata {
   readonly creator?: string;
   readonly language?: string;
   readonly identifier?: string;
+  readonly coverImageId?: string;
 }
 
 export interface OpfPackage {
@@ -77,11 +78,18 @@ function parseMetadata(xml: string): OpfMetadata {
   const identifier =
     getTagContent(metadataXml, 'dc:identifier') ?? getTagContent(metadataXml, 'identifier');
 
+  // EPUB 2: <meta name="cover" content="cover-image-id"/>
+  const coverMetaMatch = metadataXml.match(
+    /<meta\s+[^>]*name\s*=\s*["']cover["'][^>]*content\s*=\s*["']([^"']+)["'][^>]*\/?>/i,
+  );
+  const coverImageId = coverMetaMatch?.[1];
+
   return {
     ...(title !== undefined && { title }),
     ...(creator !== undefined && { creator }),
     ...(language !== undefined && { language }),
     ...(identifier !== undefined && { identifier }),
+    ...(coverImageId !== undefined && { coverImageId }),
   };
 }
 
@@ -230,4 +238,60 @@ export async function readChapterContent(data: Uint8Array, fullPath: string): Pr
     throw new EpubParseError(`Chapter file not found: ${fullPath}`);
   }
   return entry.async('string');
+}
+
+export async function extractCoverImage(
+  data: Uint8Array,
+  parsed: ParsedEpub,
+): Promise<{ data: Uint8Array; mimeType: string } | null> {
+  const zip = await JSZip.loadAsync(data);
+  const { manifest, basePath } = parsed.opf;
+
+  // Find cover image item
+  let coverItem: OpfManifestItem | undefined;
+
+  // 1. Try by coverImageId from metadata (EPUB 2)
+  if (parsed.opf.metadata.coverImageId) {
+    coverItem = manifest.find((item) => item.id === parsed.opf.metadata.coverImageId);
+  }
+
+  // 2. Try by properties="cover-image" (EPUB 3)
+  if (!coverItem) {
+    coverItem = manifest.find((item) => item.properties === 'cover-image');
+  }
+
+  // 3. Try by id containing "cover" (fallback)
+  if (!coverItem) {
+    coverItem = manifest.find(
+      (item) =>
+        item.id.toLowerCase().includes('cover') && item.mediaType.startsWith('image/'),
+    );
+  }
+
+  if (!coverItem) {
+    return null;
+  }
+
+  // Resolve the full path
+  const fullPath = resolveHref(basePath, coverItem.href);
+  const entry = zip.file(fullPath);
+
+  if (!entry) {
+    return null;
+  }
+
+  const imageData = new Uint8Array(await entry.async('arraybuffer'));
+
+  // Determine MIME type from extension
+  const ext = fullPath.split('.').pop()?.toLowerCase() ?? '';
+  const mimeMap: Record<string, string> = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    gif: 'image/gif',
+    webp: 'image/webp',
+  };
+  const mimeType = mimeMap[ext] ?? coverItem.mediaType;
+
+  return { data: imageData, mimeType };
 }

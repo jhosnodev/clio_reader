@@ -9,7 +9,7 @@ import {
   validateReaderPreferences,
 } from '@clio-reader/domain';
 
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 2;
 const DEFAULT_STATE_KEY = 'clio-reader.state';
 
 type StoredPreferences = {
@@ -224,6 +224,8 @@ export function migrateState(input: unknown): PersistenceState {
 
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
+    // Books from v1 won't have rank/coverImage fields - they'll be undefined (optional)
+    // Books imported after v2 will have these fields populated
     books: Array.isArray(candidate.books) ? candidate.books : [],
     progress: Array.isArray(candidate.progress) ? candidate.progress : [],
     preferences: {
