@@ -84,7 +84,7 @@ export class SessionManager {
       savedProgress = await this.progressSaver.flushWithPercent(
         this.currentBook.id,
         locator,
-        0,
+        locator.progression ?? 0,
         this.currentRepository,
       );
     }
@@ -113,7 +113,7 @@ export class SessionManager {
       });
 
       if (this.currentBook !== null && this.currentRepository !== null) {
-        this.progressSaver.scheduleSave(this.currentBook.id, locator, this.currentRepository, 0);
+        this.progressSaver.scheduleSave(this.currentBook.id, locator, this.currentRepository, locator.progression ?? 0);
       }
 
       return locator;
@@ -140,7 +140,7 @@ export class SessionManager {
       });
 
       if (this.currentBook !== null && this.currentRepository !== null) {
-        this.progressSaver.scheduleSave(this.currentBook.id, locator, this.currentRepository, 0);
+        this.progressSaver.scheduleSave(this.currentBook.id, locator, this.currentRepository, locator.progression ?? 0);
       }
 
       return locator;

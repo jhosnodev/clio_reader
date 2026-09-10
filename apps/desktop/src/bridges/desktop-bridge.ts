@@ -3,6 +3,9 @@ import type { FileSource } from '@clio-reader/reader-core';
 export interface DesktopBridge {
   readonly platform: 'desktop';
   pickFile(): Promise<FileSource | null>;
+  pickFiles(): Promise<FileSource[]>;
+  pickFolder(): Promise<string | null>;
+  readFolderBooks(folderPath: string): Promise<FileSource[]>;
   readFile(uri: string): Promise<Uint8Array>;
   writeFileTemp(data: Uint8Array, ext: string): Promise<string>;
   checkFileExists(uri: string): Promise<boolean>;
@@ -27,6 +30,32 @@ export function createDesktopBridge(): DesktopBridge {
         uri: file.uri,
         name: file.name,
       };
+    },
+
+    async pickFiles(): Promise<FileSource[]> {
+      const result = await api.pickFile();
+      if (!result || result.length === 0) {
+        return [];
+      }
+      return result.map((file) => ({
+        uri: file.uri,
+        name: file.name,
+      }));
+    },
+
+    async pickFolder(): Promise<string | null> {
+      return await api.pickFolder();
+    },
+
+    async readFolderBooks(folderPath: string): Promise<FileSource[]> {
+      const result = await api.readFolderBooks(folderPath);
+      if (!result || result.length === 0) {
+        return [];
+      }
+      return result.map((file) => ({
+        uri: file.uri,
+        name: file.name,
+      }));
     },
 
     async readFile(uri: string): Promise<Uint8Array> {

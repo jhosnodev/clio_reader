@@ -1,7 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
-import { join, dirname } from 'path';
+import { join, dirname, extname } from 'path';
 import { fileURLToPath } from 'url';
-import { readFile, writeFile, mkdir, access, constants, unlink } from 'fs/promises';
+import { readFile, writeFile, mkdir, access, constants, unlink, readdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import { tmpdir } from 'os';
 import { randomUUID } from 'crypto';
@@ -99,6 +99,60 @@ if (!gotTheLock) {
       } catch (err) {
         console.error('[main] pick-file error:', err);
         return null;
+      }
+    });
+
+    ipcMain.handle('pick-folder', async () => {
+      console.log('[main] pick-folder handler invoked');
+      try {
+        if (!mainWindow) {
+          console.error('[main] mainWindow is null');
+          return null;
+        }
+        const result = await dialog.showOpenDialog(mainWindow, {
+          title: 'Select a folder with books',
+          properties: ['openDirectory'],
+        });
+
+        console.log('[main] folder dialog result:', result);
+
+        if (result.canceled || result.filePaths.length === 0) {
+          return null;
+        }
+
+        return result.filePaths[0] ?? null;
+      } catch (err) {
+        console.error('[main] pick-folder error:', err);
+        return null;
+      }
+    });
+
+    ipcMain.handle('read-folder-books', async (_event, folderPath: string) => {
+      console.log('[main] read-folder-books handler invoked for:', folderPath);
+      try {
+        const supportedExtensions = new Set(['.epub', '.pdf', '.cbz', '.md']);
+        const entries = await readdir(folderPath, { withFileTypes: true });
+        const files: { uri: string; name: string; filePath: string }[] = [];
+
+        for (const entry of entries) {
+          if (entry.isFile()) {
+            const ext = extname(entry.name).toLowerCase();
+            if (supportedExtensions.has(ext)) {
+              const filePath = join(folderPath, entry.name);
+              files.push({
+                uri: `file://${filePath}`,
+                name: entry.name,
+                filePath,
+              });
+            }
+          }
+        }
+
+        console.log('[main] found', files.length, 'supported books in folder');
+        return files;
+      } catch (err) {
+        console.error('[main] read-folder-books error:', err);
+        return [];
       }
     });
 

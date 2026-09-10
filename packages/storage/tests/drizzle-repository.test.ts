@@ -1,0 +1,299 @@
+import { describe, it, expect, beforeEach, afterAll } from 'vitest';
+import { createInMemoryDatabase, DrizzleRepository } from '../src/drizzle';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+describe('DrizzleRepository', () => {
+  let dbResult: Awaited<ReturnType<typeof createInMemoryDatabase>> | null = null;
+  let repository: DrizzleRepository;
+
+  beforeEach(async () => {
+    if (dbResult) {
+      dbResult.close();
+    }
+    
+    dbResult = await createInMemoryDatabase();
+    repository = new DrizzleRepository(dbResult.db);
+    
+    // Run migration (without FTS5 for testing)
+    const migrationSQL = readFileSync(
+      join(__dirname, '../drizzle/0000_initial_no_fts.sql'),
+      'utf-8'
+    );
+    dbResult.rawDb.run(migrationSQL);
+  });
+
+  afterAll(() => {
+    if (dbResult) {
+      dbResult.close();
+    }
+  });
+
+  describe('Books', () => {
+    it('should create and retrieve a book', async () => {
+      const book = {
+        id: 'book-1',
+        title: 'Test Book',
+        author: 'Test Author',
+        format: 'epub' as const,
+        uri: '/path/to/book.epub',
+        addedAt: Date.now(),
+        status: 'available' as const,
+      };
+
+      await repository.upsertBook(book);
+      const books = await repository.listBooks();
+
+      expect(books).toHaveLength(1);
+      expect(books[0].id).toBe('book-1');
+      expect(books[0].title).toBe('Test Book');
+    });
+
+    it('should update an existing book', async () => {
+      const book = {
+        id: 'book-1',
+        title: 'Test Book',
+        format: 'epub' as const,
+        uri: '/path/to/book.epub',
+        addedAt: Date.now(),
+        status: 'available' as const,
+      };
+
+      await repository.upsertBook(book);
+      
+      const updatedBook = {
+        ...book,
+        title: 'Updated Title',
+      };
+      
+      await repository.upsertBook(updatedBook);
+      const books = await repository.listBooks();
+
+      expect(books).toHaveLength(1);
+      expect(books[0].title).toBe('Updated Title');
+    });
+
+    it('should soft delete a book', async () => {
+      const book = {
+        id: 'book-1',
+        title: 'Test Book',
+        format: 'epub' as const,
+        uri: '/path/to/book.epub',
+        addedAt: Date.now(),
+        status: 'available' as const,
+      };
+
+      await repository.upsertBook(book);
+      await repository.removeBook('book-1');
+      const books = await repository.listBooks();
+
+      expect(books).toHaveLength(0);
+    });
+  });
+
+  describe('Reading Progress', () => {
+    it('should save and retrieve reading progress', async () => {
+      const book = {
+        id: 'book-1',
+        title: 'Test Book',
+        format: 'epub' as const,
+        uri: '/path/to/book.epub',
+        addedAt: Date.now(),
+        status: 'available' as const,
+      };
+
+      await repository.upsertBook(book);
+
+      const progress = {
+        bookId: 'book-1',
+        locator: { format: 'epub' as const, href: 'chapter1', cfi: 'epubcfi(...)' },
+        percent: 0.5,
+        updatedAt: Date.now(),
+      };
+
+      await repository.saveProgress(progress);
+      const retrieved = await repository.getProgress('book-1');
+
+      expect(retrieved).toBeDefined();
+      expect(retrieved?.percent).toBe(0.5);
+    });
+  });
+
+  describe('Preferences', () => {
+    it('should save and retrieve global preferences', async () => {
+      const prefs = {
+        theme: 'dark' as const,
+        backgroundColor: '#000000',
+        foregroundColor: '#ffffff',
+        accentColor: '#ff0000',
+        fontFamily: 'serif' as const,
+        fontScale: 1.2,
+        lineHeight: 1.8,
+        margin: 'wide' as const,
+        readingDirection: 'rtl' as const,
+      };
+
+      await repository.saveGlobalPreferences(prefs);
+      const retrieved = await repository.getGlobalPreferences();
+
+      expect(retrieved.theme).toBe('dark');
+      expect(retrieved.fontScale).toBe(1.2);
+    });
+
+    it('should save and retrieve book-specific preferences', async () => {
+      const book = {
+        id: 'book-1',
+        title: 'Test Book',
+        format: 'epub' as const,
+        uri: '/path/to/book.epub',
+        addedAt: Date.now(),
+        status: 'available' as const,
+      };
+
+      await repository.upsertBook(book);
+
+      const prefs = { fontScale: 1.5 };
+      await repository.saveBookPreferences('book-1', prefs);
+      const retrieved = await repository.getBookPreferences('book-1');
+
+      expect(retrieved.fontScale).toBe(1.5);
+    });
+  });
+
+  describe('Bookmarks', () => {
+    it('should save and retrieve bookmarks', async () => {
+      const book = {
+        id: 'book-1',
+        title: 'Test Book',
+        format: 'epub' as const,
+        uri: '/path/to/book.epub',
+        addedAt: Date.now(),
+        status: 'available' as const,
+      };
+
+      await repository.upsertBook(book);
+
+      const bookmark = {
+        id: 'bookmark-1',
+        bookId: 'book-1',
+        locator: { format: 'epub' as const, href: 'chapter1', cfi: 'epubcfi(...)' },
+        label: 'My Bookmark',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      await repository.saveBookmark(bookmark);
+      const bookmarks = await repository.listBookmarks('book-1');
+
+      expect(bookmarks).toHaveLength(1);
+      expect(bookmarks[0].label).toBe('My Bookmark');
+    });
+
+    it('should soft delete a bookmark', async () => {
+      const book = {
+        id: 'book-1',
+        title: 'Test Book',
+        format: 'epub' as const,
+        uri: '/path/to/book.epub',
+        addedAt: Date.now(),
+        status: 'available' as const,
+      };
+
+      await repository.upsertBook(book);
+
+      const bookmark = {
+        id: 'bookmark-1',
+        bookId: 'book-1',
+        locator: { format: 'epub' as const, href: 'chapter1', cfi: 'epubcfi(...)' },
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      await repository.saveBookmark(bookmark);
+      await repository.removeBookmark('bookmark-1');
+      const bookmarks = await repository.listBookmarks('book-1');
+
+      expect(bookmarks).toHaveLength(0);
+    });
+  });
+
+  describe('Notes', () => {
+    it('should save and retrieve notes', async () => {
+      const book = {
+        id: 'book-1',
+        title: 'Test Book',
+        format: 'epub' as const,
+        uri: '/path/to/book.epub',
+        addedAt: Date.now(),
+        status: 'available' as const,
+      };
+
+      await repository.upsertBook(book);
+
+      const note = {
+        id: 'note-1',
+        bookId: 'book-1',
+        locator: { format: 'epub' as const, href: 'chapter1', cfi: 'epubcfi(...)' },
+        selectedText: 'Important text',
+        body: 'This is my note',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      await repository.saveNote(note);
+      const notes = await repository.listNotes('book-1');
+
+      expect(notes).toHaveLength(1);
+      expect(notes[0].body).toBe('This is my note');
+    });
+
+    it('should throw error for empty note body', async () => {
+      const note = {
+        id: 'note-1',
+        bookId: 'book-1',
+        locator: { format: 'epub' as const, href: 'chapter1', cfi: 'epubcfi(...)' },
+        body: '',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      await expect(repository.saveNote(note)).rejects.toThrow('Note body must not be empty');
+    });
+  });
+
+  describe('Highlights', () => {
+    it('should save and retrieve highlights', async () => {
+      const book = {
+        id: 'book-1',
+        title: 'Test Book',
+        format: 'epub' as const,
+        uri: '/path/to/book.epub',
+        addedAt: Date.now(),
+        status: 'available' as const,
+      };
+
+      await repository.upsertBook(book);
+
+      const highlight = {
+        id: 'highlight-1',
+        bookId: 'book-1',
+        locatorFormat: 'epub',
+        locatorStart: 'epubcfi(start)',
+        locatorEnd: 'epubcfi(end)',
+        selectedText: 'Highlighted text',
+        color: '#ffff00',
+        style: 'highlight' as const,
+        note: 'Important!',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      await repository.saveHighlight(highlight);
+      const highlights = await repository.listHighlights('book-1');
+
+      expect(highlights).toHaveLength(1);
+      expect(highlights[0].color).toBe('#ffff00');
+      expect(highlights[0].style).toBe('highlight');
+    });
+  });
+});

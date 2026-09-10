@@ -10,7 +10,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { bridge } from '../bridges/bridge-singleton';
 import type { LibraryRepository } from '@clio-reader/library';
 import type { ReaderPreferences } from '@clio-reader/domain';
-import { createDefaultPreferences } from '@clio-reader/domain';
+import { createReadingProgress, createDefaultPreferences } from '@clio-reader/domain';
 import { getPalette, LIGHT_DEFAULTS } from '../themes';
 
 /* ==========================================================================
@@ -32,12 +32,6 @@ interface ReaderViewProps {
    ========================================================================== */
 
 type FileStatus = 'checking' | 'found' | 'not-found';
-
-/* ==========================================================================
-   Debounce para guardado de progreso
-   ========================================================================== */
-
-const PROGRESS_DEBOUNCE_MS = 800;
 
 /* ==========================================================================
    Helper: build palette CSS string for webview injection
@@ -78,6 +72,8 @@ export function ReaderView({
   const [webviewLoaded, setWebviewLoaded] = useState(false);
   const webviewRef = useRef<HTMLElement | null>(null);
   const progressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastLocatorRef = useRef<import('@clio-reader/domain').ReaderLocator | null>(null);
+  const lastPercentRef = useRef<number>(0);
 
   /* ----- Handler estable para did-finish-load ----- */
   const handleFinishLoadRef = useRef<(() => Promise<void>) | null>(null);
@@ -109,38 +105,6 @@ export function ReaderView({
       return createDefaultPreferences();
     }
   }, [repository, bookId]);
-
-  /* ----- Guardar progreso con debounce ----- */
-  const saveProgress = useCallback(
-    (locator: unknown, percent: number) => {
-      if (progressTimerRef.current) {
-        clearTimeout(progressTimerRef.current);
-      }
-
-      progressTimerRef.current = setTimeout(async () => {
-        try {
-          const { createReadingProgress } = await import('@clio-reader/domain');
-          const progress = createReadingProgress({
-            bookId,
-            locator: locator as import('@clio-reader/domain').ReaderLocator,
-            percent,
-          });
-          await repository.saveProgress(progress);
-        } catch (err) {
-          console.error('Error al guardar progreso:', err);
-        }
-      }, PROGRESS_DEBOUNCE_MS);
-    },
-    [repository, bookId],
-  );
-
-  /* ----- Guardar progreso al cerrar (flush) ----- */
-  const flushProgress = useCallback(async () => {
-    if (progressTimerRef.current) {
-      clearTimeout(progressTimerRef.current);
-      progressTimerRef.current = null;
-    }
-  }, []);
 
   /* ----- Actualizar el handler del webview cuando cambian las dependencias ----- */
   useEffect(() => {
@@ -231,12 +195,22 @@ export function ReaderView({
     const handleBeforeUnload = (): void => {
       if (progressTimerRef.current) {
         clearTimeout(progressTimerRef.current);
+        progressTimerRef.current = null;
+      }
+
+      if (lastLocatorRef.current !== null) {
+        const progress = createReadingProgress({
+          bookId,
+          locator: lastLocatorRef.current,
+          percent: lastPercentRef.current,
+        });
+        repository.saveProgress(progress).catch(() => {});
       }
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, []);
+  }, [repository, bookId]);
 
   /* ----- Relocalizar archivo ----- */
   const handleRelocate = useCallback(async () => {
