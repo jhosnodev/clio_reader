@@ -135,9 +135,7 @@ export function App(): JSX.Element {
       if (format === 'epub') {
         try {
           console.log('[import] extrayendo metadata del EPUB...');
-          const response = await fetch(fileSource.uri);
-          const arrayBuffer = await response.arrayBuffer();
-          const rawData = new Uint8Array(arrayBuffer);
+          const rawData = await bridge.readFile(fileSource.uri);
 
           const parsed = await parseEpub(rawData);
 
