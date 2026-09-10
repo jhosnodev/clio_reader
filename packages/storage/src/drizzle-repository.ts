@@ -1,0 +1,578 @@
+import { eq, and, isNull, desc } from 'drizzle-orm';
+import {
+  Bookmark,
+  Book,
+  createDefaultPreferences,
+  DomainValidationError,
+  Note,
+  ReaderPreferences,
+  ReadingProgress,
+  validateReaderPreferences,
+} from '@clio-reader/domain';
+import { BetterSqlite3Connection, SqlJsConnection } from './db';
+import {
+  books,
+  readingProgress,
+  readerPreferences as readerPreferencesTable,
+  bookPreferences as bookPreferencesTable,
+  bookmarks as bookmarksTable,
+  notes as notesTable,
+  highlights as highlightsTable,
+} from './schema';
+
+export type Highlight = {
+  id: string;
+  bookId: string;
+  locatorFormat: string;
+  locatorStart: string;
+  locatorEnd: string;
+  selectedText?: string;
+  color: string;
+  style: 'highlight' | 'underline';
+  note?: string;
+  createdAt: number;
+  updatedAt: number;
+  deletedAt?: number;
+};
+
+export class DrizzleRepository {
+  constructor(private readonly db: BetterSqlite3Connection | SqlJsConnection) {}
+
+  // ==================== BOOKS ====================
+  async listBooks(): Promise<readonly Book[]> {
+    return this.db
+      .select()
+      .from(books)
+      .where(isNull(books.deletedAt))
+      .all()
+      .map(this.mapBookFromDb);
+  }
+
+  async getBook(bookId: string): Promise<Book | undefined> {
+    const result = this.db
+      .select()
+      .from(books)
+      .where(eq(books.id, bookId))
+      .get();
+    
+    return result ? this.mapBookFromDb(result) : undefined;
+  }
+
+  async upsertBook(book: Book): Promise<void> {
+    const existing = await this.getBook(book.id);
+    
+    if (existing) {
+      this.db
+        .update(books)
+        .set({
+          ...this.mapBookToDb(book),
+          updatedAt: Math.floor(Date.now() / 1000),
+        })
+        .where(eq(books.id, book.id))
+        .run();
+    } else {
+      this.db.insert(books).values(this.mapBookToDb(book)).run();
+    }
+  }
+
+  async removeBook(bookId: string): Promise<void> {
+    const now = Math.floor(Date.now() / 1000);
+    
+    // Soft delete book
+    this.db
+      .update(books)
+      .set({ deletedAt: now, updatedAt: now })
+      .where(eq(books.id, bookId))
+      .run();
+    
+    // Hard delete related data (or soft delete for sync)
+    this.db.delete(readingProgress).where(eq(readingProgress.bookId, bookId)).run();
+    this.db.delete(bookmarksTable).where(eq(bookmarksTable.bookId, bookId)).run();
+    this.db.delete(notesTable).where(eq(notesTable.bookId, bookId)).run();
+    this.db.delete(highlightsTable).where(eq(highlightsTable.bookId, bookId)).run();
+    this.db.delete(bookPreferencesTable).where(eq(bookPreferencesTable.bookId, bookId)).run();
+  }
+
+  // ==================== READING PROGRESS ====================
+  async getProgress(bookId: string): Promise<ReadingProgress | undefined> {
+    const result = this.db
+      .select()
+      .from(readingProgress)
+      .where(eq(readingProgress.bookId, bookId))
+      .get();
+    
+    return result ? this.mapProgressFromDb(result) : undefined;
+  }
+
+  async saveProgress(progress: ReadingProgress): Promise<void> {
+    const existing = await this.getProgress(progress.bookId);
+    
+    if (existing) {
+      this.db
+        .update(readingProgress)
+        .set({
+          locatorFormat: progress.locator.format,
+          locatorData: JSON.stringify(progress.locator),
+          percent: progress.percent,
+          updatedAt: Math.floor(Date.now() / 1000),
+        })
+        .where(eq(readingProgress.bookId, progress.bookId))
+        .run();
+    } else {
+      this.db
+        .insert(readingProgress)
+        .values({
+          bookId: progress.bookId,
+          locatorFormat: progress.locator.format,
+          locatorData: JSON.stringify(progress.locator),
+          percent: progress.percent,
+          updatedAt: Math.floor(Date.now() / 1000),
+        })
+        .run();
+    }
+  }
+
+  // ==================== PREFERENCES ====================
+  async getGlobalPreferences(): Promise<ReaderPreferences> {
+    const result = this.db
+      .select()
+      .from(readerPreferencesTable)
+      .where(eq(readerPreferencesTable.id, 1))
+      .get();
+    
+    if (!result) {
+      return createDefaultPreferences();
+    }
+    
+    return this.mapPreferencesFromDb(result);
+  }
+
+  async saveGlobalPreferences(preferences: ReaderPreferences): Promise<void> {
+    validateReaderPreferences(preferences);
+    
+    const existing = await this.db
+      .select()
+      .from(readerPreferencesTable)
+      .where(eq(readerPreferencesTable.id, 1))
+      .get();
+    
+    const now = Math.floor(Date.now() / 1000);
+    
+    if (existing) {
+      this.db
+        .update(readerPreferencesTable)
+        .set({
+          ...this.mapPreferencesToDb(preferences),
+          updatedAt: now,
+        })
+        .where(eq(readerPreferencesTable.id, 1))
+        .run();
+    } else {
+      this.db
+        .insert(readerPreferencesTable)
+        .values({
+          id: 1,
+          ...this.mapPreferencesToDb(preferences),
+          updatedAt: now,
+        })
+        .run();
+    }
+  }
+
+  async getBookPreferences(bookId: string): Promise<Partial<ReaderPreferences>> {
+    const result = this.db
+      .select()
+      .from(bookPreferencesTable)
+      .where(eq(bookPreferencesTable.bookId, bookId))
+      .get();
+    
+    if (!result) {
+      return {};
+    }
+    
+    return this.mapBookPreferencesFromDb(result);
+  }
+
+  async saveBookPreferences(
+    bookId: string,
+    preferences: Partial<ReaderPreferences>,
+  ): Promise<void> {
+    const global = await this.getGlobalPreferences();
+    const merged = { ...global, ...preferences };
+    validateReaderPreferences(merged);
+    
+    const existing = await this.db
+      .select()
+      .from(bookPreferencesTable)
+      .where(eq(bookPreferencesTable.bookId, bookId))
+      .get();
+    
+    const now = Math.floor(Date.now() / 1000);
+    
+    if (existing) {
+      this.db
+        .update(bookPreferencesTable)
+        .set({
+          ...this.mapBookPreferencesToDb(preferences),
+          updatedAt: now,
+        })
+        .where(eq(bookPreferencesTable.bookId, bookId))
+        .run();
+    } else {
+      this.db
+        .insert(bookPreferencesTable)
+        .values({
+          bookId,
+          ...this.mapBookPreferencesToDb(preferences),
+          updatedAt: now,
+        })
+        .run();
+    }
+  }
+
+  // ==================== BOOKMARKS ====================
+  async listBookmarks(bookId: string): Promise<readonly Bookmark[]> {
+    return this.db
+      .select()
+      .from(bookmarksTable)
+      .where(
+        and(
+          eq(bookmarksTable.bookId, bookId),
+          isNull(bookmarksTable.deletedAt)
+        )
+      )
+      .all()
+      .map(this.mapBookmarkFromDb);
+  }
+
+  async saveBookmark(bookmark: Bookmark): Promise<void> {
+    const existing = this.db
+      .select()
+      .from(bookmarksTable)
+      .where(eq(bookmarksTable.id, bookmark.id))
+      .get();
+    
+    const now = Math.floor(Date.now() / 1000);
+    
+    if (existing) {
+      this.db
+        .update(bookmarksTable)
+        .set({
+          locatorFormat: bookmark.locator.format,
+          locatorData: JSON.stringify(bookmark.locator),
+          label: bookmark.label,
+          updatedAt: now,
+        })
+        .where(eq(bookmarksTable.id, bookmark.id))
+        .run();
+    } else {
+      this.db
+        .insert(bookmarksTable)
+        .values({
+          id: bookmark.id,
+          bookId: bookmark.bookId,
+          locatorFormat: bookmark.locator.format,
+          locatorData: JSON.stringify(bookmark.locator),
+          label: bookmark.label,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .run();
+    }
+  }
+
+  async removeBookmark(bookmarkId: string): Promise<void> {
+    const now = Math.floor(Date.now() / 1000);
+    
+    // Soft delete for sync
+    this.db
+      .update(bookmarksTable)
+      .set({ deletedAt: now, updatedAt: now })
+      .where(eq(bookmarksTable.id, bookmarkId))
+      .run();
+  }
+
+  // ==================== NOTES ====================
+  async listNotes(bookId: string): Promise<readonly Note[]> {
+    return this.db
+      .select()
+      .from(notesTable)
+      .where(
+        and(
+          eq(notesTable.bookId, bookId),
+          isNull(notesTable.deletedAt)
+        )
+      )
+      .all()
+      .map(this.mapNoteFromDb);
+  }
+
+  async saveNote(note: Note): Promise<void> {
+    if (note.body.trim().length === 0) {
+      throw new DomainValidationError('Note body must not be empty');
+    }
+    
+    const existing = this.db
+      .select()
+      .from(notesTable)
+      .where(eq(notesTable.id, note.id))
+      .get();
+    
+    const now = Math.floor(Date.now() / 1000);
+    
+    if (existing) {
+      this.db
+        .update(notesTable)
+        .set({
+          locatorFormat: note.locator.format,
+          locatorData: JSON.stringify(note.locator),
+          selectedText: note.selectedText,
+          body: note.body,
+          updatedAt: now,
+        })
+        .where(eq(notesTable.id, note.id))
+        .run();
+    } else {
+      this.db
+        .insert(notesTable)
+        .values({
+          id: note.id,
+          bookId: note.bookId,
+          locatorFormat: note.locator.format,
+          locatorData: JSON.stringify(note.locator),
+          selectedText: note.selectedText,
+          body: note.body,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .run();
+    }
+  }
+
+  async removeNote(noteId: string): Promise<void> {
+    const now = Math.floor(Date.now() / 1000);
+    
+    // Soft delete for sync
+    this.db
+      .update(notesTable)
+      .set({ deletedAt: now, updatedAt: now })
+      .where(eq(notesTable.id, noteId))
+      .run();
+  }
+
+  // ==================== HIGHLIGHTS ====================
+  async listHighlights(bookId: string): Promise<readonly Highlight[]> {
+    return this.db
+      .select()
+      .from(highlightsTable)
+      .where(
+        and(
+          eq(highlightsTable.bookId, bookId),
+          isNull(highlightsTable.deletedAt)
+        )
+      )
+      .all()
+      .map(this.mapHighlightFromDb);
+  }
+
+  async saveHighlight(highlight: Highlight): Promise<void> {
+    const existing = this.db
+      .select()
+      .from(highlightsTable)
+      .where(eq(highlightsTable.id, highlight.id))
+      .get();
+    
+    const now = Math.floor(Date.now() / 1000);
+    
+    if (existing) {
+      this.db
+        .update(highlightsTable)
+        .set({
+          locatorFormat: highlight.locatorFormat,
+          locatorStart: highlight.locatorStart,
+          locatorEnd: highlight.locatorEnd,
+          selectedText: highlight.selectedText,
+          color: highlight.color,
+          style: highlight.style,
+          note: highlight.note,
+          updatedAt: now,
+        })
+        .where(eq(highlightsTable.id, highlight.id))
+        .run();
+    } else {
+      this.db
+        .insert(highlightsTable)
+        .values({
+          id: highlight.id,
+          bookId: highlight.bookId,
+          locatorFormat: highlight.locatorFormat,
+          locatorStart: highlight.locatorStart,
+          locatorEnd: highlight.locatorEnd,
+          selectedText: highlight.selectedText,
+          color: highlight.color,
+          style: highlight.style,
+          note: highlight.note,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .run();
+    }
+  }
+
+  async removeHighlight(highlightId: string): Promise<void> {
+    const now = Math.floor(Date.now() / 1000);
+    
+    // Soft delete for sync
+    this.db
+      .update(highlightsTable)
+      .set({ deletedAt: now, updatedAt: now })
+      .where(eq(highlightsTable.id, highlightId))
+      .run();
+  }
+
+  // ==================== MAPPING FUNCTIONS ====================
+  private mapBookFromDb(row: typeof books.$inferSelect): Book {
+    return {
+      id: row.id,
+      title: row.title,
+      author: row.author ?? undefined,
+      format: row.format as Book['format'],
+      uri: row.uri,
+      fileHash: row.fileHash ?? undefined,
+      addedAt: row.addedAt,
+      lastOpenedAt: row.lastOpenedAt ?? undefined,
+      readingStatus: row.readingStatus as Book['readingStatus'],
+      language: row.language ?? undefined,
+      status: row.status as Book['status'],
+      rank: row.rank as Book['rank'],
+      coverImage: row.coverImage ?? undefined,
+    };
+  }
+
+  private mapBookToDb(book: Book) {
+    return {
+      id: book.id,
+      title: book.title,
+      author: book.author,
+      format: book.format,
+      uri: book.uri,
+      fileHash: book.fileHash,
+      addedAt: book.addedAt,
+      lastOpenedAt: book.lastOpenedAt,
+      readingStatus: book.readingStatus,
+      language: book.language,
+      status: book.status,
+      rank: book.rank,
+      coverImage: book.coverImage,
+      createdAt: Math.floor(Date.now() / 1000),
+      updatedAt: Math.floor(Date.now() / 1000),
+    };
+  }
+
+  private mapProgressFromDb(row: typeof readingProgress.$inferSelect): ReadingProgress {
+    return {
+      bookId: row.bookId,
+      locator: JSON.parse(row.locatorData) as ReadingProgress['locator'],
+      percent: row.percent,
+      updatedAt: row.updatedAt,
+    };
+  }
+
+  private mapPreferencesFromDb(row: typeof readerPreferencesTable.$inferSelect): ReaderPreferences {
+    return {
+      theme: row.theme as ReaderPreferences['theme'],
+      backgroundColor: row.backgroundColor,
+      foregroundColor: row.foregroundColor,
+      accentColor: row.accentColor,
+      fontFamily: row.fontFamily as ReaderPreferences['fontFamily'],
+      fontScale: row.fontScale,
+      lineHeight: row.lineHeight,
+      margin: row.margin as ReaderPreferences['margin'],
+      readingDirection: row.readingDirection as ReaderPreferences['readingDirection'],
+    };
+  }
+
+  private mapPreferencesToDb(preferences: ReaderPreferences) {
+    return {
+      theme: preferences.theme,
+      backgroundColor: preferences.backgroundColor,
+      foregroundColor: preferences.foregroundColor,
+      accentColor: preferences.accentColor,
+      fontFamily: preferences.fontFamily,
+      fontScale: preferences.fontScale,
+      lineHeight: preferences.lineHeight,
+      margin: preferences.margin,
+      readingDirection: preferences.readingDirection,
+    };
+  }
+
+  private mapBookPreferencesFromDb(row: typeof bookPreferencesTable.$inferSelect): Partial<ReaderPreferences> {
+    const result: Partial<ReaderPreferences> = {};
+    
+    if (row.theme) result.theme = row.theme as ReaderPreferences['theme'];
+    if (row.backgroundColor) result.backgroundColor = row.backgroundColor;
+    if (row.foregroundColor) result.foregroundColor = row.foregroundColor;
+    if (row.accentColor) result.accentColor = row.accentColor;
+    if (row.fontFamily) result.fontFamily = row.fontFamily as ReaderPreferences['fontFamily'];
+    if (row.fontScale) result.fontScale = row.fontScale;
+    if (row.lineHeight) result.lineHeight = row.lineHeight;
+    if (row.margin) result.margin = row.margin as ReaderPreferences['margin'];
+    if (row.readingDirection) result.readingDirection = row.readingDirection as ReaderPreferences['readingDirection'];
+    
+    return result;
+  }
+
+  private mapBookPreferencesToDb(preferences: Partial<ReaderPreferences>) {
+    return {
+      theme: preferences.theme,
+      backgroundColor: preferences.backgroundColor,
+      foregroundColor: preferences.foregroundColor,
+      accentColor: preferences.accentColor,
+      fontFamily: preferences.fontFamily,
+      fontScale: preferences.fontScale,
+      lineHeight: preferences.lineHeight,
+      margin: preferences.margin,
+      readingDirection: preferences.readingDirection,
+    };
+  }
+
+  private mapBookmarkFromDb(row: typeof bookmarksTable.$inferSelect): Bookmark {
+    return {
+      id: row.id,
+      bookId: row.bookId,
+      locator: JSON.parse(row.locatorData) as Bookmark['locator'],
+      label: row.label ?? undefined,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    };
+  }
+
+  private mapNoteFromDb(row: typeof notesTable.$inferSelect): Note {
+    return {
+      id: row.id,
+      bookId: row.bookId,
+      locator: JSON.parse(row.locatorData) as Note['locator'],
+      selectedText: row.selectedText ?? undefined,
+      body: row.body,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    };
+  }
+
+  private mapHighlightFromDb(row: typeof highlightsTable.$inferSelect): Highlight {
+    return {
+      id: row.id,
+      bookId: row.bookId,
+      locatorFormat: row.locatorFormat,
+      locatorStart: row.locatorStart,
+      locatorEnd: row.locatorEnd,
+      selectedText: row.selectedText ?? undefined,
+      color: row.color,
+      style: row.style as Highlight['style'],
+      note: row.note ?? undefined,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      deletedAt: row.deletedAt ?? undefined,
+    };
+  }
+}

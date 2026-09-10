@@ -13,9 +13,20 @@
   "scripts": {
     "check": "tsc -p tsconfig.json",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "build": "tsc -p tsconfig.build.json"
+    "build": "tsc -p tsconfig.build.json",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@clio-reader/domain": "workspace:*"
+    "@clio-reader/domain": "workspace:*",
+    "drizzle-orm": "^0.38.0"
+  },
+  "devDependencies": {
+    "better-sqlite3": "^11.0.0",
+    "drizzle-kit": "^0.30.0",
+    "@types/better-sqlite3": "^7.6.0",
+    "sql.js": "^1.11.0"
   }
 }
