@@ -77,10 +77,11 @@ if (!gotTheLock) {
         const result = await dialog.showOpenDialog(mainWindow, {
           title: 'Select a book',
           filters: [
-            { name: 'Books', extensions: ['epub', 'pdf', 'cbz'] },
+            { name: 'Books', extensions: ['epub', 'pdf', 'cbz', 'md'] },
             { name: 'EPUB', extensions: ['epub'] },
             { name: 'PDF', extensions: ['pdf'] },
             { name: 'CBZ', extensions: ['cbz'] },
+            { name: 'Markdown', extensions: ['md'] },
           ],
           properties: ['openFile', 'multiSelections'],
         });

@@ -16,7 +16,7 @@ export function createMobileBridge(): MobileBridge {
 
     async pickFile(): Promise<FileSource | null> {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/epub+zip', 'application/pdf', 'application/x-cbz'],
+        type: ['application/epub+zip', 'application/pdf', 'application/x-cbz', 'text/markdown'],
         copyToCacheDirectory: true,
       });
 

@@ -1,57 +1,169 @@
-# clio_reader
+# Clio Reader
 
-**clio_reader** es un lector y gestor de biblioteca local para libros y cómics digitales.
+**Clio Reader** es un lector y gestor de biblioteca local para libros y cómics digitales. Diseñado para funcionar sin conexión, sin cuentas y sin backend. Tu biblioteca, tu dispositivo.
 
-## MVP
+## Características
 
-La primera versión estará orientada principalmente a **Windows y Android**. Permitirá al usuario agregar y leer archivos almacenados localmente en su dispositivo, sin necesidad de conexión a internet, cuenta o perfil.
+- **Local-first**: Todo se almacena en tu dispositivo, sin dependencia de servicios externos
+- **Multi-formato**: Soporte para EPUB, PDF, CBZ y Markdown
+- **Biblioteca organizada**: Importa, ordena y gestiona tu colección de libros
+- **Lector personalizable**: Paletas de color, modo oscuro/claro y preferencias visuales
+- **Persistencia**: Progreso de lectura, marcadores y notas guardados localmente
+- **Sin DRM**: Acceso completo a tus archivos sin restricciones
 
-Formatos previstos:
+## Formatos soportados
 
-- `.epub`
-- `.pdf`
-- `.cbz`
+| Formato | Descripción |
+|---------|-------------|
+| `.epub` | Libros electrónicos estándar |
+| `.pdf` | Documentos PDF |
+| `.cbz` | Cómics comprimidos (imágenes ZIP) |
+| `.md`  | Documentos Markdown              |
 
-El MVP incluirá una biblioteca local, navegación de lectura, guardado de la última posición, preferencias visuales, marcadores y notas. La cantidad de libros dependerá únicamente del espacio de almacenamiento y de las capacidades del dispositivo.
+## Requisitos previos
 
-La sincronización con la nube, los perfiles, la arquitectura SaaS, la exportación avanzada y el soporte para otras plataformas se consideran funcionalidades futuras.
+| Requisito | Versión |
+|-----------|---------|
+| Node.js | 22+ |
+| pnpm | 10.15.1 |
+| Git | Cualquier versión reciente |
+
+> No se requiere Rust, .NET ni ninguna otra herramienta. El proyecto es 100% TypeScript/JavaScript.
+
+## Instalación
+
+### Clonar el repositorio
+
+```bash
+git clone <url-del-repo>
+cd clio_reader
+```
+
+### Instalar dependencias
+
+```bash
+pnpm install
+```
+
+## Ejecutar en modo desarrollo
+
+```bash
+# Desde la raíz del monorepo
+pnpm --filter @clio-reader/desktop dev
+```
+
+Esto abrirá la aplicación de Electron con hot-reload. Cualquier cambio en el código se reflejará automáticamente.
+
+## Build para Windows
+
+### Instalador NSIS (recomendado)
+
+```bash
+pnpm --filter @clio-reader/desktop build:win
+```
+
+Genera un instalador `.exe` en `apps/desktop/release/`.
+
+### Versión portable (sin instalar)
+
+```bash
+pnpm --filter @clio-reader/desktop build:win:portable
+```
+
+Genera un ejecutable portable que no requiere instalación.
+
+## Ejecutar el build existente
+
+Si ya tienes un build compilado:
+
+```bash
+# Windows
+start "apps/desktop/release/Clio Reader Setup 0.1.0.exe"
+```
+
+## Scripts disponibles
+
+### Raíz del monorepo
+
+| Script | Descripción |
+|--------|-------------|
+| `pnpm build` | Build recursivo de todos los paquetes |
+| `pnpm check` | Type-check completo |
+| `pnpm format` | Formateo de código con Prettier |
+| `pnpm lint` | Linting con ESLint |
+| `pnpm test` | Ejecutar tests con Vitest |
+| `pnpm validate` | Validación completa (format + check + lint + test) |
+
+### Aplicación desktop
+
+| Script | Descripción |
+|--------|-------------|
+| `pnpm dev` | Desarrollo con HMR (Electron) |
+| `pnpm build` | Build de producción |
+| `pnpm build:win` | Build + instalador Windows NSIS |
+| `pnpm build:win:portable` | Build portable Windows |
+
+## Estructura del proyecto
+
+```
+echo_reader/
+├── apps/
+│   ├── desktop/          # Aplicación Electron + React (Windows)
+│   └── mobile/           # Aplicación Expo + React Native (Android/iOS)
+├── packages/
+│   ├── domain/           # Tipos y modelos de dominio
+│   ├── reader-core/      # Contratos abstractos y máquina de estados
+│   ├── reader-epub/      # Renderer de EPUB
+│   ├── reader-pdf/       # Renderer de PDF
+│   ├── reader-cbz/       # Renderer de CBZ
+│   ├── reader-session/   # Gestión de sesión de lectura
+│   ├── storage/          # Persistencia local (SQLite)
+│   ├── library/          # Casos de uso de biblioteca
+│   └── annotations/      # Gestión de anotaciones
+└── documentation/        # Documentación del proyecto
+```
+
+## Tests
+
+```bash
+# Ejecutar todos los tests
+pnpm test
+
+# Ejecutar tests en modo watch
+pnpm test:watch
+```
 
 ## Documentación
 
-La documentación del proyecto se encuentra en [`documentation/`](./documentation/):
+La documentación completa se encuentra en [`documentation/`](./documentation/):
 
 - [Definición del MVP](./documentation/01-definicion-mvp.md)
 - [Arquitectura técnica](./documentation/02-arquitectura-tecnica.md)
-- [Arquitectura de data y metadata](./documentation/03-arquitectura-data-y-metadata.md)
+- [Arquitectura de datos y metadata](./documentation/03-arquitectura-data-y-metadata.md)
 - [Features futuros](./documentation/04-features-futuros.md)
 - [Plan de implementación por fases](./documentation/05-plan-implementacion.md)
 - [Guía de desarrollo local](./documentation/06-desarrollo-local.md)
-- [Flujo del WebView](./documentation/07-flujo-webview.md)
-- [ADR: dominio y persistencia local](./documentation/adr/0001-dominio-y-persistencia-local.md)
-- [ADR: reader-core y máquina de estados](./documentation/adr/0002-reader-core-state-machine.md)
-- [Documentos de features futuras](./documentation/features/)
 
-## Estado
+## Estado del proyecto
 
-El proyecto se encuentra en fase de implementación activa. Las fases completadas son:
+| Fase | Estado |
+|------|--------|
+| Fase 0 — Preparación repo | ✅ Completa |
+| Fase 1 — Spike Windows | ✅ Completa |
+| Fase 2 — Dominio/contratos | ✅ Completa |
+| Fase 3 — Biblioteca/persistencia | ✅ Completa |
+| Fase 4 — Renderer CBZ | ✅ Completa |
+| Fase 5 — Renderer PDF | ✅ Completa |
+| Fase 6 — Renderer EPUB | ✅ Completa |
+| Fase 7 — Progreso/settings | ⚠️ Parcial |
+| Fase 8 — Marcadores/notas | ❌ Pendiente |
 
-| Fase                             | Estado       | Detalle                                                        |
-| -------------------------------- | ------------ | -------------------------------------------------------------- |
-| Fase 0 — Preparación repo        | ✅ Completa  | Monorepo, TypeScript estricto, Prettier, ESLint, Vitest, CI    |
-| Fase 1 — Spike Windows           | ✅ Completa  | Electron shell, selector de archivos, IPC, ciclo de vida       |
-| Fase 2 — Dominio/contratos       | ✅ Completa  | `domain`, `reader-core`, `reader-session` con tests            |
-| Fase 3 — Biblioteca/persistencia | ✅ Completa  | `storage` + `library` conectados a la UI via Electron KV store |
-| Fase 4 — Renderer CBZ            | ✅ Completa  | `reader-cbz` implementado con tests                            |
-| Fase 5 — Renderer PDF            | ✅ Completa  | `reader-pdf` implementado con tests                            |
-| Fase 6 — Renderer EPUB           | ✅ Completa  | `reader-epub` integrado al webview con navegación y temas      |
-| Fase 7 — Progreso/settings       | ⚠️ Parcial   | `reader-session` existe, progreso se guarda al cerrar          |
-| Fase 8 — Marcadores/notas        | ❌ Pendiente | Tipos definidos en dominio, sin UI                             |
+## Plataformas objetivo
 
-**Funcionalidades implementadas:**
+- **Windows**: Versión desktop completa (Electron)
+- **Android**: Versión mobile en desarrollo (Expo)
+- **iOS**: Preparada pero no prioridad para el MVP
 
-- Importar libros EPUB, PDF y CBZ
-- Biblioteca local con persistencia (los libros sobreviven al reinicio)
-- Lector EPUB con navegación por capítulos
-- Manejo de archivos perdidos/movidos con opción de reubicar
-- UI completamente en español
-- Arquitectura SOLID con separación de responsabilidades
+## Autor
+
+Desarrollado por [jhosno.dev](https://jhosno.dev)

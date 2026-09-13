@@ -22,7 +22,7 @@ El MVP no tendrá backend, cuentas, perfiles ni sincronización. Los libros, met
 | Preferencias       | Tema, colores, fuente, escala, márgenes y dirección    | Tabla `preferences` o almacenamiento clave-valor |
 | Anotaciones        | Marcadores, notas y texto seleccionado                 | Tablas `bookmarks` y `notes`                     |
 | Estado técnico     | Versión de esquema y migraciones                       | Tabla `app_state`                                |
-| Archivo físico     | EPUB, PDF o CBZ importado                              | Directorio gestionado por la aplicación          |
+| Archivo físico     | EPUB, PDF, CBZ o Markdown importado                    | Directorio gestionado por la aplicación          |
 
 ## 3. Modelo mínimo
 
@@ -32,7 +32,7 @@ interface Book {
   uri: string;
   title: string;
   author?: string;
-  format: 'epub' | 'pdf' | 'cbz';
+  format: 'epub' | 'pdf' | 'cbz' | 'md';
   fileHash?: string;
   addedAt: number;
   lastOpenedAt?: number;
@@ -83,7 +83,7 @@ interface Note {
 
 ## 4. Locators
 
-La última posición debe almacenarse como un locator específico del formato y no únicamente como porcentaje. EPUB puede usar CFI o capítulo + posición; PDF puede usar página, zoom y viewport; CBZ puede usar índice de imagen, escala y desplazamiento. `percent` sirve para la biblioteca, mientras que `locator` es la fuente de verdad para reanudar.
+La última posición debe almacenarse como un locator específico del formato y no únicamente como porcentaje. EPUB puede usar CFI o capítulo + posición; PDF puede usar página, zoom y viewport; CBZ puede usar índice de imagen, escala y desplazamiento; Markdown puede usar href o offset de línea. `percent` sirve para la biblioteca, mientras que `locator` es la fuente de verdad para reanudar.
 
 El renderer emitirá cambios significativos y el repositorio guardará con debounce. También se debe guardar al cerrar el libro y al pasar la aplicación a segundo plano. Si un locator deja de existir, el adaptador intentará recuperar la página o capítulo más cercano.
 

@@ -20,7 +20,7 @@ import { EpubReaderDocument } from '@clio-reader/reader-epub';
    Constantes
    ========================================================================== */
 
-const SUPPORTED_FORMATS = ['epub'] as const;
+const SUPPORTED_FORMATS = ['epub', 'pdf', 'cbz', 'md'] as const;
 type SupportedFormat = (typeof SUPPORTED_FORMATS)[number];
 
 const DEFAULT_PREFERENCES: ReaderPreferences = {
