@@ -420,11 +420,13 @@ export function App(): JSX.Element {
   /* ----- Guardar ranking desde el reader ----- */
   const handleSaveRankFromReader = useCallback(async (rank: number) => {
     if (!openBook) return;
-    const book = books.find((b) => b.id === openBook.id);
+    const freshBooks = await listBooks(repository, { sortBy: 'addedAt', sortDirection: 'desc' });
+    const book = freshBooks.find((b) => b.id === openBook.id);
     if (!book) return;
     await repository.upsertBook({ ...book, rank: rank as import('@clio-reader/domain').Rank });
     setOpenBook((prev) => (prev ? { ...prev, rank } : prev));
-  }, [openBook, books, repository]);
+    loadBooks();
+  }, [openBook, repository, loadBooks]);
 
   /* ----- Eliminar libro ----- */
   const handleRemoveBook = useCallback(
