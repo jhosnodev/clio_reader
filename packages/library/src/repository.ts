@@ -2,6 +2,7 @@ import type { Bookmark, Book, Note, ReaderPreferences, ReadingProgress } from '@
 
 export interface LibraryRepository {
   listBooks(): Promise<readonly Book[]>;
+  getBook(bookId: string): Promise<Book | undefined>;
   upsertBook(book: Book): Promise<void>;
   removeBook(bookId: string): Promise<void>;
   getProgress(bookId: string): Promise<ReadingProgress | undefined>;

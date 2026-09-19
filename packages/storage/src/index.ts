@@ -85,6 +85,10 @@ export class LocalRepository {
     return (await this.getState()).books;
   }
 
+  async getBook(bookId: string): Promise<Book | undefined> {
+    return (await this.getState()).books.find((b) => b.id === bookId);
+  }
+
   async upsertBook(book: Book): Promise<void> {
     const state = await this.getState();
     const index = state.books.findIndex((item) => item.id === book.id);

@@ -420,8 +420,7 @@ export function App(): JSX.Element {
   /* ----- Guardar ranking desde el reader ----- */
   const handleSaveRankFromReader = useCallback(async (rank: number) => {
     if (!openBook) return;
-    const freshBooks = await listBooks(repository, { sortBy: 'addedAt', sortDirection: 'desc' });
-    const book = freshBooks.find((b) => b.id === openBook.id);
+    const book = await repository.getBook(openBook.id);
     if (!book) return;
     await repository.upsertBook({ ...book, rank: rank as import('@clio-reader/domain').Rank });
     setOpenBook((prev) => (prev ? { ...prev, rank } : prev));
