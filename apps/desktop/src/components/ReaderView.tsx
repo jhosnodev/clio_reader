@@ -26,11 +26,13 @@ interface ReaderViewProps {
   readonly title: string;
   readonly author?: string | undefined;
   readonly coverImage?: string | undefined;
+  readonly rank?: number | undefined;
   readonly initialLocator?: string | undefined;
   readonly repository: LibraryRepository;
   readonly paletteId: string;
   readonly theme: 'dark' | 'light';
   readonly onClose: () => void;
+  readonly onSaveRank?: ((rank: number) => void) | undefined;
 }
 
 /* ==========================================================================
@@ -71,11 +73,13 @@ export function ReaderView({
   title,
   author,
   coverImage,
+  rank,
   initialLocator,
   repository,
   paletteId,
   theme,
   onClose,
+  onSaveRank,
 }: ReaderViewProps): JSX.Element {
   const [fileStatus, setFileStatus] = useState<FileStatus>('checking');
   const [isRelocating, setIsRelocating] = useState(false);
@@ -167,8 +171,9 @@ export function ReaderView({
             bookId,
             title,
             author,
-            coverImage: coverImage && coverImage.length < 80_000 ? coverImage : undefined,
+            coverImage: coverImage && coverImage.length < 500_000 ? coverImage : undefined,
             format,
+            rank: rank ?? 0,
           },
           notes: notesData,
         };
@@ -196,7 +201,7 @@ export function ReaderView({
         setWebviewLoaded(true);
       }
     };
-  }, [loadPreferences, loadProgress, fileUri, paletteId, theme, bookId, title, author, coverImage, format, repository, initialLocator]);
+  }, [loadPreferences, loadProgress, fileUri, paletteId, theme, bookId, title, author, coverImage, format, rank, repository, initialLocator]);
 
   /* ----- Cleanup del listener en unmount ----- */
   useEffect(() => {
@@ -378,6 +383,7 @@ export function ReaderView({
     if (!webview) return;
 
     const CLOSE_SENTINEL = '__clio_back__';
+    const RANK_SENTINEL = '__clio_rank__';
 
     const isBackNavigation = (url: unknown): boolean => {
       if (typeof url !== 'string' || url.length === 0) return false;
@@ -409,6 +415,12 @@ export function ReaderView({
     const handleConsoleMessage = (event: unknown): void => {
       const message = (event as { message?: string } | null)?.message ?? '';
       if (message === CLOSE_SENTINEL) handleCloseFromSentinel();
+      if (message.startsWith(RANK_SENTINEL)) {
+        try {
+          const payload = JSON.parse(message.slice(RANK_SENTINEL.length)) as { rank: number };
+          onSaveRank?.(payload.rank);
+        } catch { /* ignore */ }
+      }
     };
 
     const handleWillNavigate = (event: unknown): void => {
@@ -429,7 +441,7 @@ export function ReaderView({
       webview.removeEventListener('will-navigate', handleWillNavigate);
       webview.removeEventListener('did-navigate', handleNavigate);
     };
-  }, [onClose, drainNotes, flushProgress, webviewLoaded, fileStatus]);
+  }, [onClose, onSaveRank, drainNotes, flushProgress, webviewLoaded, fileStatus]);
 
   /* ----- Guardar progreso al cerrar la ventana ----- */
   useEffect(() => {

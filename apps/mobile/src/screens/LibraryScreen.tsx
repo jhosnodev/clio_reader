@@ -5,6 +5,7 @@ import { BookCard } from '../components/BookCard';
 import type { MobileBridge } from '../bridges/mobile-bridge';
 
 type ReadingStatus = 'unread' | 'opened' | 'reading';
+type Rank = 0 | 0.5 | 1 | 1.5 | 2 | 2.5 | 3 | 3.5 | 4 | 4.5 | 5;
 
 interface Book {
   id: string;
@@ -15,6 +16,8 @@ interface Book {
   addedAt?: number;
   lastOpenedAt?: number;
   readingStatus?: ReadingStatus;
+  rank?: Rank;
+  coverImage?: string;
 }
 
 interface LibraryScreenProps {
@@ -44,6 +47,12 @@ export function LibraryScreen({ bridge, onOpenBook }: LibraryScreenProps): JSX.E
     } catch (error) {
       Alert.alert('Error', 'Failed to import book');
     }
+  };
+
+  const handleSaveRank = (bookId: string, rank: Rank): void => {
+    setBooks((prev: Book[]) =>
+      prev.map((b) => (b.id === bookId ? { ...b, rank } : b))
+    );
   };
 
   return (
@@ -80,7 +89,10 @@ export function LibraryScreen({ bridge, onOpenBook }: LibraryScreenProps): JSX.E
                 addedAt={item.addedAt}
                 lastOpenedAt={item.lastOpenedAt}
                 readingStatus={item.readingStatus}
+                rank={item.rank}
+                coverImage={item.coverImage}
                 onPress={() => onOpenBook(item)}
+                onSaveRank={(rank) => handleSaveRank(item.id, rank)}
               />
             )}
           />

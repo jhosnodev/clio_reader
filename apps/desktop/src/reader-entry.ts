@@ -544,20 +544,124 @@ declare global {
 
 function log(...args: unknown[]): void { console.log('[reader-entry]', ...args); }
 
-function renderInfoPanel(metadata: { title: string; author?: string; coverImage?: string; format: string }): void {
+function renderInfoPanel(metadata: { title: string; author?: string; coverImage?: string; format: string; rank: number }): void {
   const panel = document.getElementById('panel-info');
   if (!panel) return;
+
+  const rankValue = metadata.rank ?? 0;
+  const gradId = `reader-half-star`;
+
+  const authorLast = metadata.author ? metadata.author.split(' ').pop() ?? '' : '';
+  const glyphs = ['Η', 'Θ', 'Β', 'Α', 'C', '∞', 'H', '⁂', 'Μ', '❦', 'G', 'B', 'Σ', 'Ω', 'Δ', 'Φ'];
+  let hash = 0;
+  const idStr = metadata.title;
+  for (let i = 0; i < idStr.length; i++) {
+    hash = ((hash << 5) - hash + idStr.charCodeAt(i)) | 0;
+  }
+  const glyph = glyphs[Math.abs(hash) % glyphs.length];
+
+  const palettes: [string, string][] = [
+    ['#3a2e5c', '#6b4ea3'], ['#173a34', '#2f6d61'], ['#4a2b2b', '#8a3f3f'],
+    ['#2c3a52', '#4a6a8a'], ['#453520', '#8a6a34'], ['#3a1f2e', '#7a3a55'],
+  ];
+  const palette = palettes[Math.abs(hash) % palettes.length]!;
+  const pc1 = palette[0];
+  const pc2 = palette[1];
 
   panel.innerHTML = `
     <div class="info-content">
       ${metadata.coverImage
         ? `<img src="${metadata.coverImage}" class="info-cover" alt="Portada" />`
-        : '<div class="info-cover-placeholder"></div>'}
+        : `<div class="info-cover-placeholder" style="background:linear-gradient(150deg,${pc1},${pc2})">
+            <div class="info-cover-author">${authorLast}</div>
+            <div class="info-cover-title">${metadata.title}</div>
+            <div class="info-cover-glyph">${glyph}</div>
+          </div>`}
       <h3 class="info-title">${metadata.title}</h3>
       ${metadata.author ? `<p class="info-author">${metadata.author}</p>` : ''}
       <p class="info-format">Formato: ${metadata.format.toUpperCase()}</p>
+      <div class="info-rating">
+        <svg width="0" height="0" style="position:absolute">
+          <defs>
+            <linearGradient id="${gradId}">
+              <stop offset="50%" stop-color="var(--gold)" />
+              <stop offset="50%" stop-color="var(--line)" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="info-stars" role="radiogroup" aria-label="Rating del libro" data-rank="${rankValue}">
+          ${[1, 2, 3, 4, 5].map((s) => {
+            const isHalf = rankValue >= s - 0.5 && rankValue < s;
+            const isFull = rankValue >= s;
+            const fillClass = isFull ? 'star-full' : isHalf ? 'star-half' : 'star-empty';
+            return `<span class="star-btn ${fillClass}" data-star="${s}" role="radio" aria-checked="${isFull || isHalf}" aria-label="${s} estrella${s > 1 ? 's' : ''}">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="${isFull ? 'var(--gold)' : isHalf ? `url(#${gradId})` : 'var(--line)'}" stroke="none">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+            </span>`;
+          }).join('')}
+        </div>
+        <span class="info-rank-value">${rankValue > 0 ? rankValue : ''}</span>
+      </div>
     </div>
   `;
+
+  const starsContainer = panel.querySelector('.info-stars');
+  if (!starsContainer) return;
+
+  const sendRankToHost = (newRank: number): void => {
+    console.log('__clio_rank__' + JSON.stringify({ rank: newRank }));
+  };
+
+  const updateStars = (displayRank: number): void => {
+    starsContainer.querySelectorAll('.star-btn').forEach((btn) => {
+      const s = Number((btn as HTMLElement).dataset.star);
+      const isHalf = displayRank >= s - 0.5 && displayRank < s;
+      const isFull = displayRank >= s;
+      btn.classList.toggle('star-full', isFull);
+      btn.classList.toggle('star-half', isHalf && !isFull);
+      btn.classList.toggle('star-empty', !isFull && !isHalf);
+      const svg = btn.querySelector('svg');
+      if (svg) {
+        svg.setAttribute('fill', isFull ? 'var(--gold)' : isHalf ? `url(#${gradId})` : 'var(--line)');
+      }
+      btn.setAttribute('aria-checked', String(isFull || isHalf));
+    });
+    const rankValueEl = panel.querySelector('.info-rank-value');
+    if (rankValueEl) rankValueEl.textContent = displayRank > 0 ? String(displayRank) : '';
+    starsContainer.setAttribute('data-rank', String(displayRank));
+  };
+
+  starsContainer.addEventListener('mousemove', (e: Event) => {
+    const me = e as MouseEvent;
+    const target = (me.target as HTMLElement).closest('.star-btn');
+    if (!target) return;
+    const rect = target.getBoundingClientRect();
+    const x = me.clientX - rect.left;
+    const starIndex = Number((target as HTMLElement).dataset.star);
+    const hoverRank = x < rect.width / 2 ? starIndex - 0.5 : starIndex;
+    updateStars(hoverRank);
+  });
+
+  starsContainer.addEventListener('mouseleave', () => {
+    const current = Number(starsContainer.getAttribute('data-rank')) || 0;
+    updateStars(current);
+  });
+
+  starsContainer.addEventListener('click', (e: Event) => {
+    const me = e as MouseEvent;
+    const target = (me.target as HTMLElement).closest('.star-btn');
+    if (!target) return;
+    const rect = target.getBoundingClientRect();
+    const x = me.clientX - rect.left;
+    const starIndex = Number((target as HTMLElement).dataset.star);
+    const clickedRank = x < rect.width / 2 ? starIndex - 0.5 : starIndex;
+    const currentRank = Number(starsContainer.getAttribute('data-rank')) || 0;
+    const newRank = clickedRank === currentRank ? 0 : clickedRank;
+    starsContainer.setAttribute('data-rank', String(newRank));
+    updateStars(newRank);
+    sendRankToHost(newRank);
+  });
 }
 
 function renderNotesList(notes: Array<{ id: string; body: string; createdAt: number; locator: string }>): void {
@@ -672,6 +776,7 @@ async function main(): Promise<void> {
         author?: string;
         coverImage?: string;
         format: string;
+        rank: number;
       };
       notes: Array<{ id: string; body: string; createdAt: number; locator: string }>;
     }) => {

@@ -43,6 +43,7 @@ interface OpenBook {
   readonly author?: string | undefined;
   readonly coverImage?: string | undefined;
   readonly format: string;
+  readonly rank?: number | undefined;
   readonly initialLocator?: string | undefined;
 }
 
@@ -404,6 +405,7 @@ export function App(): JSX.Element {
       author: book.author,
       coverImage: book.coverImage,
       format: book.format,
+      rank: book.rank,
       initialLocator,
     });
   }, [repository]);
@@ -414,6 +416,15 @@ export function App(): JSX.Element {
     setOpenBook(null);
     loadBooks();
   }, [loadBooks]);
+
+  /* ----- Guardar ranking desde el reader ----- */
+  const handleSaveRankFromReader = useCallback(async (rank: number) => {
+    if (!openBook) return;
+    const book = books.find((b) => b.id === openBook.id);
+    if (!book) return;
+    await repository.upsertBook({ ...book, rank: rank as import('@clio-reader/domain').Rank });
+    setOpenBook((prev) => (prev ? { ...prev, rank } : prev));
+  }, [openBook, books, repository]);
 
   /* ----- Eliminar libro ----- */
   const handleRemoveBook = useCallback(
@@ -443,11 +454,13 @@ export function App(): JSX.Element {
         title={openBook.title}
         author={openBook.author}
         coverImage={openBook.coverImage}
+        rank={openBook.rank}
         initialLocator={openBook.initialLocator}
         repository={repository}
         paletteId={paletteId}
         theme={theme}
         onClose={handleCloseBook}
+        onSaveRank={handleSaveRankFromReader}
       />
     );
   }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Pressable } from 'react-native';
 
 type ReadingStatus = 'unread' | 'opened' | 'reading';
 type Rank = 0 | 0.5 | 1 | 1.5 | 2 | 2.5 | 3 | 3.5 | 4 | 4.5 | 5;
@@ -15,6 +15,7 @@ interface BookCardProps {
   rank?: Rank | undefined;
   progressPercent?: number | undefined;
   onPress: () => void;
+  onSaveRank?: ((rank: Rank) => void) | undefined;
 }
 
 const COVER_PALETTES: [string, string][] = [
@@ -95,12 +96,19 @@ export function BookCard({
   rank,
   progressPercent,
   onPress,
+  onSaveRank,
 }: BookCardProps): JSX.Element {
   const status = getStatus(readingStatus, lastOpenedAt);
   const statusCfg = STATUS_CONFIG[status];
   const [c1] = getCoverColors(title);
   const glyph = getGlyph(title);
   const authorLast = getAuthorLast(author);
+
+  const handleStarPress = (starIndex: number, isHalf: boolean) => {
+    if (!onSaveRank) return;
+    const newRank = isHalf ? starIndex - 0.5 : starIndex;
+    onSaveRank((rank === newRank ? 0 : newRank) as Rank);
+  };
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
@@ -144,16 +152,49 @@ export function BookCard({
             <Text style={[styles.metaText, { color: '#4fa393' }]}>{progressPercent}% leído</Text>
           )}
         </View>
-        {rank !== undefined && rank > 0 && (
+        {(rank !== undefined && rank > 0 || onSaveRank) && (
           <View style={styles.rankContainer}>
-            {[1, 2, 3, 4, 5].map((s) => (
-              <Text
-                key={s}
-                style={[styles.rankStar, s <= rank ? styles.rankStarFilled : styles.rankStarEmpty]}
+            <View
+              style={styles.rankStarsRow}
+              accessibilityRole="radiogroup"
+              accessibilityLabel={`Rating: ${rank ?? 0} de 5 estrellas`}
+            >
+              {[1, 2, 3, 4, 5].map((s) => {
+                const currentRank = rank ?? 0;
+                const isHalf = currentRank >= s - 0.5 && currentRank < s;
+                const isFull = currentRank >= s;
+                const fill = isFull ? 1 : isHalf ? 0.5 : 0;
+                return (
+                  <Pressable
+                    key={s}
+                    style={styles.starTouchTarget}
+                    onPress={() => handleStarPress(s, !isFull && (isHalf || currentRank < s - 0.5))}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: isFull || isHalf }}
+                    accessibilityLabel={`${s} estrella${s > 1 ? 's' : ''}`}
+                  >
+                    <View style={styles.starWrapper}>
+                      <Text style={styles.starEmpty}>☆</Text>
+                      {fill > 0 && (
+                        <View style={[styles.starFilledClip, { width: `${fill * 100}%` }]}>
+                          <Text style={styles.starFilled}>★</Text>
+                        </View>
+                      )}
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+            {rank !== undefined && rank > 0 && onSaveRank && (
+              <Pressable
+                style={styles.clearRankBtn}
+                onPress={() => onSaveRank(0 as Rank)}
+                accessibilityLabel="Limpiar rating"
+                accessibilityRole="button"
               >
-                ★
-              </Text>
-            ))}
+                <Text style={styles.clearRankText}>×</Text>
+              </Pressable>
+            )}
           </View>
         )}
       </View>
@@ -297,16 +338,53 @@ const styles = StyleSheet.create({
   },
   rankContainer: {
     flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 4,
   },
-  rankStar: {
-    fontSize: 12,
-    marginRight: 1,
+  rankStarsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  rankStarFilled: {
+  starTouchTarget: {
+    minWidth: 28,
+    minHeight: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 2,
+  },
+  starWrapper: {
+    position: 'relative',
+    width: 16,
+    height: 16,
+  },
+  starEmpty: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    fontSize: 16,
+    color: '#3a3548',
+  },
+  starFilledClip: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    height: '100%',
+    overflow: 'hidden',
+  },
+  starFilled: {
+    fontSize: 16,
     color: '#c9a24b',
   },
-  rankStarEmpty: {
-    color: '#3a3548',
+  clearRankBtn: {
+    minWidth: 24,
+    minHeight: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 4,
+  },
+  clearRankText: {
+    fontSize: 14,
+    color: '#6a657a',
+    fontWeight: '600',
   },
 });

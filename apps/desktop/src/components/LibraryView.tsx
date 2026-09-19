@@ -1173,6 +1173,40 @@ function BookCard({ book, progress, onOpen, onRemove, onSaveRank }: BookCardProp
     onSaveRank(book.id, rank as Rank);
   };
 
+  const handleRankKeyDown = (e: React.KeyboardEvent) => {
+    const current = book.rank ?? 0;
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      e.stopPropagation();
+      const next = Math.min(5, current + 0.5);
+      onSaveRank(book.id, next as Rank);
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      e.stopPropagation();
+      const prev = Math.max(0, current - 0.5);
+      onSaveRank(book.id, prev as Rank);
+    } else if (e.key === 'Backspace' || e.key === 'Delete') {
+      e.preventDefault();
+      e.stopPropagation();
+      onSaveRank(book.id, 0 as Rank);
+    }
+  };
+
+  const handleClearRank = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSaveRank(book.id, 0 as Rank);
+  };
+
+  const handleStarMouseMove = (e: React.MouseEvent, starIndex: number) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const isLeftHalf = x < rect.width / 2;
+    setHoverRank(isLeftHalf ? starIndex - 0.5 : starIndex);
+  };
+
+  const gradientId = `halfStar-${book.id}`;
+  const currentRank = book.rank ?? 0;
+
   return (
     <div
       style={{
@@ -1259,35 +1293,53 @@ function BookCard({ book, progress, onOpen, onRemove, onSaveRank }: BookCardProp
         <div style={S.cardFooter}>
           <div
             style={S.starRating}
+            role="radiogroup"
+            aria-label={`Rating: ${currentRank} de 5 estrellas`}
             onMouseLeave={() => setHoverRank(null)}
+            onKeyDown={handleRankKeyDown}
+            tabIndex={0}
           >
+            <svg width="0" height="0" style={{ position: 'absolute' }}>
+              <defs>
+                <linearGradient id={gradientId}>
+                  <stop offset="50%" stopColor="var(--gold)" />
+                  <stop offset="50%" stopColor="var(--line)" />
+                </linearGradient>
+              </defs>
+            </svg>
             {[1, 2, 3, 4, 5].map((s) => {
-              const currentRank = book.rank ?? 0;
               const displayRank = hoverRank ?? currentRank;
               const isHalf = displayRank >= s - 0.5 && displayRank < s;
               const isFull = displayRank >= s;
               return (
                 <span
                   key={s}
-                  style={{ cursor: 'pointer', display: 'inline-flex' }}
-                  onMouseEnter={() => setHoverRank(s)}
+                  role="radio"
+                  aria-checked={isFull || isHalf}
+                  aria-label={`${s} estrella${s > 1 ? 's' : ''}`}
+                  style={S.starBtn}
+                  onMouseMove={(e) => handleStarMouseMove(e, s)}
                   onClick={(e) => handleRankClick(e, isHalf ? s - 0.5 : s)}
                 >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill={isFull ? 'var(--gold)' : isHalf ? 'url(#halfStar)' : 'var(--line)'} stroke="none">
-                    {isHalf && (
-                      <defs>
-                        <linearGradient id="halfStar">
-                          <stop offset="50%" stopColor="var(--gold)" />
-                          <stop offset="50%" stopColor="var(--line)" />
-                        </linearGradient>
-                      </defs>
-                    )}
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill={isFull ? 'var(--gold)' : isHalf ? `url(#${gradientId})` : 'var(--line)'} stroke="none">
                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                   </svg>
                 </span>
               );
             })}
+            {hoverRank !== null && (
+              <span style={S.rankTooltip}>{hoverRank}</span>
+            )}
           </div>
+          {currentRank > 0 && (
+            <button
+              style={S.clearRankBtn}
+              onClick={handleClearRank}
+              aria-label="Limpiar rating"
+            >
+              ×
+            </button>
+          )}
           <button style={S.removeBtn} onClick={handleRemove} aria-label={`Eliminar ${book.title}`}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
           </button>
@@ -1620,7 +1672,20 @@ const S: Record<string, React.CSSProperties> = {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
     marginTop: 6, paddingTop: 8, borderTop: '1px solid var(--ink-800)',
   },
-  starRating: { display: 'flex', gap: 2 },
+  starRating: { display: 'flex', gap: 2, alignItems: 'center', outline: 'none' },
+  starBtn: {
+    cursor: 'pointer', display: 'inline-flex', padding: 2, borderRadius: 3,
+    transition: 'transform .1s',
+  },
+  rankTooltip: {
+    fontSize: 10, color: 'var(--gold)', fontWeight: 600, marginLeft: 4,
+    fontFamily: 'var(--font-body)',
+  },
+  clearRankBtn: {
+    padding: '1px 5px', background: 'transparent', border: 'none',
+    color: 'var(--tx-faint)', cursor: 'pointer', fontSize: 13, lineHeight: 1,
+    fontFamily: 'inherit', borderRadius: 4, transition: '.15s',
+  },
   removeBtn: {
     padding: '3px 8px', background: 'transparent',
     border: '1px solid var(--line)', borderRadius: 6,
