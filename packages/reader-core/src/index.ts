@@ -21,6 +21,7 @@ export interface ReaderDocument {
   getLocator(): Promise<ReaderLocator>;
   goNext(): Promise<ReaderLocator>;
   goPrevious(): Promise<ReaderLocator>;
+  goToChapter?(idx: number): Promise<ReaderLocator>;
   getCurrentChapterContent?(): Promise<string>;
   getChapterCount?(): Promise<number>;
   getCurrentChapterIndex?(): Promise<number>;

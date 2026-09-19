@@ -91,7 +91,7 @@ interface LibraryViewProps {
   readonly importProgress: ImportProgress | null;
   readonly onToggleTheme: () => void;
   readonly onSetPalette: (id: string) => void;
-  readonly onOpenBook: (book: Book) => void;
+  readonly onOpenBook: (book: Book, initialLocator?: string) => void;
   readonly onImportBook: () => void;
   readonly onImportFiles: () => void;
   readonly onImportFolder: () => void;
@@ -884,7 +884,7 @@ function NotesView({
 }: {
   books: readonly Book[];
   repository: LibraryRepository;
-  onOpen: (book: Book) => void;
+  onOpen: (book: Book, initialLocator?: string) => void;
 }): JSX.Element {
   const [selectedBookId, setSelectedBookId] = useState<string>('');
   const [sort, setSort] = useState<NotesSort>('date-desc');
@@ -942,9 +942,9 @@ function NotesView({
     }
   }, [repository, selectedBookId]);
 
-  const handleOpenBook = useCallback((bookId: string) => {
+  const handleOpenBook = useCallback((bookId: string, locator?: string) => {
     const book = books.find((b) => b.id === bookId);
-    if (book) onOpen(book);
+    if (book) onOpen(book, locator);
   }, [books, onOpen]);
 
   const bookOptions = useMemo(
@@ -1022,8 +1022,8 @@ function NotesView({
             <div key={note.id} style={S.bookmarkItem}>
               <div
                 style={S.bookmarkContent}
-                onClick={() => handleOpenBook(note.bookId)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleOpenBook(note.bookId); }}
+                onClick={() => handleOpenBook(note.bookId, JSON.stringify(note.locator))}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleOpenBook(note.bookId, JSON.stringify(note.locator)); }}
                 role="button"
                 tabIndex={0}
               >

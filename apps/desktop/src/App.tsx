@@ -43,6 +43,7 @@ interface OpenBook {
   readonly author?: string | undefined;
   readonly coverImage?: string | undefined;
   readonly format: string;
+  readonly initialLocator?: string | undefined;
 }
 
 export interface ImportProgress {
@@ -389,7 +390,7 @@ export function App(): JSX.Element {
   }, [loadBooks]);
 
   /* ----- Abrir libro ----- */
-  const handleOpenBook = useCallback(async (book: Book) => {
+  const handleOpenBook = useCallback(async (book: Book, initialLocator?: string) => {
     console.log('[openBook]', book.id, book.title);
     await repository.upsertBook({
       ...book,
@@ -403,6 +404,7 @@ export function App(): JSX.Element {
       author: book.author,
       coverImage: book.coverImage,
       format: book.format,
+      initialLocator,
     });
   }, [repository]);
 
@@ -441,6 +443,7 @@ export function App(): JSX.Element {
         title={openBook.title}
         author={openBook.author}
         coverImage={openBook.coverImage}
+        initialLocator={openBook.initialLocator}
         repository={repository}
         paletteId={paletteId}
         theme={theme}

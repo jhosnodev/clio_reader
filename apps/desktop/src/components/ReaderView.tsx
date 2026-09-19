@@ -25,6 +25,7 @@ interface ReaderViewProps {
   readonly title: string;
   readonly author?: string | undefined;
   readonly coverImage?: string | undefined;
+  readonly initialLocator?: string | undefined;
   readonly repository: LibraryRepository;
   readonly paletteId: string;
   readonly theme: 'dark' | 'light';
@@ -69,6 +70,7 @@ export function ReaderView({
   title,
   author,
   coverImage,
+  initialLocator,
   repository,
   paletteId,
   theme,
@@ -168,13 +170,25 @@ export function ReaderView({
         const paletteCss = buildPaletteCss(paletteId, theme);
         await wv?.executeJavaScript(`window.__applyPalette(${JSON.stringify(paletteCss)})`);
 
+        // Navigate to initial locator if provided (e.g., from note click)
+        if (initialLocator) {
+          try {
+            const locator = JSON.parse(initialLocator) as { positionOrder?: number };
+            if (typeof locator.positionOrder === 'number') {
+              await wv?.executeJavaScript(`window.__goToChapter && window.__goToChapter(${locator.positionOrder})`);
+            }
+          } catch {
+            // Ignore invalid locator
+          }
+        }
+
         setWebviewLoaded(true);
       } catch (err) {
         console.error('[reader] error inyectando datos en webview:', err);
         setWebviewLoaded(true);
       }
     };
-  }, [loadPreferences, fileUri, paletteId, theme, bookId, title, author, coverImage, format, repository]);
+  }, [loadPreferences, fileUri, paletteId, theme, bookId, title, author, coverImage, format, repository, initialLocator]);
 
   /* ----- Cleanup del listener en unmount ----- */
   useEffect(() => {

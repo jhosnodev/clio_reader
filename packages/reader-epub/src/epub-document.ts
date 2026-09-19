@@ -200,6 +200,16 @@ export class EpubReaderDocument implements ReaderDocument {
     return this.currentChapterIndex;
   }
 
+  async goToChapter(idx: number): Promise<ReaderLocator> {
+    this.assertOpen();
+    const chapters = this.parsedEpub!.chapters;
+    if (idx < 0 || idx >= chapters.length) {
+      throw new EpubNavigationError(`Cannot go to chapter ${idx}: out of range (0-${chapters.length - 1})`);
+    }
+    this.currentChapterIndex = idx;
+    return this.getLocator();
+  }
+
   async getToc(): Promise<readonly TocEntry[]> {
     this.assertOpen();
     return this.toc;

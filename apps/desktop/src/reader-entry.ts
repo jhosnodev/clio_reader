@@ -537,6 +537,7 @@ declare global {
     __updateNotes?: (notes: Array<{ id: string; body: string; createdAt: number; locator: string }>) => void;
     __noteSaved?: () => void;
     __noteError?: (message: string) => void;
+    __goToChapter?: (idx: number) => Promise<void>;
   }
 }
 
@@ -744,6 +745,17 @@ async function main(): Promise<void> {
     };
     window.__noteError = (message: string) => {
       showToast(message);
+    };
+
+    /* --- Go to chapter by index (for initial locator from host) --- */
+    window.__goToChapter = async (idx: number) => {
+      if (!currentReaderDoc) return;
+      const goToChapter = currentReaderDoc.goToChapter as ((i: number) => Promise<unknown>) | undefined;
+      if (goToChapter) {
+        await goToChapter(idx);
+        await renderChapter(currentReaderDoc, currentPreferences);
+        await syncLocator();
+      }
     };
 
     const retryBtn = document.getElementById('reader-error-retry');
