@@ -280,10 +280,12 @@ export function ReaderView({
     }
   }, []);
 
-  /* ----- Interceptar navegación a "/" del webview (back button) ----- */
+  /* ----- Cerrar lector vía sentinel del webview + fallbacks de navegación ----- */
   useEffect(() => {
     const webview = webviewRef.current as (HTMLElement & { addEventListener: (event: string, handler: (...args: unknown[]) => void) => void; removeEventListener: (event: string, handler: (...args: unknown[]) => void) => void }) | null;
     if (!webview) return;
+
+    const CLOSE_SENTINEL = '__clio_back__';
 
     const isBackNavigation = (url: unknown): boolean => {
       if (typeof url !== 'string' || url.length === 0) return false;
@@ -305,27 +307,32 @@ export function ReaderView({
       onClose();
     };
 
-    // Flush pendientes antes de salir (will-navigate es cancelable en <webview>)
-    const handleWillNavigate = (event: unknown): void => {
-      const nav = event as { url?: string; preventDefault?: () => void };
-      if (!isBackNavigation(nav.url)) return;
-      nav.preventDefault?.();
-      drainNotes()
-        .catch(() => {})
-        .finally(() => closeOnce());
+    const handleCloseFromSentinel = (): void => {
+      if (closingRef.current) return;
+      closeOnce();
+      void drainNotes().catch(() => {});
     };
 
-    // Fallback: si will-navigate no se emitió
+    const handleConsoleMessage = (event: unknown): void => {
+      const message = (event as { message?: string } | null)?.message ?? '';
+      if (message === CLOSE_SENTINEL) handleCloseFromSentinel();
+    };
+
+    const handleWillNavigate = (event: unknown): void => {
+      const nav = event as { url?: string } | undefined;
+      if (isBackNavigation(nav?.url)) closeOnce();
+    };
+
     const handleNavigate = (...args: unknown[]): void => {
       const event = args[0] as { href?: string } | undefined;
-      if (isBackNavigation(event?.href)) {
-        closeOnce();
-      }
+      if (isBackNavigation(event?.href)) closeOnce();
     };
 
+    webview.addEventListener('console-message', handleConsoleMessage);
     webview.addEventListener('will-navigate', handleWillNavigate);
     webview.addEventListener('did-navigate', handleNavigate);
     return () => {
+      webview.removeEventListener('console-message', handleConsoleMessage);
       webview.removeEventListener('will-navigate', handleWillNavigate);
       webview.removeEventListener('did-navigate', handleNavigate);
     };

@@ -480,11 +480,13 @@ function setupBookmark(): void {
    Back button
    ========================================================================== */
 
+const CLOSE_SENTINEL = '__clio_back__';
+
 function setupBack(): void {
   const backBtn = document.getElementById('r-back');
   if (backBtn) {
     backBtn.addEventListener('click', () => {
-      window.location.href = '/';
+      console.log(CLOSE_SENTINEL);
     });
   }
 }
