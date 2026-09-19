@@ -434,10 +434,13 @@ async function renderTOC(readerDoc: ReaderDocument): Promise<void> {
     tocPanel.querySelectorAll('.toc-item').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const idx = parseInt((btn as HTMLElement).dataset.chapter ?? '0', 10);
-        await doc.goToChapter?.(idx);
-        await renderChapter(readerDoc, currentPreferences);
-        closeDrawer();
-        await syncLocator();
+        const goToChapter = doc.goToChapter as ((i: number) => Promise<void>) | undefined;
+        if (goToChapter) {
+          await goToChapter(idx);
+          await renderChapter(readerDoc, currentPreferences);
+          closeDrawer();
+          await syncLocator();
+        }
       });
     });
   } catch {
