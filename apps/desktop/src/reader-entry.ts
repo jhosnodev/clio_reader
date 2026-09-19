@@ -538,6 +538,7 @@ declare global {
     __noteSaved?: () => void;
     __noteError?: (message: string) => void;
     __goToChapter?: (idx: number) => Promise<void>;
+    __getCurrentLocator?: () => string | undefined;
   }
 }
 
@@ -753,6 +754,11 @@ async function main(): Promise<void> {
       await currentReaderDoc.goToChapter?.(idx);
       await renderChapter(currentReaderDoc, currentPreferences);
       await syncLocator();
+    };
+
+    /* --- Get current locator (for host progress sync) --- */
+    window.__getCurrentLocator = (): string | undefined => {
+      return currentLocator || undefined;
     };
 
     const retryBtn = document.getElementById('reader-error-retry');

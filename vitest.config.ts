@@ -22,7 +22,10 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['packages/**/tests/**/*.test.ts'],
+    include: [
+      'packages/**/tests/**/*.test.ts',
+      'apps/desktop/src/**/*.test.ts',
+    ],
     passWithNoTests: false,
     coverage: {
       reporter: ['text', 'json-summary'],

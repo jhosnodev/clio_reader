@@ -13,6 +13,7 @@ import { createNoteManaged, listNotesManaged, removeNoteManaged, updateNoteManag
 import type { ReaderPreferences } from '@clio-reader/domain';
 import { createReadingProgress, createDefaultPreferences } from '@clio-reader/domain';
 import { getPalette, LIGHT_DEFAULTS } from '../themes';
+import { getResumePositionOrder, locatorToPercent } from './reader-progress';
 
 /* ==========================================================================
    Props
@@ -121,14 +122,24 @@ export function ReaderView({
     }
   }, [repository, bookId]);
 
+  /* ----- Cargar progreso guardado ----- */
+  const loadProgress = useCallback(async () => {
+    try {
+      return await repository.getProgress(bookId);
+    } catch {
+      return undefined;
+    }
+  }, [repository, bookId]);
+
   /* ----- Actualizar el handler del webview cuando cambian las dependencias ----- */
   useEffect(() => {
     handleFinishLoadRef.current = async (): Promise<void> => {
       try {
-        const [preferences, fileData, existingNotes] = await Promise.all([
+        const [preferences, fileData, existingNotes, savedProgress] = await Promise.all([
           loadPreferences(),
           bridge.readFile(fileUri),
           listNotesManaged(repository, bookId).catch(() => []),
+          loadProgress(),
         ]);
 
         if (!fileData || fileData.byteLength === 0) {
@@ -170,16 +181,13 @@ export function ReaderView({
         const paletteCss = buildPaletteCss(paletteId, theme);
         await wv?.executeJavaScript(`window.__applyPalette(${JSON.stringify(paletteCss)})`);
 
-        // Navigate to initial locator if provided (e.g., from note click)
-        if (initialLocator) {
-          try {
-            const locator = JSON.parse(initialLocator) as { positionOrder?: number };
-            if (typeof locator.positionOrder === 'number') {
-              await wv?.executeJavaScript(`window.__goToChapter && window.__goToChapter(${locator.positionOrder})`);
-            }
-          } catch {
-            // Ignore invalid locator
-          }
+        // Resume to saved chapter: note locator takes priority over saved progress
+        const noteLocator = initialLocator
+          ? (JSON.parse(initialLocator) as import('@clio-reader/domain').ReaderLocator)
+          : undefined;
+        const resumeOrder = getResumePositionOrder(noteLocator, savedProgress?.locator);
+        if (typeof resumeOrder === 'number') {
+          await wv?.executeJavaScript(`window.__goToChapter && window.__goToChapter(${resumeOrder})`);
         }
 
         setWebviewLoaded(true);
@@ -188,7 +196,7 @@ export function ReaderView({
         setWebviewLoaded(true);
       }
     };
-  }, [loadPreferences, fileUri, paletteId, theme, bookId, title, author, coverImage, format, repository, initialLocator]);
+  }, [loadPreferences, loadProgress, fileUri, paletteId, theme, bookId, title, author, coverImage, format, repository, initialLocator]);
 
   /* ----- Cleanup del listener en unmount ----- */
   useEffect(() => {
@@ -295,6 +303,56 @@ export function ReaderView({
     return () => clearInterval(interval);
   }, [webviewLoaded, drainNotes]);
 
+  /* ----- Sincronizar progreso con el webview (poll + debounce) ----- */
+  const flushProgress = useCallback(async (): Promise<void> => {
+    if (!lastLocatorRef.current) return;
+
+    if (progressTimerRef.current) {
+      clearTimeout(progressTimerRef.current);
+      progressTimerRef.current = null;
+    }
+
+    const progress = createReadingProgress({
+      bookId,
+      locator: lastLocatorRef.current,
+      percent: lastPercentRef.current,
+    });
+    await repository.saveProgress(progress);
+  }, [repository, bookId]);
+
+  useEffect(() => {
+    if (!webviewLoaded) return;
+
+    const interval = setInterval(() => {
+      const wv = webviewRef.current as unknown as { executeJavaScript: (code: string) => Promise<unknown> } | null;
+      if (!wv) return;
+
+      void wv.executeJavaScript('window.__getCurrentLocator && window.__getCurrentLocator()')
+        .then((result) => {
+          if (typeof result !== 'string') return;
+          try {
+            const locator = JSON.parse(result) as import('@clio-reader/domain').ReaderLocator;
+            lastLocatorRef.current = locator;
+            lastPercentRef.current = locatorToPercent(locator);
+          } catch {
+            // Ignore invalid locator
+          }
+        })
+        .catch(() => {});
+
+      // Debounce save: reset timer on each tick
+      if (progressTimerRef.current) {
+        clearTimeout(progressTimerRef.current);
+      }
+      progressTimerRef.current = setTimeout(() => {
+        progressTimerRef.current = null;
+        void flushProgress().catch(() => {});
+      }, 800);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [webviewLoaded, flushProgress]);
+
   /* ----- Callback ref: adjunta el listener inmediatamente al crear el elemento ----- */
   const webviewCallbackRef = useCallback((el: HTMLElement | null) => {
     const prevEl = webviewRef.current;
@@ -344,7 +402,8 @@ export function ReaderView({
     const handleCloseFromSentinel = (): void => {
       if (closingRef.current) return;
       closeOnce();
-      void drainNotes().catch(() => {});
+      // Flush progress + drain notes (fire-and-forget, repo stays valid)
+      void flushProgress().then(() => drainNotes()).catch(() => {});
     };
 
     const handleConsoleMessage = (event: unknown): void => {
@@ -370,7 +429,7 @@ export function ReaderView({
       webview.removeEventListener('will-navigate', handleWillNavigate);
       webview.removeEventListener('did-navigate', handleNavigate);
     };
-  }, [onClose, drainNotes, webviewLoaded, fileStatus]);
+  }, [onClose, drainNotes, flushProgress, webviewLoaded, fileStatus]);
 
   /* ----- Guardar progreso al cerrar la ventana ----- */
   useEffect(() => {
