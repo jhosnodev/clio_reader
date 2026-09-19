@@ -9,7 +9,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { bridge } from '../bridges/bridge-singleton';
 import type { LibraryRepository } from '@clio-reader/library';
-import { createNoteManaged, listNotesManaged, removeNoteManaged } from '@clio-reader/annotations';
+import { createNoteManaged, listNotesManaged, removeNoteManaged, updateNoteManaged } from '@clio-reader/annotations';
 import type { ReaderPreferences } from '@clio-reader/domain';
 import { createReadingProgress, createDefaultPreferences } from '@clio-reader/domain';
 import { getPalette, LIGHT_DEFAULTS } from '../themes';
@@ -201,6 +201,7 @@ export function ReaderView({
   }, [repository, bookId]);
 
   type NoteQueueItem = { readonly key: string; readonly body: string; readonly locator: string };
+  type NoteUpdateItem = { readonly key: string; readonly noteId: string; readonly body: string };
 
   /* ----- Drenar cola de notas + borrados pendientes del webview ----- */
   const drainNotes = useCallback((): Promise<void> => {
@@ -236,6 +237,25 @@ export function ReaderView({
             }
             await wv.executeJavaScript(
               `window.__pendingNotes = (window.__pendingNotes ?? []).filter((n) => n.key !== ${JSON.stringify(item.key)})`,
+            );
+          }
+          await pushNotesToWebview(wv);
+        }
+
+        // Actualizaciones en cola
+        const updateQueue = await wv.executeJavaScript('window.__pendingNoteUpdates') as NoteUpdateItem[] | null | undefined;
+        if (updateQueue && updateQueue.length > 0) {
+          for (const item of updateQueue) {
+            try {
+              await updateNoteManaged(repository, item.noteId, bookId, item.body);
+              await wv.executeJavaScript('window.__noteSaved && window.__noteSaved()');
+            } catch (err) {
+              const message = err instanceof Error ? err.message : 'No se pudo actualizar la nota';
+              console.error('[reader] error actualizando nota:', err);
+              await wv.executeJavaScript(`window.__noteError && window.__noteError(${JSON.stringify(message)})`);
+            }
+            await wv.executeJavaScript(
+              `window.__pendingNoteUpdates = (window.__pendingNoteUpdates ?? []).filter((n) => n.key !== ${JSON.stringify(item.key)})`,
             );
           }
           await pushNotesToWebview(wv);

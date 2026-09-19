@@ -515,6 +515,7 @@ let currentReaderDoc: ReaderDocument | null = null;
 let currentPreferences: ReaderPreferences = DEFAULT_PREFERENCES;
 let currentNotes: Array<{ id: string; body: string; createdAt: number; locator: string }> = [];
 let currentLocator: string = '';
+let editingNoteId: string | null = null;
 
 interface PendingNoteItem {
   readonly key: string;
@@ -522,9 +523,16 @@ interface PendingNoteItem {
   readonly locator: string;
 }
 
+interface PendingNoteUpdateItem {
+  readonly key: string;
+  readonly noteId: string;
+  readonly body: string;
+}
+
 declare global {
   interface Window {
     __pendingNotes?: PendingNoteItem[];
+    __pendingNoteUpdates?: PendingNoteUpdateItem[];
     __pendingNoteDelete?: string | null;
     __updateNotes?: (notes: Array<{ id: string; body: string; createdAt: number; locator: string }>) => void;
     __noteSaved?: () => void;
@@ -566,9 +574,14 @@ function renderNotesList(notes: Array<{ id: string; body: string; createdAt: num
       (n) => `
     <div class="note" data-note-id="${n.id}">
       <div class="ntx">${n.body}</div>
-      <button class="note-delete" data-note-id="${n.id}" title="Eliminar nota">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-      </button>
+      <div class="note-actions">
+        <button class="note-edit" data-note-id="${n.id}" data-note-body="${n.body.replace(/"/g, '&quot;')}" title="Editar nota">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="note-delete" data-note-id="${n.id}" title="Eliminar nota">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
     </div>
   `,
     )
@@ -579,6 +592,20 @@ function renderNotesList(notes: Array<{ id: string; body: string; createdAt: num
       const noteId = (btn as HTMLElement).dataset.noteId;
       if (noteId) {
         window.__pendingNoteDelete = noteId;
+      }
+    });
+  });
+
+  list.querySelectorAll('.note-edit').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const noteId = (btn as HTMLElement).dataset.noteId;
+      const noteBody = (btn as HTMLElement).dataset.noteBody ?? '';
+      if (noteId) {
+        editingNoteId = noteId;
+        const input = document.getElementById('note-input') as HTMLTextAreaElement | null;
+        const saveBtn = document.getElementById('note-save');
+        if (input) input.value = noteBody;
+        if (saveBtn) saveBtn.textContent = 'Actualizar';
       }
     });
   });
@@ -594,6 +621,16 @@ function enqueueNote(payload: { body: string; locator: string }): void {
   });
 }
 
+function enqueueNoteUpdate(payload: { noteId: string; body: string }): void {
+  const queue = window.__pendingNoteUpdates ?? [];
+  if (!window.__pendingNoteUpdates) window.__pendingNoteUpdates = queue;
+  queue.push({
+    key: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`,
+    noteId: payload.noteId,
+    body: payload.body,
+  });
+}
+
 function setupNotes(): void {
   const saveBtn = document.getElementById('note-save');
   const input = document.getElementById('note-input') as HTMLTextAreaElement | null;
@@ -602,9 +639,16 @@ function setupNotes(): void {
     saveBtn.addEventListener('click', () => {
       const body = input.value.trim();
       if (!body) return;
-      enqueueNote({ body, locator: currentLocator });
+      if (editingNoteId) {
+        enqueueNoteUpdate({ noteId: editingNoteId, body });
+        editingNoteId = null;
+        saveBtn.textContent = 'Guardar';
+        showToast('Actualización en cola');
+      } else {
+        enqueueNote({ body, locator: currentLocator });
+        showToast('Nota en cola');
+      }
       input.value = '';
-      showToast('Nota en cola');
     });
   }
 

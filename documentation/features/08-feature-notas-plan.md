@@ -16,7 +16,7 @@ de anotaciones por libro con filtro y orden, según
 | CRUD de notas (`packages/library`) | ✅ | ✅ |
 | Persistencia JSON + SQLite + FTS | ✅ | ✅ |
 | Paquete `@clio-reader/annotations` | ❌ dead code | ✅ integrado en desktop |
-| Notas dentro del reader (crear/borrar/listar por página) | ⚠️ WIP con bugs | ✅ sin bugs conocidos |
+| Notas dentro del reader (crear/editar/borrar/listar por página) | ⚠️ WIP con bugs | ✅ sin bugs conocidos |
 | Vista de anotaciones por libro (filtro + orden) | ❌ | ✅ `LibraryView` → "Notas" |
 | Crear marcador desde el reader | ❌ stub | ❌ pendiente (fuera de notas) |
 | Mobile (Android) | ❌ | ❌ fuera de alcance |
@@ -37,10 +37,23 @@ de anotaciones por libro con filtro y orden, según
 - Cola de guardado en el webview con `key` única por nota.
 - Drain en el host con lock por promesa (`drainPromiseRef`) para evitar
   procesamiento duplicado y garantizar el flush al cerrar.
-- `will-navigate` intercepta el botón atrás (`/`), drena pendientes y luego cierra.
-- `did-navigate` queda como fallback con guarda `closeOnce`.
+- `console-message` sentinel (`__clio_back__`) para cerrar el lector sin
+  navegar a `/` (evita el bug del webview cargando la app completa sin
+  `electronAPI` → biblioteca vacía + import roto).
+- `will-navigate` / `did-navigate` como fallback sin gating (Electron
+  `<webview>` no soporta `preventDefault` en `will-navigate`).
 - Feedback: "Nota en cola" al encolar, "Nota guardada" al persistir, mensaje de
   error si falla.
+
+### Fase 1b — Editar notas
+
+- Botón de editar (lápiz) en cada nota de la lista, junto al botón de eliminar.
+- Al hacer clic, el textarea se popular con el body existente y el botón
+  "Guardar" cambia a "Actualizar".
+- Cola `window.__pendingNoteUpdates` con `{ key, noteId, body }`.
+- `drainNotes` procesa la cola de updates vía `updateNoteManaged`.
+- `editingNoteId` (closure en `setupNotes`) controla el modo edición;
+  se limpia al guardar o al cambiar de locator.
 
 ### Fase 2 — Integración de `@clio-reader/annotations`
 
@@ -69,9 +82,9 @@ de anotaciones por libro con filtro y orden, según
 
 - **Duplicados de nota en el mismo locator: permitidos** (comportamiento actual,
   sin `DuplicateLocatorError` para notas).
-- **Flush al cerrar** vía `will-navigate`; el cierre abrupto de toda la ventana
-  (quit de la app) conserva la ventana de hasta 1s del poll como limitación conocida.
-- **`selectedText`**: el contrato y la UI de la vista lo soportan; la captura de
+- **Flush al cerrar** vía `console-message` sentinel; `will-navigate`/`did-navigate`
+  quedan como fallback sin gating (Electron `<webview>` no soporta `preventDefault`).
+- **`selectedText`**: el contrato y la UI lo soportan; la captura de
   selección dentro del reader queda para una iteración posterior.
 
 ## Pendientes (fuera de este plan)
@@ -90,8 +103,9 @@ de anotaciones por libro con filtro y orden, según
 | `packages/annotations/src/bookmark-manager.ts` | exactOptionalPropertyTypes |
 | `packages/annotations/src/annotation-export.ts` | tipos de repo acotado |
 | `packages/annotations/tests/note-manager.test.ts` | test de error tipado |
-| `apps/desktop/src/components/ReaderView.tsx` | cola, drain, flush, managed |
-| `apps/desktop/src/reader-entry.ts` | cola, syncLocator, ack/error |
+| `apps/desktop/src/components/ReaderView.tsx` | cola, drain, flush, managed, updates, sentinel |
+| `apps/desktop/src/reader-entry.ts` | cola, syncLocator, ack/error, edit button, edit queue |
+| `apps/desktop/src/reader.css` | .note-actions, .note-edit |
 | `apps/desktop/src/components/LibraryView.tsx` | vista Notas + fixes de tipo |
 | `apps/desktop/src/themes.ts` | fix de tipo preexistente |
 | `apps/desktop/tsconfig.json` / `vite.config.ts` | alias annotations |

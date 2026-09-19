@@ -378,15 +378,19 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
 .note .nmeta button { color: var(--read-tx-lo); opacity: .7; }
 .note .nmeta button:hover { opacity: 1; color: var(--rose); }
 .note .ntx { font-family: "Fraunces", serif; font-size: 14px; line-height: 1.5; color: var(--read-tx); }
-.note-delete {
+.note-actions {
   position: absolute; top: 8px; right: 8px;
+  display: flex; gap: 4px;
+}
+.note-edit, .note-delete {
   width: 24px; height: 24px; border-radius: 6px;
   display: grid; place-items: center;
   color: var(--read-tx-lo); opacity: .5;
   transition: .16s var(--ease);
 }
+.note-edit:hover { opacity: 1; color: var(--verdigris); background: rgba(var(--verdigris-rgb),.12); }
 .note-delete:hover { opacity: 1; color: var(--rose); background: rgba(var(--rose-rgb),.12); }
-.note-delete svg { width: 14px; height: 14px; }
+.note-edit svg, .note-delete svg { width: 14px; height: 14px; }
 .notes-empty {
   color: var(--read-tx-lo); font-size: 13px; text-align: center;
   padding: 20px 0; opacity: .7;
