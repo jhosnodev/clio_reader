@@ -431,16 +431,13 @@ async function renderTOC(readerDoc: ReaderDocument): Promise<void> {
       </button>`;
     }).join('');
 
-    const goToChapter = doc.goToChapter as ((idx: number) => Promise<void>) | undefined;
     tocPanel.querySelectorAll('.toc-item').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const idx = parseInt((btn as HTMLElement).dataset.chapter ?? '0', 10);
-        if (goToChapter) {
-          await goToChapter(idx);
-          await renderChapter(readerDoc, currentPreferences);
-          closeDrawer();
-          await syncLocator();
-        }
+        await doc.goToChapter?.(idx);
+        await renderChapter(readerDoc, currentPreferences);
+        closeDrawer();
+        await syncLocator();
       });
     });
   } catch {
@@ -750,12 +747,9 @@ async function main(): Promise<void> {
     /* --- Go to chapter by index (for initial locator from host) --- */
     window.__goToChapter = async (idx: number) => {
       if (!currentReaderDoc) return;
-      const goToChapter = currentReaderDoc.goToChapter as ((i: number) => Promise<unknown>) | undefined;
-      if (goToChapter) {
-        await goToChapter(idx);
-        await renderChapter(currentReaderDoc, currentPreferences);
-        await syncLocator();
-      }
+      await currentReaderDoc.goToChapter?.(idx);
+      await renderChapter(currentReaderDoc, currentPreferences);
+      await syncLocator();
     };
 
     const retryBtn = document.getElementById('reader-error-retry');
