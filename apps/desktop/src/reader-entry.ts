@@ -539,6 +539,7 @@ declare global {
     __noteError?: (message: string) => void;
     __goToChapter?: (idx: number) => Promise<void>;
     __getCurrentLocator?: () => string | undefined;
+    __updateRank?: (rank: number) => void;
   }
 }
 
@@ -843,6 +844,31 @@ async function main(): Promise<void> {
     window.__updateNotes = (notes: Array<{ id: string; body: string; createdAt: number; locator: string }>) => {
       currentNotes = notes;
       renderNotesList(currentNotes);
+    };
+
+    /* --- Rank update from host --- */
+    window.__updateRank = (newRank: number) => {
+      const panel = document.getElementById('panel-info');
+      if (!panel) return;
+      const starsContainer = panel.querySelector('.info-stars');
+      if (!starsContainer) return;
+      starsContainer.setAttribute('data-rank', String(newRank));
+      const gradId = 'reader-half-star';
+      starsContainer.querySelectorAll('.star-btn').forEach((btn) => {
+        const s = Number((btn as HTMLElement).dataset.star);
+        const isHalf = newRank >= s - 0.5 && newRank < s;
+        const isFull = newRank >= s;
+        btn.classList.toggle('star-full', isFull);
+        btn.classList.toggle('star-half', isHalf && !isFull);
+        btn.classList.toggle('star-empty', !isFull && !isHalf);
+        const svg = btn.querySelector('svg');
+        if (svg) {
+          svg.setAttribute('fill', isFull ? 'var(--gold)' : isHalf ? `url(#${gradId})` : 'var(--line)');
+        }
+        btn.setAttribute('aria-checked', String(isFull || isHalf));
+      });
+      const rankValueEl = panel.querySelector('.info-rank-value');
+      if (rankValueEl) rankValueEl.textContent = newRank > 0 ? String(newRank) : '';
     };
 
     /* --- Notes save/error feedback from host --- */

@@ -201,7 +201,7 @@ export function ReaderView({
         setWebviewLoaded(true);
       }
     };
-  }, [loadPreferences, loadProgress, fileUri, paletteId, theme, bookId, title, author, coverImage, format, rank, repository, initialLocator]);
+  }, [loadPreferences, loadProgress, fileUri, paletteId, theme, bookId, title, author, coverImage, format, repository, initialLocator]);
 
   /* ----- Cleanup del listener en unmount ----- */
   useEffect(() => {
@@ -357,6 +357,15 @@ export function ReaderView({
 
     return () => clearInterval(interval);
   }, [webviewLoaded, flushProgress]);
+
+  /* ----- Push rank updates al webview sin re-inicializar ----- */
+  useEffect(() => {
+    if (!webviewLoaded) return;
+    const wv = webviewRef.current as unknown as { executeJavaScript: (code: string) => Promise<unknown> } | null;
+    if (!wv) return;
+    const currentRank = rank ?? 0;
+    void wv.executeJavaScript(`window.__updateRank && window.__updateRank(${currentRank})`);
+  }, [webviewLoaded, rank]);
 
   /* ----- Callback ref: adjunta el listener inmediatamente al crear el elemento ----- */
   const webviewCallbackRef = useCallback((el: HTMLElement | null) => {
