@@ -18,5 +18,8 @@
   "dependencies": {
     "@clio-reader/domain": "workspace:*",
     "@clio-reader/library": "workspace:*"
+  },
+  "devDependencies": {
+    "@clio-reader/storage": "workspace:*"
   }
 }

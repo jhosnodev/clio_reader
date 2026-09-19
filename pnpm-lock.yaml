@@ -148,6 +148,10 @@ importers:
       '@clio-reader/library':
         specifier: workspace:*
         version: link:../library
+    devDependencies:
+      '@clio-reader/storage':
+        specifier: workspace:*
+        version: link:../storage
 
   packages/domain: {}
 

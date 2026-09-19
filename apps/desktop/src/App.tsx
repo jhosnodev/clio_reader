@@ -40,6 +40,8 @@ interface OpenBook {
   readonly id: string;
   readonly uri: string;
   readonly title: string;
+  readonly author?: string | undefined;
+  readonly coverImage?: string | undefined;
   readonly format: string;
 }
 
@@ -398,6 +400,8 @@ export function App(): JSX.Element {
       id: book.id,
       uri: book.uri,
       title: book.title,
+      author: book.author,
+      coverImage: book.coverImage,
       format: book.format,
     });
   }, [repository]);
@@ -434,6 +438,9 @@ export function App(): JSX.Element {
         bookId={openBook.id}
         fileUri={openBook.uri}
         format={openBook.format}
+        title={openBook.title}
+        author={openBook.author}
+        coverImage={openBook.coverImage}
         repository={repository}
         paletteId={paletteId}
         theme={theme}

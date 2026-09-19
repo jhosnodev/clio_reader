@@ -10,6 +10,7 @@ import {
   type SortOptions,
 } from './annotation-filter.js';
 import { throwIfInvalid, validateNoteInput } from './annotation-validator.js';
+import { AnnotationValidationError } from './errors.js';
 import { locatorsEqual } from './bookmark-manager.js';
 
 export interface CreateNoteOptions {
@@ -40,7 +41,7 @@ export async function createNoteManaged(
     bookId,
     locator,
     body,
-    selectedText: options?.selectedText,
+    ...(options?.selectedText !== undefined ? { selectedText: options.selectedText } : {}),
   });
 }
 
@@ -61,7 +62,7 @@ export async function updateNoteManaged(
   text: string,
 ): Promise<Note> {
   if (typeof text !== 'string' || text.trim().length === 0) {
-    throw new Error('Note body must not be empty');
+    throw new AnnotationValidationError('Note body must not be empty', 'body');
   }
 
   const existing = await listNotes(repo, bookId);

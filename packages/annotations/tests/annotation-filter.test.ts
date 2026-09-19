@@ -135,8 +135,8 @@ describe('AnnotationFilter', () => {
       ];
 
       const result = sortByPosition(bookmarks);
-      expect(result[0]!.locator.href).toBe('ch1');
-      expect(result[2]!.locator.href).toBe('ch3');
+      expect(result[0]!.locator.progression).toBe(0.1);
+      expect(result[2]!.locator.progression).toBe(0.6);
     });
 
     it('sorts pdf locators by page', () => {

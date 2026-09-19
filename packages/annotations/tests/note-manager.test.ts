@@ -161,7 +161,7 @@ describe('NoteManager', () => {
       await expect(updateNoteManaged(repo, 'nonexistent', 'book-1', 'Updated')).rejects.toThrow();
     });
 
-    it('rejects empty body', async () => {
+    it('rejects empty body with typed error', async () => {
       const repo = createRepo();
       await setupBook(repo);
 
@@ -175,7 +175,8 @@ describe('NoteManager', () => {
         'Original',
       );
 
-      await expect(updateNoteManaged(repo, note.id, 'book-1', '')).rejects.toThrow();
+      const promise = updateNoteManaged(repo, note.id, 'book-1', '');
+      await expect(promise).rejects.toMatchObject({ name: 'AnnotationValidationError', field: 'body' });
     });
   });
 

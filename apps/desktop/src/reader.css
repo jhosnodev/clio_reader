@@ -267,6 +267,51 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
 .panel { display: none; }
 .panel.active { display: block; }
 
+/* --- Info panel --- */
+.info-content {
+  padding: 16px;
+  text-align: center;
+}
+.info-cover {
+  max-width: 150px;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+.info-cover-placeholder {
+  width: 150px;
+  height: 200px;
+  background: var(--ink-850);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin: 0 auto 12px;
+}
+.info-title {
+  font-family: "Fraunces", serif;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--read-tx);
+  margin: 0 0 4px;
+}
+.info-author {
+  color: var(--read-tx-lo);
+  margin: 4px 0;
+  font-size: 14px;
+}
+.info-format {
+  color: var(--read-tx-lo);
+  font-size: 0.85em;
+  margin: 8px 0 0;
+}
+.reader[data-theme="night"] .info-cover-placeholder {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+.reader[data-theme="night"] .info-author,
+.reader[data-theme="night"] .info-format {
+  color: var(--read-tx-lo);
+}
+
 /* --- TOC --- */
 .toc-item {
   display: flex; align-items: baseline; gap: 12px;
@@ -324,6 +369,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
 .note {
   border-left: 3px solid var(--gold); padding: 12px 14px; margin-top: 16px;
   background: rgba(var(--gold-rgb),.08); border-radius: 0 10px 10px 0;
+  position: relative;
 }
 .note .nmeta {
   font-size: 11px; color: var(--read-tx-lo); margin-bottom: 6px;
@@ -332,6 +378,19 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
 .note .nmeta button { color: var(--read-tx-lo); opacity: .7; }
 .note .nmeta button:hover { opacity: 1; color: var(--rose); }
 .note .ntx { font-family: "Fraunces", serif; font-size: 14px; line-height: 1.5; color: var(--read-tx); }
+.note-delete {
+  position: absolute; top: 8px; right: 8px;
+  width: 24px; height: 24px; border-radius: 6px;
+  display: grid; place-items: center;
+  color: var(--read-tx-lo); opacity: .5;
+  transition: .16s var(--ease);
+}
+.note-delete:hover { opacity: 1; color: var(--rose); background: rgba(var(--rose-rgb),.12); }
+.note-delete svg { width: 14px; height: 14px; }
+.notes-empty {
+  color: var(--read-tx-lo); font-size: 13px; text-align: center;
+  padding: 20px 0; opacity: .7;
+}
 
 /* --- Info --- */
 .info-cover {

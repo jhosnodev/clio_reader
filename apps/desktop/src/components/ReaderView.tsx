@@ -9,6 +9,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { bridge } from '../bridges/bridge-singleton';
 import type { LibraryRepository } from '@clio-reader/library';
+import { createNoteManaged, listNotesManaged, removeNoteManaged } from '@clio-reader/annotations';
 import type { ReaderPreferences } from '@clio-reader/domain';
 import { createReadingProgress, createDefaultPreferences } from '@clio-reader/domain';
 import { getPalette, LIGHT_DEFAULTS } from '../themes';
@@ -21,6 +22,9 @@ interface ReaderViewProps {
   readonly bookId: string;
   readonly fileUri: string;
   readonly format: string;
+  readonly title: string;
+  readonly author?: string | undefined;
+  readonly coverImage?: string | undefined;
   readonly repository: LibraryRepository;
   readonly paletteId: string;
   readonly theme: 'dark' | 'light';
@@ -62,6 +66,9 @@ export function ReaderView({
   bookId,
   fileUri,
   format,
+  title,
+  author,
+  coverImage,
   repository,
   paletteId,
   theme,
@@ -74,6 +81,12 @@ export function ReaderView({
   const progressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastLocatorRef = useRef<import('@clio-reader/domain').ReaderLocator | null>(null);
   const lastPercentRef = useRef<number>(0);
+  const drainPromiseRef = useRef<Promise<void> | null>(null);
+  const closingRef = useRef(false);
+  const readerUrlRef = useRef<string | null>(null);
+  if (readerUrlRef.current === null) {
+    readerUrlRef.current = `/reader.html?uri=${encodeURIComponent(fileUri)}&format=${encodeURIComponent(format)}&_v=${Date.now()}`;
+  }
 
   /* ----- Handler estable para did-finish-load ----- */
   const handleFinishLoadRef = useRef<(() => Promise<void>) | null>(null);
@@ -110,9 +123,10 @@ export function ReaderView({
   useEffect(() => {
     handleFinishLoadRef.current = async (): Promise<void> => {
       try {
-        const [preferences, fileData] = await Promise.all([
+        const [preferences, fileData, existingNotes] = await Promise.all([
           loadPreferences(),
           bridge.readFile(fileUri),
+          listNotesManaged(repository, bookId).catch(() => []),
         ]);
 
         if (!fileData || fileData.byteLength === 0) {
@@ -126,7 +140,25 @@ export function ReaderView({
         }
         const b64 = btoa(binary);
 
-        const initData = { preferences, fileDataB64: b64 };
+        const notesData = existingNotes.map((n) => ({
+          id: n.id,
+          body: n.body,
+          createdAt: n.createdAt,
+          locator: JSON.stringify(n.locator),
+        }));
+
+        const initData = {
+          preferences,
+          fileDataB64: b64,
+          metadata: {
+            bookId,
+            title,
+            author,
+            coverImage: coverImage && coverImage.length < 80_000 ? coverImage : undefined,
+            format,
+          },
+          notes: notesData,
+        };
         const initCode = `window.__initFromHost(${JSON.stringify(initData)})`;
 
         const wv = webviewRef.current as unknown as { executeJavaScript: (code: string) => Promise<unknown> } | null;
@@ -142,7 +174,7 @@ export function ReaderView({
         setWebviewLoaded(true);
       }
     };
-  }, [loadPreferences, fileUri, paletteId, theme]);
+  }, [loadPreferences, fileUri, paletteId, theme, bookId, title, author, coverImage, format, repository]);
 
   /* ----- Cleanup del listener en unmount ----- */
   useEffect(() => {
@@ -153,6 +185,81 @@ export function ReaderView({
       }
     };
   }, []);
+
+  /* ----- Helper: empujar notas actualizadas al webview ----- */
+  const pushNotesToWebview = useCallback(async (wv: {
+    executeJavaScript: (code: string) => Promise<unknown>;
+  }): Promise<void> => {
+    const notes = await listNotesManaged(repository, bookId).catch(() => []);
+    const notesData = notes.map((n) => ({
+      id: n.id,
+      body: n.body,
+      createdAt: n.createdAt,
+      locator: JSON.stringify(n.locator),
+    }));
+    await wv.executeJavaScript(`window.__updateNotes && window.__updateNotes(${JSON.stringify(notesData)})`);
+  }, [repository, bookId]);
+
+  type NoteQueueItem = { readonly key: string; readonly body: string; readonly locator: string };
+
+  /* ----- Drenar cola de notas + borrados pendientes del webview ----- */
+  const drainNotes = useCallback((): Promise<void> => {
+    if (drainPromiseRef.current) return drainPromiseRef.current;
+
+    const run = (async (): Promise<void> => {
+      const wv = webviewRef.current as unknown as { executeJavaScript: (code: string) => Promise<unknown> } | null;
+      if (!wv) return;
+
+      try {
+        const pendingDelete = await wv.executeJavaScript('window.__pendingNoteDelete') as string | null | undefined;
+        if (pendingDelete) {
+          try {
+            await removeNoteManaged(repository, pendingDelete, bookId);
+          } catch (err) {
+            console.error('[reader] error eliminando nota:', err);
+          }
+          await wv.executeJavaScript('window.__pendingNoteDelete = null');
+        }
+
+        // Guardado en cola: procesa cada ítem y lo quita siempre (éxito o error)
+        const queue = await wv.executeJavaScript('window.__pendingNotes') as NoteQueueItem[] | null | undefined;
+        if (queue && queue.length > 0) {
+          for (const item of queue) {
+            try {
+              const locator = JSON.parse(item.locator);
+              await createNoteManaged(repository, bookId, locator, item.body);
+              await wv.executeJavaScript('window.__noteSaved && window.__noteSaved()');
+            } catch (err) {
+              const message = err instanceof Error ? err.message : 'No se pudo guardar la nota';
+              console.error('[reader] error guardando nota:', err);
+              await wv.executeJavaScript(`window.__noteError && window.__noteError(${JSON.stringify(message)})`);
+            }
+            await wv.executeJavaScript(
+              `window.__pendingNotes = (window.__pendingNotes ?? []).filter((n) => n.key !== ${JSON.stringify(item.key)})`,
+            );
+          }
+          await pushNotesToWebview(wv);
+        }
+      } catch {
+        // Ignorar errores transitorios del poll
+      }
+    })();
+
+    drainPromiseRef.current = run;
+    void run.finally(() => { drainPromiseRef.current = null; });
+    return run;
+  }, [repository, bookId, pushNotesToWebview]);
+
+  /* ----- Polling: drenar cola de notas pendientes del webview ----- */
+  useEffect(() => {
+    if (!webviewLoaded) return;
+
+    const interval = setInterval(() => {
+      drainNotes().catch(() => {});
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [webviewLoaded, drainNotes]);
 
   /* ----- Callback ref: adjunta el listener inmediatamente al crear el elemento ----- */
   const webviewCallbackRef = useCallback((el: HTMLElement | null) => {
@@ -166,6 +273,7 @@ export function ReaderView({
     webviewRef.current = el;
 
     if (el) {
+      el.setAttribute('src', readerUrlRef.current ?? '');
       setWebviewLoaded(false);
       (el as HTMLElement & { addEventListener: (event: string, handler: () => void) => void })
         .addEventListener('did-finish-load', handleFinishLoadRef.current!);
@@ -177,18 +285,51 @@ export function ReaderView({
     const webview = webviewRef.current as (HTMLElement & { addEventListener: (event: string, handler: (...args: unknown[]) => void) => void; removeEventListener: (event: string, handler: (...args: unknown[]) => void) => void }) | null;
     if (!webview) return;
 
+    const isBackNavigation = (url: unknown): boolean => {
+      if (typeof url !== 'string' || url.length === 0) return false;
+      let parsed: URL;
+      try {
+        parsed = new URL(url);
+      } catch {
+        return false;
+      }
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:' && parsed.protocol !== 'file:') {
+        return false;
+      }
+      return parsed.pathname === '/' || parsed.pathname === '';
+    };
+
+    const closeOnce = (): void => {
+      if (closingRef.current) return;
+      closingRef.current = true;
+      onClose();
+    };
+
+    // Flush pendientes antes de salir (will-navigate es cancelable en <webview>)
+    const handleWillNavigate = (event: unknown): void => {
+      const nav = event as { url?: string; preventDefault?: () => void };
+      if (!isBackNavigation(nav.url)) return;
+      nav.preventDefault?.();
+      drainNotes()
+        .catch(() => {})
+        .finally(() => closeOnce());
+    };
+
+    // Fallback: si will-navigate no se emitió
     const handleNavigate = (...args: unknown[]): void => {
       const event = args[0] as { href?: string } | undefined;
-      if (event?.href === '/' || event?.href === '') {
-        onClose();
+      if (isBackNavigation(event?.href)) {
+        closeOnce();
       }
     };
 
+    webview.addEventListener('will-navigate', handleWillNavigate);
     webview.addEventListener('did-navigate', handleNavigate);
     return () => {
+      webview.removeEventListener('will-navigate', handleWillNavigate);
       webview.removeEventListener('did-navigate', handleNavigate);
     };
-  }, [onClose]);
+  }, [onClose, drainNotes, webviewLoaded, fileStatus]);
 
   /* ----- Guardar progreso al cerrar la ventana ----- */
   useEffect(() => {
@@ -226,7 +367,7 @@ export function ReaderView({
   }, [format]);
 
   /* ----- Construir URL del reader ----- */
-  const readerUrl = `/reader.html?uri=${encodeURIComponent(fileUri)}&format=${encodeURIComponent(format)}&_v=${Date.now()}`;
+  const readerUrl = readerUrlRef.current;
 
   /* ----- Renderizado ----- */
   return (

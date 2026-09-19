@@ -57,6 +57,7 @@ export default defineConfig({
       '@clio-reader/reader-session': resolve(__dirname, '../../packages/reader-session/src'),
       '@clio-reader/storage': resolve(__dirname, '../../packages/storage/src'),
       '@clio-reader/library': resolve(__dirname, '../../packages/library/src'),
+      '@clio-reader/annotations': resolve(__dirname, '../../packages/annotations/src'),
     },
   },
 });

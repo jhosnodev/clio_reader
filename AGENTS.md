@@ -12,7 +12,7 @@
 | 5 | Renderer PDF | ✅ Completa |
 | 6 | Renderer EPUB | ✅ Completa |
 | 7 | Progreso/settings | ⚠️ Parcial |
-| 8 | Marcadores/notas | ❌ Pendiente |
+| 8 | Marcadores/notas | ⚠️ Parcial |
 
 ## 2. Arquitectura
 
@@ -489,6 +489,7 @@ test: add integration tests for progress persistence
 | Lectura Markdown | `documentation/features/05-lectura-markdown.md` |
 | Skill portabilidad | `documentation/features/06-skill-portabilidad-plataformas.md` |
 | Library use cases | `documentation/features/07-library-use-cases.md` |
+| Plan notas | `documentation/features/08-feature-notas-plan.md` |
 | Release MVP | `documentation/features/10-release-mvp.md` |
 | Paletas de color | `documentation/features/11-paletas-color-customizacion.md` |
 | Cover optimization | `documentation/features/cover-image-optimization.md` |
@@ -535,10 +536,14 @@ test: add integration tests for progress persistence
 
 ### Fase 8 — Implementar
 
-- [ ] CRUD de marcadores y notas
-- [ ] Asociar a `bookId`, locator, posición normalizada, fecha
-- [ ] Vista de anotaciones filtrada por libro
-- [ ] Ordenamiento por posición o fecha
+- [x] CRUD de notas en el reader (crear/listar/editar/eliminar)
+- [ ] CRUD de marcadores: crear desde el reader (resto del CRUD ya existe)
+- [x] Asociar a `bookId`, locator, posición normalizada, fecha
+- [x] Vista de anotaciones filtrada por libro (`LibraryView` → Notas)
+- [x] Ordenamiento por posición o fecha
+- [x] Integrar `@clio-reader/annotations` en desktop (filtro/orden/búsqueda/export)
+- [ ] Reemplazar el stub `setupBookmark()` del reader
+- [ ] Mobile (Android): notas (fuera de alcance desktop)
 
 ### Features futuros (fuera del MVP)
 

@@ -255,11 +255,19 @@ function setupNavigation(readerDoc: ReaderDocument, preferences: ReaderPreferenc
   if (btnNext) btnNext.addEventListener('click', () => navigateChapter(readerDoc, preferences, 'next'));
 }
 
+async function syncLocator(): Promise<void> {
+  if (!currentReaderDoc) return;
+  const locator = await currentReaderDoc.getLocator();
+  currentLocator = JSON.stringify(locator);
+  renderNotesList(currentNotes);
+}
+
 async function navigateChapter(readerDoc: ReaderDocument, preferences: ReaderPreferences, direction: 'next' | 'previous'): Promise<void> {
   try {
     if (direction === 'next') await readerDoc.goNext();
     else await readerDoc.goPrevious();
     await renderChapter(readerDoc, preferences);
+    await syncLocator();
   } catch (error) {
     if (error instanceof Error && error.name === 'EpubNavigationError') return;
     throw error;
@@ -431,6 +439,7 @@ async function renderTOC(readerDoc: ReaderDocument): Promise<void> {
           await goToChapter(idx);
           await renderChapter(readerDoc, currentPreferences);
           closeDrawer();
+          await syncLocator();
         }
       });
     });
@@ -502,8 +511,103 @@ async function loadDocument(uri: string, format: SupportedFormat, preloadedData?
 
 let currentReaderDoc: ReaderDocument | null = null;
 let currentPreferences: ReaderPreferences = DEFAULT_PREFERENCES;
+let currentNotes: Array<{ id: string; body: string; createdAt: number; locator: string }> = [];
+let currentLocator: string = '';
+
+interface PendingNoteItem {
+  readonly key: string;
+  readonly body: string;
+  readonly locator: string;
+}
+
+declare global {
+  interface Window {
+    __pendingNotes?: PendingNoteItem[];
+    __pendingNoteDelete?: string | null;
+    __updateNotes?: (notes: Array<{ id: string; body: string; createdAt: number; locator: string }>) => void;
+    __noteSaved?: () => void;
+    __noteError?: (message: string) => void;
+  }
+}
 
 function log(...args: unknown[]): void { console.log('[reader-entry]', ...args); }
+
+function renderInfoPanel(metadata: { title: string; author?: string; coverImage?: string; format: string }): void {
+  const panel = document.getElementById('panel-info');
+  if (!panel) return;
+
+  panel.innerHTML = `
+    <div class="info-content">
+      ${metadata.coverImage
+        ? `<img src="${metadata.coverImage}" class="info-cover" alt="Portada" />`
+        : '<div class="info-cover-placeholder"></div>'}
+      <h3 class="info-title">${metadata.title}</h3>
+      ${metadata.author ? `<p class="info-author">${metadata.author}</p>` : ''}
+      <p class="info-format">Formato: ${metadata.format.toUpperCase()}</p>
+    </div>
+  `;
+}
+
+function renderNotesList(notes: Array<{ id: string; body: string; createdAt: number; locator: string }>): void {
+  const list = document.getElementById('notes-list');
+  if (!list) return;
+
+  const pageNotes = notes.filter((n) => n.locator === currentLocator);
+
+  if (pageNotes.length === 0) {
+    list.innerHTML = '<p class="notes-empty">No hay notas en esta página.</p>';
+    return;
+  }
+
+  list.innerHTML = pageNotes
+    .map(
+      (n) => `
+    <div class="note" data-note-id="${n.id}">
+      <div class="ntx">${n.body}</div>
+      <button class="note-delete" data-note-id="${n.id}" title="Eliminar nota">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+  `,
+    )
+    .join('');
+
+  list.querySelectorAll('.note-delete').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const noteId = (btn as HTMLElement).dataset.noteId;
+      if (noteId) {
+        window.__pendingNoteDelete = noteId;
+      }
+    });
+  });
+}
+
+function enqueueNote(payload: { body: string; locator: string }): void {
+  const queue = window.__pendingNotes ?? [];
+  if (!window.__pendingNotes) window.__pendingNotes = queue;
+  queue.push({
+    key: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`,
+    body: payload.body,
+    locator: payload.locator,
+  });
+}
+
+function setupNotes(): void {
+  const saveBtn = document.getElementById('note-save');
+  const input = document.getElementById('note-input') as HTMLTextAreaElement | null;
+
+  if (saveBtn && input) {
+    saveBtn.addEventListener('click', () => {
+      const body = input.value.trim();
+      if (!body) return;
+      enqueueNote({ body, locator: currentLocator });
+      input.value = '';
+      showToast('Nota en cola');
+    });
+  }
+
+  renderNotesList(currentNotes);
+}
 
 async function main(): Promise<void> {
   setUIState({ type: 'loading' });
@@ -514,6 +618,14 @@ async function main(): Promise<void> {
     (window as unknown as Record<string, unknown>).__initFromHost = async (data: {
       preferences: ReaderPreferences;
       fileDataB64: string;
+      metadata: {
+        bookId: string;
+        title: string;
+        author?: string;
+        coverImage?: string;
+        format: string;
+      };
+      notes: Array<{ id: string; body: string; createdAt: number; locator: string }>;
     }) => {
       try {
         const binary = atob(data.fileDataB64);
@@ -523,10 +635,20 @@ async function main(): Promise<void> {
         }
 
         currentPreferences = data.preferences;
+        currentNotes = data.notes ?? [];
         currentReaderDoc = await loadDocument(uri, format, bytes);
+
+        // Populate toolbar with real metadata
+        const titleEl = document.getElementById('r-title');
+        const authorEl = document.getElementById('r-author');
+        if (titleEl && titleEl.childNodes[0]) {
+          titleEl.childNodes[0].textContent = data.metadata.title;
+        }
+        if (authorEl) authorEl.textContent = data.metadata.author ?? '';
 
         setUIState({ type: 'content' });
         await renderChapter(currentReaderDoc, currentPreferences);
+        await syncLocator();
         setupNavigation(currentReaderDoc, currentPreferences);
         setupDrawer();
         setupZen();
@@ -534,6 +656,8 @@ async function main(): Promise<void> {
         setupBookmark();
         setupBack();
         await renderTOC(currentReaderDoc);
+        renderInfoPanel(data.metadata);
+        setupNotes();
 
         // Apply initial theme from preferences
         const reader = document.getElementById('reader');
@@ -560,6 +684,20 @@ async function main(): Promise<void> {
         document.head.appendChild(style);
       }
       style.textContent = `:root { ${cssVars} }`;
+    };
+
+    /* --- Notes update from host --- */
+    window.__updateNotes = (notes: Array<{ id: string; body: string; createdAt: number; locator: string }>) => {
+      currentNotes = notes;
+      renderNotesList(currentNotes);
+    };
+
+    /* --- Notes save/error feedback from host --- */
+    window.__noteSaved = () => {
+      showToast('Nota guardada');
+    };
+    window.__noteError = (message: string) => {
+      showToast(message);
     };
 
     const retryBtn = document.getElementById('reader-error-retry');

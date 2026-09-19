@@ -5,8 +5,9 @@
  */
 
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import type { Book, Bookmark, ReadingStatus, Rank, ReadingProgress } from '@clio-reader/domain';
+import type { Book, Bookmark, Note, ReaderLocator, ReadingStatus, Rank, ReadingProgress } from '@clio-reader/domain';
 import type { LibraryRepository } from '@clio-reader/library';
+import { listNotesManaged, removeNoteManaged } from '@clio-reader/annotations';
 import type { ThemePalette } from '../themes';
 import { PALETTES } from '../themes';
 import { BrandIcon } from './BrandIcon';
@@ -79,7 +80,7 @@ const STATUS_CFG: Record<ReadingStatus, { label: string; dot: string }> = {
    Props
    ========================================================================== */
 
-type ViewId = 'home' | 'collection' | 'bookmarks';
+type ViewId = 'home' | 'collection' | 'bookmarks' | 'notes';
 
 interface LibraryViewProps {
   readonly books: readonly Book[];
@@ -221,7 +222,6 @@ export function LibraryView({
             onSearchFocus={handleHomeSearchFocus}
             onOpen={onOpenBook}
             onRemove={onRemoveBook}
-            onImport={onImportBook}
             onImportFiles={onImportFiles}
             onImportFolder={onImportFolder}
             onSaveRank={handleSaveRank}
@@ -251,6 +251,13 @@ export function LibraryView({
         )}
         {activeView === 'bookmarks' && (
           <BookmarksView
+            books={books}
+            repository={repository}
+            onOpen={onOpenBook}
+          />
+        )}
+        {activeView === 'notes' && (
+          <NotesView
             books={books}
             repository={repository}
             onOpen={onOpenBook}
@@ -289,6 +296,10 @@ function Rail({ active, onChange, theme, paletteId, palette, onToggleTheme, onSe
     {
       id: 'bookmarks', label: 'Marcadores',
       icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M6 4h12v16l-6-4-6 4z"/></svg>,
+    },
+    {
+      id: 'notes', label: 'Notas',
+      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M4 5h16v11l-4 4H4z"/><path d="M16 20v-4h4"/><path d="M8 9h8M8 13h5"/></svg>,
     },
   ];
 
@@ -821,8 +832,8 @@ function BookmarksView({
               <div style={S.bookmarkInfo}>
                 <div style={S.bookmarkTitle}>{bookmark.bookTitle}</div>
                 <div style={S.bookmarkMeta}>
-                  {bookmark.title && <span>{bookmark.title}</span>}
-                  {bookmark.title && <span style={S.bookmarkDot}>·</span>}
+                  {bookmark.label && <span>{bookmark.label}</span>}
+                  {bookmark.label && <span style={S.bookmarkDot}>·</span>}
                   <span>{fmtDate(bookmark.createdAt)}</span>
                 </div>
               </div>
@@ -839,6 +850,213 @@ function BookmarksView({
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+/* ==========================================================================
+   Notes View
+   ========================================================================== */
+
+type NotesSort = 'date-desc' | 'date-asc' | 'position';
+
+function fmtLocator(locator: ReaderLocator): string {
+  switch (locator.format) {
+    case 'epub':
+      if (typeof locator.progression === 'number') {
+        return `${Math.round(locator.progression * 100)}%`;
+      }
+      return locator.href || 'EPUB';
+    case 'pdf':
+    case 'cbz':
+      return `Pág. ${locator.page}`;
+    case 'md':
+      if (locator.href) return locator.href;
+      if (typeof locator.offset === 'number') return `Offset ${locator.offset}`;
+      return 'Markdown';
+  }
+}
+
+function NotesView({
+  books,
+  repository,
+  onOpen,
+}: {
+  books: readonly Book[];
+  repository: LibraryRepository;
+  onOpen: (book: Book) => void;
+}): JSX.Element {
+  const [selectedBookId, setSelectedBookId] = useState<string>('');
+  const [sort, setSort] = useState<NotesSort>('date-desc');
+  const [notes, setNotes] = useState<readonly Note[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const bookTitle = useCallback(
+    (bookId: string) => books.find((b) => b.id === bookId)?.title ?? 'Libro desconocido',
+    [books],
+  );
+
+  // Libro por defecto: el primero con notas, o el primero de la biblioteca
+  useEffect(() => {
+    if (selectedBookId) return;
+    let cancelled = false;
+    const pick = async () => {
+      let found = '';
+      for (const b of books) {
+        const list = await repository.listNotes(b.id).catch(() => []);
+        if (list.length > 0) { found = b.id; break; }
+      }
+      if (cancelled) return;
+      setSelectedBookId(found || books[0]?.id || '');
+    };
+    pick();
+    return () => { cancelled = true; };
+  }, [books, repository, selectedBookId]);
+
+  const loadNotes = useCallback(async () => {
+    if (!selectedBookId) { setNotes([]); return; }
+    setLoading(true);
+    try {
+      const sortOptions =
+        sort === 'position'
+          ? { field: 'position' as const }
+          : { field: 'date' as const, order: sort === 'date-asc' ? ('asc' as const) : ('desc' as const) };
+      const list = await listNotesManaged(repository, selectedBookId, { sort: sortOptions });
+      setNotes(list);
+    } catch (err) {
+      console.error('Error cargando notas:', err);
+      setNotes([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [repository, selectedBookId, sort]);
+
+  useEffect(() => { loadNotes(); }, [loadNotes]);
+
+  const handleDelete = useCallback(async (noteId: string) => {
+    try {
+      await removeNoteManaged(repository, noteId, selectedBookId);
+      setNotes((prev) => prev.filter((n) => n.id !== noteId));
+    } catch (err) {
+      console.error('Error eliminando nota:', err);
+    }
+  }, [repository, selectedBookId]);
+
+  const handleOpenBook = useCallback((bookId: string) => {
+    const book = books.find((b) => b.id === bookId);
+    if (book) onOpen(book);
+  }, [books, onOpen]);
+
+  const bookOptions = useMemo(
+    () => [...books].sort((a, b) => a.title.localeCompare(b.title, 'es')),
+    [books],
+  );
+
+  if (books.length === 0) {
+    return (
+      <div style={S.wrap}>
+        <header style={S.topbar}>
+          <div><h1 style={S.h1}>Notas</h1><div style={S.sub}>Tus anotaciones, guardadas localmente</div></div>
+        </header>
+        <div style={S.meander} />
+        <div style={S.emptyBookmarks}>
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--tx-faint)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 5h16v11l-4 4H4z"/><path d="M16 20v-4h4"/><path d="M8 9h8M8 13h5"/>
+          </svg>
+          <h3 style={S.emptyTitle}>No hay libros todavía</h3>
+          <p style={S.emptyHint}>Importa un libro para empezar a tomar notas.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={S.wrap}>
+      <header style={S.topbar}>
+        <div>
+          <h1 style={S.h1}>Notas</h1>
+          <div style={S.sub}>{notes.length} nota{notes.length !== 1 ? 's' : ''} en {bookTitle(selectedBookId)}</div>
+        </div>
+      </header>
+      <div style={S.meander} />
+
+      <div style={S.notesToolbar}>
+        <select
+          style={S.notesSelect}
+          value={selectedBookId}
+          onChange={(e) => setSelectedBookId(e.target.value)}
+          aria-label="Filtrar notas por libro"
+        >
+          {bookOptions.map((b) => (
+            <option key={b.id} value={b.id}>{b.title}</option>
+          ))}
+        </select>
+        <select
+          style={S.notesSelect}
+          value={sort}
+          onChange={(e) => setSort(e.target.value as NotesSort)}
+          aria-label="Ordenar notas"
+        >
+          <option value="date-desc">Más recientes</option>
+          <option value="date-asc">Más antiguas</option>
+          <option value="position">Por posición</option>
+        </select>
+      </div>
+
+      {loading ? (
+        <div style={S.emptyBookmarks}>
+          <div style={{ ...S.spinner, width: 24, height: 24 }} aria-hidden="true" />
+          <p style={S.emptyHint}>Cargando notas…</p>
+        </div>
+      ) : notes.length === 0 ? (
+        <div style={S.emptyBookmarks}>
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--tx-faint)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 5h16v11l-4 4H4z"/><path d="M16 20v-4h4"/><path d="M8 9h8M8 13h5"/>
+          </svg>
+          <h3 style={S.emptyTitle}>Sin notas en este libro</h3>
+          <p style={S.emptyHint}>Selecciona otro libro o abre uno para escribir una nota.</p>
+        </div>
+      ) : (
+        <div style={S.bookmarksList}>
+          {notes.map((note) => (
+            <div key={note.id} style={S.bookmarkItem}>
+              <div
+                style={S.bookmarkContent}
+                onClick={() => handleOpenBook(note.bookId)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleOpenBook(note.bookId); }}
+                role="button"
+                tabIndex={0}
+              >
+                <div style={S.bookmarkIcon}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 5h16v11l-4 4H4z"/><path d="M16 20v-4h4"/><path d="M8 9h8M8 13h5"/>
+                  </svg>
+                </div>
+                <div style={S.bookmarkInfo}>
+                  {note.selectedText && <div style={S.noteQuote}>“{note.selectedText}”</div>}
+                  <div style={S.noteBody}>{note.body}</div>
+                  <div style={S.bookmarkMeta}>
+                    <span>{bookTitle(note.bookId)}</span>
+                    <span style={S.bookmarkDot}>·</span>
+                    <span>{fmtLocator(note.locator)}</span>
+                    <span style={S.bookmarkDot}>·</span>
+                    <span>{fmtDate(note.createdAt)}</span>
+                  </div>
+                </div>
+              </div>
+              <button
+                style={S.bookmarkDelete}
+                onClick={() => handleDelete(note.id)}
+                aria-label="Eliminar nota"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                </svg>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -1305,6 +1523,23 @@ const S: Record<string, React.CSSProperties> = {
     border: '1px solid transparent', borderRadius: 6,
     color: 'var(--tx-faint)', cursor: 'pointer', display: 'grid', placeItems: 'center',
     fontFamily: 'inherit', transition: '.15s', flexShrink: 0,
+  },
+  notesToolbar: {
+    display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap',
+  },
+  notesSelect: {
+    padding: '8px 12px', borderRadius: 8, background: 'var(--ink-850)',
+    border: '1px solid var(--line)', color: 'var(--tx)', fontSize: 13,
+    fontFamily: 'inherit', cursor: 'pointer', minWidth: 180,
+  },
+  noteBody: {
+    fontSize: 14, color: 'var(--tx)', lineHeight: 1.45, marginBottom: 2,
+    whiteSpace: 'pre-wrap', overflowWrap: 'anywhere',
+  },
+  noteQuote: {
+    fontSize: 13, fontStyle: 'italic', color: 'var(--tx-lo)',
+    borderLeft: '2px solid var(--line)', paddingLeft: 8, marginBottom: 4,
+    overflow: 'hidden', textOverflow: 'ellipsis',
   },
   emptyTitle: { fontFamily: '"Fraunces", serif', color: 'var(--tx)', fontWeight: 600, fontSize: 18, margin: 0 },
   emptyHint: { fontSize: 14, color: 'var(--tx-faint)', margin: 0, maxWidth: 340 },

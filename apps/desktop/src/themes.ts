@@ -243,7 +243,7 @@ export const PALETTES = THEMES;
 
 /** Buscar paleta por ID, fallback a clio-0 */
 export function getPalette(id: string): ThemePalette {
-  return THEMES.find((p) => p.id === id) ?? THEMES[0];
+  return THEMES.find((p) => p.id === id) ?? THEMES[0]!;
 }
 
 /** IDs de todas las paletas */
