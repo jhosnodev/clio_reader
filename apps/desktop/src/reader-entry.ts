@@ -780,7 +780,7 @@ function renderInfoPanel(metadata: {
     console.log('__clio_rank__' + JSON.stringify({ rank: newRank }));
   };
 
-  const updateStars = (displayRank: number): void => {
+  const paintStars = (displayRank: number): void => {
     starsContainer.querySelectorAll('.star-btn').forEach((btn) => {
       const s = Number((btn as HTMLElement).dataset.star);
       const isHalf = displayRank >= s - 0.5 && displayRank < s;
@@ -799,7 +799,12 @@ function renderInfoPanel(metadata: {
     });
     const rankValueEl = panel.querySelector('.info-rank-value');
     if (rankValueEl) rankValueEl.textContent = displayRank > 0 ? String(displayRank) : '';
-    starsContainer.setAttribute('data-rank', String(displayRank));
+  };
+
+  const commitRank = (newRank: number): void => {
+    starsContainer.setAttribute('data-rank', String(newRank));
+    paintStars(newRank);
+    sendRankToHost(newRank);
   };
 
   starsContainer.addEventListener('mousemove', (e: Event) => {
@@ -810,12 +815,12 @@ function renderInfoPanel(metadata: {
     const x = me.clientX - rect.left;
     const starIndex = Number((target as HTMLElement).dataset.star);
     const hoverRank = x < rect.width / 2 ? starIndex - 0.5 : starIndex;
-    updateStars(hoverRank);
+    paintStars(hoverRank);
   });
 
   starsContainer.addEventListener('mouseleave', () => {
     const current = Number(starsContainer.getAttribute('data-rank')) || 0;
-    updateStars(current);
+    paintStars(current);
   });
 
   starsContainer.addEventListener('click', (e: Event) => {
@@ -828,9 +833,7 @@ function renderInfoPanel(metadata: {
     const clickedRank = x < rect.width / 2 ? starIndex - 0.5 : starIndex;
     const currentRank = Number(starsContainer.getAttribute('data-rank')) || 0;
     const newRank = clickedRank === currentRank ? 0 : clickedRank;
-    starsContainer.setAttribute('data-rank', String(newRank));
-    updateStars(newRank);
-    sendRankToHost(newRank);
+    commitRank(newRank);
   });
 }
 
