@@ -445,6 +445,7 @@ export function ReaderView({
 
     const CLOSE_SENTINEL = '__clio_back__';
     const RANK_SENTINEL = '__clio_rank__';
+    const PREFERENCES_SENTINEL = '__clio_prefs__';
 
     const isBackNavigation = (url: unknown): boolean => {
       if (typeof url !== 'string' || url.length === 0) return false;
@@ -490,6 +491,18 @@ export function ReaderView({
           /* ignore */
         }
       }
+      if (message.startsWith(PREFERENCES_SENTINEL)) {
+        try {
+          const preferences = JSON.parse(
+            message.slice(PREFERENCES_SENTINEL.length),
+          ) as ReaderPreferences;
+          repository.saveGlobalPreferences(preferences).catch((err) => {
+            console.error('[reader] error guardando preferencias:', err);
+          });
+        } catch {
+          /* ignore */
+        }
+      }
     };
 
     const handleWillNavigate = (event: unknown): void => {
@@ -510,7 +523,7 @@ export function ReaderView({
       webview.removeEventListener('will-navigate', handleWillNavigate);
       webview.removeEventListener('did-navigate', handleNavigate);
     };
-  }, [onClose, onSaveRank, drainNotes, flushProgress, webviewLoaded, fileStatus]);
+  }, [onClose, onSaveRank, drainNotes, flushProgress, webviewLoaded, fileStatus, repository]);
 
   /* ----- Guardar progreso al cerrar la ventana ----- */
   useEffect(() => {

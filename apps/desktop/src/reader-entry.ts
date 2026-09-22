@@ -15,6 +15,16 @@ window.addEventListener('unhandledrejection', (e) => {
 import type { ReaderDocument } from '@clio-reader/reader-core';
 import type { ReaderPreferences } from '@clio-reader/domain';
 import { EpubReaderDocument } from '@clio-reader/reader-epub';
+import {
+  PREFERENCES_SENTINEL,
+  lineHeightToButton,
+  pixelSizeFor,
+  stepFontScale,
+  themeFromWebview,
+  webviewFontFor,
+  webviewThemeFor,
+} from './reader-prefs';
+import type { WebviewTheme } from './reader-prefs';
 
 /* ==========================================================================
    Constantes
@@ -303,6 +313,19 @@ async function updateChapterInfo(readerDoc: ReaderDocument): Promise<void> {
   }
 }
 
+async function refreshReaderStyle(
+  readerDoc: ReaderDocument,
+  preferences: ReaderPreferences,
+): Promise<void> {
+  const contentEl = document.getElementById('page');
+  if (!contentEl || !readerDoc.applyPreferences) return;
+  const existingStyle = contentEl.querySelector('style');
+  if (existingStyle) existingStyle.remove();
+  const styleEl = document.createElement('style');
+  styleEl.textContent = await readerDoc.applyPreferences(preferences);
+  contentEl.append(styleEl);
+}
+
 /* ==========================================================================
    Navegación
    ========================================================================== */
@@ -420,53 +443,101 @@ function setupZen(): void {
    Settings: theme, font, size, line-height
    ========================================================================== */
 
-function setupSettings(_preferences: ReaderPreferences): void {
+function applySettingsToDom(): void {
   const reader = document.getElementById('reader');
   const page = document.getElementById('page');
   if (!reader || !page) return;
 
-  let currentSize = 19;
-  let currentLh = 1.75;
+  const theme = webviewThemeFor(currentPreferences.theme);
+  const font = webviewFontFor(currentPreferences.fontFamily);
+  const sizePx = pixelSizeFor(currentPreferences.fontScale);
+
+  reader.setAttribute('data-theme', theme);
+  reader.setAttribute('data-font', font);
+  page.style.setProperty('--read-size', `${sizePx}px`);
+  page.style.setProperty('--read-lh', String(currentPreferences.lineHeight));
+
+  document.querySelectorAll('.sw[data-t]').forEach((sw) => {
+    sw.classList.toggle('sel', (sw as HTMLElement).dataset.t === theme);
+  });
+
+  document.querySelectorAll('#sw-font button[data-f]').forEach((btn) => {
+    btn.classList.toggle('sel', (btn as HTMLElement).dataset.f === font);
+  });
+
+  const sizeVal = document.getElementById('size-val');
+  if (sizeVal) sizeVal.textContent = `${sizePx} px`;
+
+  const lhButton = lineHeightToButton(currentPreferences.lineHeight);
+  document.querySelectorAll('#sw-lh button[data-lh]').forEach((btn) => {
+    btn.classList.toggle('sel', (btn as HTMLElement).dataset.lh === lhButton);
+  });
+}
+
+function sendPreferencesToHost(): void {
+  console.log(PREFERENCES_SENTINEL + JSON.stringify(currentPreferences));
+}
+
+function setupSettings(): void {
+  const sizeDown = document.getElementById('size-down');
+  const sizeUp = document.getElementById('size-up');
 
   // Theme swatches
   document.querySelectorAll('.sw[data-t]').forEach((sw) => {
     sw.addEventListener('click', () => {
-      document.querySelectorAll('.sw[data-t]').forEach((s) => s.classList.remove('sel'));
-      sw.classList.add('sel');
-      reader.setAttribute('data-theme', (sw as HTMLElement).dataset.t ?? 'paper');
+      const theme = themeFromWebview((sw as HTMLElement).dataset.t as WebviewTheme);
+      currentPreferences = { ...currentPreferences, theme };
+      applySettingsToDom();
+      sendPreferencesToHost();
     });
   });
 
   // Font segmented
   document.querySelectorAll('#sw-font button[data-f]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('#sw-font button').forEach((b) => b.classList.remove('sel'));
-      btn.classList.add('sel');
-      reader.setAttribute('data-font', (btn as HTMLElement).dataset.f ?? 'serif');
+      const fontFamily = (btn as HTMLElement).dataset.f === 'serif' ? 'serif' : 'sans';
+      currentPreferences = { ...currentPreferences, fontFamily };
+      applySettingsToDom();
+      if (currentReaderDoc) {
+        void refreshReaderStyle(currentReaderDoc, currentPreferences);
+      }
+      sendPreferencesToHost();
     });
   });
 
   // Size stepper
-  const sizeVal = document.getElementById('size-val');
-  const sizeDown = document.getElementById('size-down');
-  const sizeUp = document.getElementById('size-up');
-  const updateSize = (delta: number) => {
-    currentSize = Math.max(14, Math.min(28, currentSize + delta));
-    if (sizeVal) sizeVal.textContent = `${currentSize} px`;
-    page.style.setProperty('--read-size', `${currentSize}px`);
-  };
-  if (sizeDown) sizeDown.addEventListener('click', () => updateSize(-1));
-  if (sizeUp) sizeUp.addEventListener('click', () => updateSize(1));
+  if (sizeDown) {
+    sizeDown.addEventListener('click', () => {
+      currentPreferences = {
+        ...currentPreferences,
+        fontScale: stepFontScale(currentPreferences.fontScale, -1),
+      };
+      applySettingsToDom();
+      sendPreferencesToHost();
+    });
+  }
+  if (sizeUp) {
+    sizeUp.addEventListener('click', () => {
+      currentPreferences = {
+        ...currentPreferences,
+        fontScale: stepFontScale(currentPreferences.fontScale, 1),
+      };
+      applySettingsToDom();
+      sendPreferencesToHost();
+    });
+  }
 
   // Line height segmented
   document.querySelectorAll('#sw-lh button[data-lh]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('#sw-lh button').forEach((b) => b.classList.remove('sel'));
-      btn.classList.add('sel');
-      currentLh = parseFloat((btn as HTMLElement).dataset.lh ?? '1.75');
-      page.style.setProperty('--read-lh', String(currentLh));
+      const lineHeight = parseFloat((btn as HTMLElement).dataset.lh ?? '1.75');
+      currentPreferences = { ...currentPreferences, lineHeight };
+      applySettingsToDom();
+      sendPreferencesToHost();
     });
   });
+
+  applySettingsToDom();
 }
 
 /* ==========================================================================
@@ -906,28 +977,12 @@ async function main(): Promise<void> {
         setupNavigation(currentReaderDoc, currentPreferences);
         setupDrawer();
         setupZen();
-        setupSettings(currentPreferences);
+        setupSettings();
         setupBookmark();
         setupBack();
         await renderTOC(currentReaderDoc);
         renderInfoPanel(data.metadata);
         setupNotes();
-
-        // Tema de la superficie de lectura según las preferencias guardadas.
-        // El chrome (cintillos y drawer) sigue la paleta de la app por separado.
-        const reader = document.getElementById('reader');
-        if (reader) {
-          const themeMap: Record<string, string> = {
-            light: 'paper',
-            dark: 'night',
-            sepia: 'sepia',
-          };
-          const theme = themeMap[currentPreferences.theme] ?? 'paper';
-          reader.setAttribute('data-theme', theme);
-          document.querySelectorAll('.sw[data-t]').forEach((sw) => {
-            sw.classList.toggle('sel', (sw as HTMLElement).dataset.t === theme);
-          });
-        }
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Error al abrir el libro';
         setUIState({ type: 'error', message });
