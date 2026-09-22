@@ -298,6 +298,25 @@ Implementa `LibraryRepository` usando `KeyValueStore`. Persiste un único blob J
 
 Implementa `LibraryRepository` usando Drizzle ORM + better-sqlite3. Tablas normalizadas con FK cascade, soft delete para sync, y FTS5 para búsqueda.
 
+### Ubicación del archivo SQLite
+
+#### Desktop (SQLite)
+
+Se deriva de `app.getPath('userData')` + `/clio-reader/clio.db` en `apps/desktop/electron/main.ts`:
+
+- **Linux**: `~/.config/@clio-reader/desktop/clio-reader/clio.db`
+- **Windows**: `%APPDATA%\@clio-reader\desktop\clio-reader\clio.db`
+- **macOS**: `~/Library/Application Support/@clio-reader/desktop/clio-reader/clio.db`
+
+Los archivos `-shm`/`-wal` son temporales del journal WAL; solo se respalda `clio.db`.
+
+#### Mobile (JSON)
+
+En mobile no hay SQLite; se persiste un blob JSON por clave bajo `documentDirectory` de `expo-file-system` (`apps/mobile/src/bridges/storage.ts`):
+
+- **Android**: `/data/user/0/<applicationId>/files/clio-reader/`
+- **iOS**: `<AppContainer>/Documents/clio-reader/` (sandbox, solo accesible por la app)
+
 ### Migración JSON → SQLite (one-time)
 
 La función `migrateJsonToSqlite()` en `packages/storage/src/migrate-json.ts` migra datos existentes del JSON a SQLite al iniciar la app.
