@@ -578,6 +578,19 @@ function HomeView({
   const greeting =
     h < 6 ? 'Buenas noches' : h < 13 ? 'Buenos días' : h < 20 ? 'Buenas tardes' : 'Buenas noches';
 
+  const [showImportMenu, setShowImportMenu] = useState(false);
+  const importMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (importMenuRef.current && !importMenuRef.current.contains(event.target as Node)) {
+        setShowImportMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   if (books.length === 0) {
     return (
       <div style={S.wrap}>
@@ -592,19 +605,6 @@ function HomeView({
       </div>
     );
   }
-
-  const [showImportMenu, setShowImportMenu] = useState(false);
-  const importMenuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (importMenuRef.current && !importMenuRef.current.contains(event.target as Node)) {
-        setShowImportMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   return (
     <div style={S.wrap}>
