@@ -87,13 +87,22 @@ button {
   transform: translateY(100%);
   pointer-events: none;
   transition: transform 0.42s var(--ease);
+
+  /* Chrome del lector (cintillos, drawer y toolbars) → sigue la paleta de la app.
+     La superficie de lectura (--read-*) conserva sus colores establecidos. */
+  --chrome-bg: var(--ink-950);
+  --chrome-fg: var(--tx);
+  --chrome-fg-lo: var(--tx-lo);
+  --chrome-line: color-mix(in srgb, var(--tx) 16%, transparent);
+  --chrome-hover: color-mix(in srgb, var(--tx) 8%, transparent);
+  --chrome-field: color-mix(in srgb, var(--tx) 5%, transparent);
 }
 .reader.open {
   transform: none;
   pointer-events: auto;
 }
 
-/* --- Temas --- */
+/* --- Temas de lectura (solo superficie del libro, no el chrome) --- */
 .reader[data-theme='paper'] {
   --read-bg: #f4efe4;
   --read-tx: #2b2620;
@@ -119,23 +128,20 @@ button {
   align-items: center;
   gap: 6px;
   padding: 12px 18px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  background: color-mix(in srgb, var(--read-bg) 88%, transparent);
+  border-bottom: 1px solid var(--chrome-line);
+  background: color-mix(in srgb, var(--chrome-bg) 88%, transparent);
   backdrop-filter: blur(10px);
   z-index: 5;
   transition:
     transform 0.3s var(--ease),
     opacity 0.3s var(--ease);
 }
-.reader[data-theme='night'] .r-bar {
-  border-bottom-color: rgba(255, 255, 255, 0.08);
-}
 
 .r-title {
   font-family: 'Fraunces', serif;
   font-weight: 600;
   font-size: 15px;
-  color: var(--read-tx);
+  color: var(--chrome-fg);
   max-width: 280px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -146,7 +152,7 @@ button {
   font-family: 'Hanken Grotesk';
   font-weight: 400;
   font-size: 11.5px;
-  color: var(--read-tx-lo);
+  color: var(--chrome-fg-lo);
   letter-spacing: 0.01em;
 }
 
@@ -162,7 +168,7 @@ button {
   border-radius: 10px;
   display: grid;
   place-items: center;
-  color: var(--read-tx);
+  color: var(--chrome-fg);
   opacity: 0.72;
   transition: 0.16s var(--ease);
   position: relative;
@@ -173,18 +179,12 @@ button {
 }
 .r-btn:hover {
   opacity: 1;
-  background: rgba(0, 0, 0, 0.06);
-}
-.reader[data-theme='night'] .r-btn:hover {
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--chrome-hover);
 }
 .r-btn.on {
   opacity: 1;
-  color: var(--gold-dim);
-  background: rgba(var(--gold-rgb), 0.14);
-}
-.reader[data-theme='night'] .r-btn.on {
-  color: var(--gold-bright);
+  color: var(--gold);
+  background: rgba(var(--gold-rgb), 0.18);
 }
 
 .r-sep {
@@ -283,15 +283,12 @@ button {
   align-items: center;
   gap: 16px;
   padding: 14px 28px;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
-  background: color-mix(in srgb, var(--read-bg) 88%, transparent);
+  border-top: 1px solid var(--chrome-line);
+  background: color-mix(in srgb, var(--chrome-bg) 88%, transparent);
   backdrop-filter: blur(10px);
   transition:
     transform 0.3s var(--ease),
     opacity 0.3s var(--ease);
-}
-.reader[data-theme='night'] .r-foot {
-  border-top-color: rgba(255, 255, 255, 0.08);
 }
 
 .pg-btn {
@@ -302,7 +299,7 @@ button {
   border-radius: 10px;
   font-size: 13.5px;
   font-weight: 500;
-  color: var(--read-tx);
+  color: var(--chrome-fg);
   opacity: 0.8;
   transition: 0.16s var(--ease);
 }
@@ -312,10 +309,7 @@ button {
 }
 .pg-btn:hover:not(:disabled) {
   opacity: 1;
-  background: rgba(0, 0, 0, 0.06);
-}
-.reader[data-theme='night'] .pg-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--chrome-hover);
 }
 .pg-btn:disabled {
   opacity: 0.28;
@@ -332,7 +326,7 @@ button {
   flex: 1;
   height: 5px;
   border-radius: 20px;
-  background: rgba(120, 110, 90, 0.25);
+  background: color-mix(in srgb, var(--chrome-fg) 22%, transparent);
   overflow: hidden;
   cursor: pointer;
 }
@@ -345,7 +339,7 @@ button {
 }
 .r-progress .pct {
   font-size: 12px;
-  color: var(--read-tx-lo);
+  color: var(--chrome-fg-lo);
   font-variant-numeric: tabular-nums;
   min-width: 118px;
   text-align: right;
@@ -379,9 +373,9 @@ button {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: color-mix(in srgb, var(--read-bg) 70%, transparent);
-  border: 1px solid rgba(120, 110, 90, 0.3);
-  color: var(--read-tx);
+  background: color-mix(in srgb, var(--chrome-bg) 78%, transparent);
+  border: 1px solid var(--chrome-line);
+  color: var(--chrome-fg);
   opacity: 0;
   transform: scale(0.8);
   pointer-events: none;
@@ -425,16 +419,13 @@ button {
   bottom: 0;
   width: 360px;
   z-index: 7;
-  background: var(--read-bg);
-  border-left: 1px solid rgba(0, 0, 0, 0.1);
+  background: var(--chrome-bg);
+  border-left: 1px solid var(--chrome-line);
   box-shadow: -24px 0 60px -30px rgba(0, 0, 0, 0.6);
   transform: translateX(100%);
   transition: transform 0.32s var(--ease);
   display: flex;
   flex-direction: column;
-}
-.reader[data-theme='night'] .drawer {
-  border-left-color: rgba(255, 255, 255, 0.09);
 }
 .drawer.show {
   transform: none;
@@ -445,16 +436,13 @@ button {
   align-items: center;
   gap: 10px;
   padding: 20px 22px 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-}
-.reader[data-theme='night'] .drawer-head {
-  border-bottom-color: rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--chrome-line);
 }
 .drawer-head h3 {
   font-family: 'Fraunces', serif;
   font-weight: 600;
   font-size: 18px;
-  color: var(--read-tx);
+  color: var(--chrome-fg);
   flex: 1;
 }
 .drawer-head .x {
@@ -463,13 +451,13 @@ button {
   border-radius: 9px;
   display: grid;
   place-items: center;
-  color: var(--read-tx);
+  color: var(--chrome-fg);
   opacity: 0.65;
   transition: 0.15s var(--ease);
 }
 .drawer-head .x:hover {
   opacity: 1;
-  background: rgba(0, 0, 0, 0.07);
+  background: var(--chrome-hover);
 }
 .drawer-head .x svg {
   width: 18px;
@@ -550,16 +538,16 @@ button {
   font-family: 'Fraunces', serif;
   font-weight: 600;
   font-size: 16px;
-  color: var(--read-tx);
+  color: var(--chrome-fg);
   margin: 0 0 4px;
 }
 .info-author {
-  color: var(--read-tx-lo);
+  color: var(--chrome-fg-lo);
   margin: 4px 0;
   font-size: 14px;
 }
 .info-format {
-  color: var(--read-tx-lo);
+  color: var(--chrome-fg-lo);
   font-size: 0.85em;
   margin: 8px 0 0;
 }
@@ -571,7 +559,7 @@ button {
   align-items: center;
   margin-top: 14px;
   padding-top: 12px;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--chrome-line);
 }
 .info-stars {
   display: flex;
@@ -596,14 +584,6 @@ button {
   min-height: 1.2em;
 }
 
-.reader[data-theme='night'] .info-cover-placeholder {
-  border-color: rgba(255, 255, 255, 0.08);
-}
-.reader[data-theme='night'] .info-author,
-.reader[data-theme='night'] .info-format {
-  color: var(--read-tx-lo);
-}
-
 /* --- TOC --- */
 .toc-item {
   display: flex;
@@ -613,21 +593,18 @@ button {
   text-align: left;
   padding: 11px 12px;
   border-radius: 9px;
-  color: var(--read-tx);
+  color: var(--chrome-fg);
   transition: 0.14s var(--ease);
 }
 .toc-item:hover {
-  background: rgba(0, 0, 0, 0.05);
-}
-.reader[data-theme='night'] .toc-item:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--chrome-hover);
 }
 .toc-item.current {
   background: rgba(var(--gold-rgb), 0.16);
 }
 .toc-item .n {
   font-variant-numeric: tabular-nums;
-  color: var(--read-tx-lo);
+  color: var(--chrome-fg-lo);
   font-size: 12.5px;
   min-width: 20px;
 }
@@ -639,7 +616,7 @@ button {
 }
 .toc-item .pp {
   font-size: 11.5px;
-  color: var(--read-tx-lo);
+  color: var(--chrome-fg-lo);
 }
 
 /* --- Search drawer --- */
@@ -647,28 +624,24 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: var(--chrome-field);
+  border: 1px solid var(--chrome-line);
   border-radius: 10px;
   padding: 0 12px;
   height: 42px;
   margin-bottom: 16px;
 }
-.reader[data-theme='night'] .dsearch {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
-}
 .dsearch svg {
   width: 16px;
   height: 16px;
-  color: var(--read-tx-lo);
+  color: var(--chrome-fg-lo);
   flex-shrink: 0;
 }
 .dsearch input {
   background: none;
   border: none;
   outline: none;
-  color: var(--read-tx);
+  color: var(--chrome-fg);
   width: 100%;
   font-size: 14px;
   font-family: inherit;
@@ -679,11 +652,8 @@ button {
   border-radius: 10px;
   margin-bottom: 9px;
   cursor: pointer;
-  background: rgba(0, 0, 0, 0.035);
+  background: var(--chrome-field);
   transition: 0.14s var(--ease);
-}
-.reader[data-theme='night'] .sres {
-  background: rgba(255, 255, 255, 0.04);
 }
 .sres:hover {
   background: rgba(var(--gold-rgb), 0.12);
@@ -692,7 +662,7 @@ button {
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--read-tx-lo);
+  color: var(--chrome-fg-lo);
   font-weight: 600;
   margin-bottom: 5px;
 }
@@ -700,27 +670,23 @@ button {
   font-family: 'Fraunces', serif;
   font-size: 14px;
   line-height: 1.5;
-  color: var(--read-tx);
+  color: var(--chrome-fg);
 }
 
 /* --- Notes --- */
 .note-add {
   width: 100%;
-  background: rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: var(--chrome-field);
+  border: 1px solid var(--chrome-line);
   border-radius: 11px;
   padding: 12px;
-  color: var(--read-tx);
+  color: var(--chrome-fg);
   font-family: inherit;
   font-size: 14px;
   resize: vertical;
   min-height: 74px;
   outline: none;
   margin-bottom: 10px;
-}
-.reader[data-theme='night'] .note-add {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.1);
 }
 .note-save {
   padding: 9px 16px;
@@ -740,14 +706,14 @@ button {
 }
 .note .nmeta {
   font-size: 11px;
-  color: var(--read-tx-lo);
+  color: var(--chrome-fg-lo);
   margin-bottom: 6px;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 .note .nmeta button {
-  color: var(--read-tx-lo);
+  color: var(--chrome-fg-lo);
   opacity: 0.7;
 }
 .note .nmeta button:hover {
@@ -758,7 +724,7 @@ button {
   font-family: 'Fraunces', serif;
   font-size: 14px;
   line-height: 1.5;
-  color: var(--read-tx);
+  color: var(--chrome-fg);
 }
 .note-actions {
   position: absolute;
@@ -774,7 +740,7 @@ button {
   border-radius: 6px;
   display: grid;
   place-items: center;
-  color: var(--read-tx-lo);
+  color: var(--chrome-fg-lo);
   opacity: 0.5;
   transition: 0.16s var(--ease);
 }
@@ -794,7 +760,7 @@ button {
   height: 14px;
 }
 .notes-empty {
-  color: var(--read-tx-lo);
+  color: var(--chrome-fg-lo);
   font-size: 13px;
   text-align: center;
   padding: 20px 0;
@@ -816,17 +782,14 @@ button {
   justify-content: space-between;
   gap: 14px;
   padding: 12px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+  border-bottom: 1px solid var(--chrome-line);
   font-size: 13.5px;
 }
-.reader[data-theme='night'] .info-row {
-  border-bottom-color: rgba(255, 255, 255, 0.07);
-}
 .info-row .k {
-  color: var(--read-tx-lo);
+  color: var(--chrome-fg-lo);
 }
 .info-row .v {
-  color: var(--read-tx);
+  color: var(--chrome-fg);
   font-weight: 500;
   text-align: right;
 }
@@ -852,7 +815,7 @@ button {
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--read-tx-lo);
+  color: var(--chrome-fg-lo);
   font-weight: 600;
   margin-bottom: 11px;
 }
@@ -888,12 +851,9 @@ button {
 .seg {
   display: flex;
   gap: 6px;
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--chrome-field);
   padding: 5px;
   border-radius: 12px;
-}
-.reader[data-theme='night'] .seg {
-  background: rgba(255, 255, 255, 0.05);
 }
 .seg button {
   flex: 1;
@@ -901,18 +861,15 @@ button {
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--read-tx);
+  color: var(--chrome-fg);
   opacity: 0.7;
   transition: 0.14s var(--ease);
 }
 .seg button.sel {
   opacity: 1;
-  background: var(--read-bg);
+  background: var(--ink-800);
   box-shadow: 0 2px 8px -3px rgba(0, 0, 0, 0.3);
   font-weight: 600;
-}
-.reader[data-theme='night'] .seg button.sel {
-  background: var(--ink-800);
 }
 
 /* stepper */
@@ -925,15 +882,12 @@ button {
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--chrome-field);
   display: grid;
   place-items: center;
   font-size: 20px;
-  color: var(--read-tx);
+  color: var(--chrome-fg);
   transition: 0.14s var(--ease);
-}
-.reader[data-theme='night'] .stepper button {
-  background: rgba(255, 255, 255, 0.06);
 }
 .stepper button:hover {
   background: rgba(var(--gold-rgb), 0.2);
@@ -943,7 +897,7 @@ button {
   text-align: center;
   font-weight: 600;
   font-size: 15px;
-  color: var(--read-tx);
+  color: var(--chrome-fg);
   font-variant-numeric: tabular-nums;
 }
 

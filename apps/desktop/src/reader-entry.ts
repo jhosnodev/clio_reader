@@ -279,7 +279,8 @@ async function renderChapter(
     const styleEl = document.createElement('style');
     const css = await readerDoc.applyPreferences(preferences);
     styleEl.textContent = css;
-    contentEl.prepend(styleEl);
+    // Append (no prepend) para que el tema del lector gane sobre los <style> del EPUB
+    contentEl.append(styleEl);
   }
 
   updateChapterInfo(readerDoc);
@@ -481,7 +482,7 @@ async function renderTOC(readerDoc: ReaderDocument): Promise<void> {
   const getTOC = doc.getTOC as (() => Promise<Array<{ title: string; href?: string }>>) | undefined;
   if (!getTOC) {
     tocPanel.innerHTML =
-      '<p style="color:var(--read-tx-lo);font-size:14px">No hay índice disponible.</p>';
+      '<p style="color:var(--chrome-fg-lo);font-size:14px">No hay índice disponible.</p>';
     return;
   }
 
@@ -489,7 +490,7 @@ async function renderTOC(readerDoc: ReaderDocument): Promise<void> {
     const toc = await getTOC();
     if (!toc || toc.length === 0) {
       tocPanel.innerHTML =
-        '<p style="color:var(--read-tx-lo);font-size:14px">No hay índice disponible.</p>';
+        '<p style="color:var(--chrome-fg-lo);font-size:14px">No hay índice disponible.</p>';
       return;
     }
 
@@ -520,7 +521,7 @@ async function renderTOC(readerDoc: ReaderDocument): Promise<void> {
     });
   } catch {
     tocPanel.innerHTML =
-      '<p style="color:var(--read-tx-lo);font-size:14px">Error al cargar el índice.</p>';
+      '<p style="color:var(--chrome-fg-lo);font-size:14px">Error al cargar el índice.</p>';
   }
 }
 
@@ -912,10 +913,15 @@ async function main(): Promise<void> {
         renderInfoPanel(data.metadata);
         setupNotes();
 
-        // Apply initial theme from preferences
+        // Tema de la superficie de lectura según las preferencias guardadas.
+        // El chrome (cintillos y drawer) sigue la paleta de la app por separado.
         const reader = document.getElementById('reader');
         if (reader) {
-          const themeMap: Record<string, string> = { light: 'paper', dark: 'night' };
+          const themeMap: Record<string, string> = {
+            light: 'paper',
+            dark: 'night',
+            sepia: 'sepia',
+          };
           const theme = themeMap[currentPreferences.theme] ?? 'paper';
           reader.setAttribute('data-theme', theme);
           document.querySelectorAll('.sw[data-t]').forEach((sw) => {

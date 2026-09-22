@@ -50,11 +50,21 @@ export const LIGHT_DEFAULTS = {
   'ink-700': '#d7dace',
   'ink-600': '#c2c6b6',
   line: '#e0e3d9',
+  gold: '#8a6d12',
+  'gold-bright': '#c9a94e',
+  'gold-dim': '#8a6d12',
+  verdigris: '#4f8290',
+  'verdigris-dim': '#3f6a75',
+  rose: '#b0494e',
   'tx-hi': '#1e2019',
   tx: '#474a40',
   'tx-lo': '#7b7e70',
   'tx-faint': '#a6a897',
+  'on-gold': '#2b1107',
   'accent-strong': '#8a6d12',
+  'read-bg': '#f4efe4',
+  'read-tx': '#2b2620',
+  'read-tx-lo': '#7a7266',
 } as const;
 
 /* ==========================================================================
