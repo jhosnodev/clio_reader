@@ -2,11 +2,7 @@ import type { EpubLocator, ReaderPreferences, ReaderLocator } from '@clio-reader
 import type { FileSource, ReaderCapabilities, ReaderDocument } from '@clio-reader/reader-core';
 
 import JSZip from 'jszip';
-import {
-  parseEpub,
-  type ChapterEntry,
-  type ParsedEpub,
-} from './epub-parser.js';
+import { parseEpub, type ParsedEpub } from './epub-parser.js';
 import { extractToc, type TocEntry } from './epub-toc.js';
 import { generateReaderStyle } from './epub-themes.js';
 
@@ -84,7 +80,9 @@ export class EpubReaderDocument implements ReaderDocument {
     epubLog('open() chapters:', this.parsedEpub.chapters.length);
 
     this.parsedEpub.chapters.forEach((ch, i) => {
-      epubLog(`open() chapter[${i}]: id=${ch.id} href=${ch.href} fullPath=${ch.fullPath} mediaType=${ch.mediaType}`);
+      epubLog(
+        `open() chapter[${i}]: id=${ch.id} href=${ch.href} fullPath=${ch.fullPath} mediaType=${ch.mediaType}`,
+      );
     });
 
     const imageItems = this.parsedEpub.opf.manifest.filter((item) =>
@@ -175,7 +173,12 @@ export class EpubReaderDocument implements ReaderDocument {
 
     const imgCount = (content.match(/<img\b/gi) ?? []).length;
     const svgImageCount = (content.match(/<image\b/gi) ?? []).length;
-    epubLog('getCurrentChapterContent() <img> tags:', imgCount, '| <image> SVG tags:', svgImageCount);
+    epubLog(
+      'getCurrentChapterContent() <img> tags:',
+      imgCount,
+      '| <image> SVG tags:',
+      svgImageCount,
+    );
 
     if (imgCount > 0) {
       const srcMatches = content.match(/src\s*=\s*["']([^"']+)["']/gi) ?? [];
@@ -204,7 +207,9 @@ export class EpubReaderDocument implements ReaderDocument {
     this.assertOpen();
     const chapters = this.parsedEpub!.chapters;
     if (idx < 0 || idx >= chapters.length) {
-      throw new EpubNavigationError(`Cannot go to chapter ${idx}: out of range (0-${chapters.length - 1})`);
+      throw new EpubNavigationError(
+        `Cannot go to chapter ${idx}: out of range (0-${chapters.length - 1})`,
+      );
     }
     this.currentChapterIndex = idx;
     return this.getLocator();
@@ -236,7 +241,12 @@ export class EpubReaderDocument implements ReaderDocument {
       ? chapter.fullPath.substring(0, chapter.fullPath.lastIndexOf('/') + 1)
       : '';
 
-    epubLog('getImageData() chapter.fullPath:', JSON.stringify(chapter.fullPath), 'chapterDir:', JSON.stringify(chapterDir));
+    epubLog(
+      'getImageData() chapter.fullPath:',
+      JSON.stringify(chapter.fullPath),
+      'chapterDir:',
+      JSON.stringify(chapterDir),
+    );
 
     const zip = this.zipArchive!;
     const basePath = this.parsedEpub!.opf.basePath;
@@ -244,7 +254,10 @@ export class EpubReaderDocument implements ReaderDocument {
     epubLog('getImageData() opf.basePath:', JSON.stringify(basePath));
 
     const resolvedPath = this.resolveHref(chapterDir, cleanHref);
-    epubLog('getImageData() intento 1 — resolveHref(chapterDir, href):', JSON.stringify(resolvedPath));
+    epubLog(
+      'getImageData() intento 1 — resolveHref(chapterDir, href):',
+      JSON.stringify(resolvedPath),
+    );
 
     let entry = zip.file(resolvedPath) ?? null;
 
@@ -256,7 +269,10 @@ export class EpubReaderDocument implements ReaderDocument {
 
     if (!entry) {
       const opfResolved = this.resolveHref(basePath, cleanHref);
-      epubLog('getImageData() intento 3 — resolveHref(basePath, href):', JSON.stringify(opfResolved));
+      epubLog(
+        'getImageData() intento 3 — resolveHref(basePath, href):',
+        JSON.stringify(opfResolved),
+      );
       entry = zip.file(opfResolved) ?? null;
     }
 
@@ -264,7 +280,12 @@ export class EpubReaderDocument implements ReaderDocument {
       const fileName = cleanHref.split('/').pop() ?? cleanHref;
       const allFiles = Object.keys(zip.files);
       const matchingFile = allFiles.find((f) => f.endsWith(fileName));
-      epubLog('getImageData() intento 4 — filename match:', JSON.stringify(fileName), 'found:', JSON.stringify(matchingFile ?? null));
+      epubLog(
+        'getImageData() intento 4 — filename match:',
+        JSON.stringify(fileName),
+        'found:',
+        JSON.stringify(matchingFile ?? null),
+      );
       if (matchingFile) {
         entry = zip.file(matchingFile) ?? null;
       }

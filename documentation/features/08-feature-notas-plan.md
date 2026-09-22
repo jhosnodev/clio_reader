@@ -10,25 +10,25 @@ de anotaciones por libro con filtro y orden, según
 
 ## Estado
 
-| Pieza | Antes | Ahora |
-|-------|-------|-------|
-| Dominio `Note` / `Bookmark` | ✅ | ✅ |
-| CRUD de notas (`packages/library`) | ✅ | ✅ |
-| Persistencia JSON + SQLite + FTS | ✅ | ✅ |
-| Paquete `@clio-reader/annotations` | ❌ dead code | ✅ integrado en desktop |
-| Notas dentro del reader (crear/editar/borrar/listar por página) | ⚠️ WIP con bugs | ✅ sin bugs conocidos |
-| Vista de anotaciones por libro (filtro + orden) | ❌ | ✅ `LibraryView` → "Notas" |
-| Crear marcador desde el reader | ❌ stub | ❌ pendiente (fuera de notas) |
-| Mobile (Android) | ❌ | ❌ fuera de alcance |
+| Pieza                                                           | Antes           | Ahora                         |
+| --------------------------------------------------------------- | --------------- | ----------------------------- |
+| Dominio `Note` / `Bookmark`                                     | ✅              | ✅                            |
+| CRUD de notas (`packages/library`)                              | ✅              | ✅                            |
+| Persistencia JSON + SQLite + FTS                                | ✅              | ✅                            |
+| Paquete `@clio-reader/annotations`                              | ❌ dead code    | ✅ integrado en desktop       |
+| Notas dentro del reader (crear/editar/borrar/listar por página) | ⚠️ WIP con bugs | ✅ sin bugs conocidos         |
+| Vista de anotaciones por libro (filtro + orden)                 | ❌              | ✅ `LibraryView` → "Notas"    |
+| Crear marcador desde el reader                                  | ❌ stub         | ❌ pendiente (fuera de notas) |
+| Mobile (Android)                                                | ❌              | ❌ fuera de alcance           |
 
 ## Bugs corregidos
 
-| Bug | Ubicación original | Fix |
-|-----|--------------------|-----|
-| **B1** Pérdida de notas: slot único `window.__pendingNote` + poll 1s. Guardar dos notas seguidas sobrescribía la primera; cerrar antes del poll perdía la nota; toast de éxito antes de persistir. | `ReaderView.tsx`, `reader-entry.ts` | Cola `window.__pendingNotes`; drain por ítem; ack `__noteSaved`/`__noteError`; flush antes de cerrar vía `will-navigate` (cancelable en `<webview>`) |
-| **B2** Locator obsoleto: navegar por TOC no actualizaba `currentLocator`, así que no aparecían las notas de la página destino. | `reader-entry.ts` (click TOC) | Helper `syncLocator()` invocado tras TOC, prev/next, carga inicial y retry |
-| **B3** Retry infinito: si `createNote` fallaba, `__pendingNote` nunca se limpiaba y reintentaba cada segundo en silencio. | `ReaderView.tsx` | El ítem se quita de la cola siempre (éxito o error); el error se muestra con `__noteError` |
-| **B4** Error genérico `new Error(...)` en `updateNoteManaged`. | `packages/annotations/src/note-manager.ts` | Lanza `AnnotationValidationError` (field `body`) |
+| Bug                                                                                                                                                                                                | Ubicación original                         | Fix                                                                                                                                                  |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **B1** Pérdida de notas: slot único `window.__pendingNote` + poll 1s. Guardar dos notas seguidas sobrescribía la primera; cerrar antes del poll perdía la nota; toast de éxito antes de persistir. | `ReaderView.tsx`, `reader-entry.ts`        | Cola `window.__pendingNotes`; drain por ítem; ack `__noteSaved`/`__noteError`; flush antes de cerrar vía `will-navigate` (cancelable en `<webview>`) |
+| **B2** Locator obsoleto: navegar por TOC no actualizaba `currentLocator`, así que no aparecían las notas de la página destino.                                                                     | `reader-entry.ts` (click TOC)              | Helper `syncLocator()` invocado tras TOC, prev/next, carga inicial y retry                                                                           |
+| **B3** Retry infinito: si `createNote` fallaba, `__pendingNote` nunca se limpiaba y reintentaba cada segundo en silencio.                                                                          | `ReaderView.tsx`                           | El ítem se quita de la cola siempre (éxito o error); el error se muestra con `__noteError`                                                           |
+| **B4** Error genérico `new Error(...)` en `updateNoteManaged`.                                                                                                                                     | `packages/annotations/src/note-manager.ts` | Lanza `AnnotationValidationError` (field `body`)                                                                                                     |
 
 ## Fases aplicadas
 
@@ -97,15 +97,15 @@ de anotaciones por libro con filtro y orden, según
 
 ## Archivos tocados
 
-| Archivo | Cambio |
-|---------|--------|
-| `packages/annotations/src/note-manager.ts` | B4 + exactOptionalPropertyTypes |
-| `packages/annotations/src/bookmark-manager.ts` | exactOptionalPropertyTypes |
-| `packages/annotations/src/annotation-export.ts` | tipos de repo acotado |
-| `packages/annotations/tests/note-manager.test.ts` | test de error tipado |
-| `apps/desktop/src/components/ReaderView.tsx` | cola, drain, flush, managed, updates, sentinel |
-| `apps/desktop/src/reader-entry.ts` | cola, syncLocator, ack/error, edit button, edit queue |
-| `apps/desktop/src/reader.css` | .note-actions, .note-edit |
-| `apps/desktop/src/components/LibraryView.tsx` | vista Notas + fixes de tipo |
-| `apps/desktop/src/themes.ts` | fix de tipo preexistente |
-| `apps/desktop/tsconfig.json` / `vite.config.ts` | alias annotations |
+| Archivo                                           | Cambio                                                |
+| ------------------------------------------------- | ----------------------------------------------------- |
+| `packages/annotations/src/note-manager.ts`        | B4 + exactOptionalPropertyTypes                       |
+| `packages/annotations/src/bookmark-manager.ts`    | exactOptionalPropertyTypes                            |
+| `packages/annotations/src/annotation-export.ts`   | tipos de repo acotado                                 |
+| `packages/annotations/tests/note-manager.test.ts` | test de error tipado                                  |
+| `apps/desktop/src/components/ReaderView.tsx`      | cola, drain, flush, managed, updates, sentinel        |
+| `apps/desktop/src/reader-entry.ts`                | cola, syncLocator, ack/error, edit button, edit queue |
+| `apps/desktop/src/reader.css`                     | .note-actions, .note-edit                             |
+| `apps/desktop/src/components/LibraryView.tsx`     | vista Notas + fixes de tipo                           |
+| `apps/desktop/src/themes.ts`                      | fix de tipo preexistente                              |
+| `apps/desktop/tsconfig.json` / `vite.config.ts`   | alias annotations                                     |

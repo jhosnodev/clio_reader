@@ -263,8 +263,7 @@ export async function extractCoverImage(
   // 3. Try by id containing "cover" (fallback)
   if (!coverItem) {
     coverItem = manifest.find(
-      (item) =>
-        item.id.toLowerCase().includes('cover') && item.mediaType.startsWith('image/'),
+      (item) => item.id.toLowerCase().includes('cover') && item.mediaType.startsWith('image/'),
     );
   }
 

@@ -11,8 +11,8 @@ export function BrandIcon({ color, size = 26 }: { color: string; size?: number }
       return;
     }
     fetch('/brand.svg')
-      .then(r => r.text())
-      .then(raw => {
+      .then((r) => r.text())
+      .then((raw) => {
         const colored = raw
           .replace(/currentColor/g, color)
           .replace(/width="512"/, 'width="100%"')

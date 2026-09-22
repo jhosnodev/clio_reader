@@ -7,6 +7,14 @@ const electronAPI = {
     return ipcRenderer.invoke('pick-file');
   },
 
+  pickFolder: () => {
+    return ipcRenderer.invoke('pick-folder');
+  },
+
+  readFolderBooks: (folderPath) => {
+    return ipcRenderer.invoke('read-folder-books', folderPath);
+  },
+
   readFile: (uri) => {
     return ipcRenderer.invoke('read-file', uri);
   },
@@ -45,6 +53,100 @@ const electronAPI = {
 
   removeAllListeners: (channel) => {
     ipcRenderer.removeAllListeners(channel);
+  },
+
+  repo: {
+    listBooks: () => {
+      return ipcRenderer.invoke('repo:list-books');
+    },
+
+    getBook: (bookId) => {
+      return ipcRenderer.invoke('repo:get-book', bookId);
+    },
+
+    upsertBook: (book) => {
+      return ipcRenderer.invoke('repo:upsert-book', book);
+    },
+
+    removeBook: (bookId) => {
+      return ipcRenderer.invoke('repo:remove-book', bookId);
+    },
+
+    getProgress: (bookId) => {
+      return ipcRenderer.invoke('repo:get-progress', bookId);
+    },
+
+    saveProgress: (progress) => {
+      return ipcRenderer.invoke('repo:save-progress', progress);
+    },
+
+    listAllProgress: () => {
+      return ipcRenderer.invoke('repo:list-all-progress');
+    },
+
+    getGlobalPreferences: () => {
+      return ipcRenderer.invoke('repo:get-global-preferences');
+    },
+
+    saveGlobalPreferences: (preferences) => {
+      return ipcRenderer.invoke('repo:save-global-preferences', preferences);
+    },
+
+    getBookPreferences: (bookId) => {
+      return ipcRenderer.invoke('repo:get-book-preferences', bookId);
+    },
+
+    saveBookPreferences: (bookId, preferences) => {
+      return ipcRenderer.invoke('repo:save-book-preferences', bookId, preferences);
+    },
+
+    listAllBookmarks: () => {
+      return ipcRenderer.invoke('repo:list-all-bookmarks');
+    },
+
+    listBookmarks: (bookId) => {
+      return ipcRenderer.invoke('repo:list-bookmarks', bookId);
+    },
+
+    saveBookmark: (bookmark) => {
+      return ipcRenderer.invoke('repo:save-bookmark', bookmark);
+    },
+
+    removeBookmark: (bookmarkId) => {
+      return ipcRenderer.invoke('repo:remove-bookmark', bookmarkId);
+    },
+
+    listNotes: (bookId) => {
+      return ipcRenderer.invoke('repo:list-notes', bookId);
+    },
+
+    saveNote: (note) => {
+      return ipcRenderer.invoke('repo:save-note', note);
+    },
+
+    removeNote: (noteId) => {
+      return ipcRenderer.invoke('repo:remove-note', noteId);
+    },
+
+    listHighlights: (bookId) => {
+      return ipcRenderer.invoke('repo:list-highlights', bookId);
+    },
+
+    saveHighlight: (highlight) => {
+      return ipcRenderer.invoke('repo:save-highlight', highlight);
+    },
+
+    removeHighlight: (highlightId) => {
+      return ipcRenderer.invoke('repo:remove-highlight', highlightId);
+    },
+
+    getUserSettings: () => {
+      return ipcRenderer.invoke('repo:get-user-settings');
+    },
+
+    saveUserSettings: (settings) => {
+      return ipcRenderer.invoke('repo:save-user-settings', settings);
+    },
   },
 };
 

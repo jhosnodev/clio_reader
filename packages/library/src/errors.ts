@@ -25,3 +25,10 @@ export class NoteNotFoundError extends Error {
     this.name = 'NoteNotFoundError';
   }
 }
+
+export class HighlightNotFoundError extends Error {
+  constructor(highlightId: string) {
+    super(`Highlight not found: ${highlightId}`);
+    this.name = 'HighlightNotFoundError';
+  }
+}

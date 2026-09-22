@@ -6,6 +6,9 @@ directories:
 files:
   - dist/**/*
   - dist-electron/**/*
+asarUnpack:
+  - '**/node_modules/better-sqlite3/**'
+npmRebuild: true
 win:
   target:
     - target: nsis

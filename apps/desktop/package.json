@@ -14,9 +14,11 @@
     "preview": "vite preview",
     "check": "tsc -p tsconfig.json",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "generate-icons": "node scripts/generate-icons.js"
+    "generate-icons": "node scripts/generate-icons.js",
+    "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
+    "@clio-reader/library": "workspace:*",
     "@clio-reader/reader-core": "workspace:*",
     "@clio-reader/reader-cbz": "workspace:*",
     "@clio-reader/reader-pdf": "workspace:*",
@@ -25,7 +27,8 @@
     "@clio-reader/storage": "workspace:*",
     "@clio-reader/domain": "workspace:*",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "better-sqlite3": "^11.0.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",

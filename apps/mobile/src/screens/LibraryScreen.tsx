@@ -50,9 +50,7 @@ export function LibraryScreen({ bridge, onOpenBook }: LibraryScreenProps): JSX.E
   };
 
   const handleSaveRank = (bookId: string, rank: Rank): void => {
-    setBooks((prev: Book[]) =>
-      prev.map((b) => (b.id === bookId ? { ...b, rank } : b))
-    );
+    setBooks((prev: Book[]) => prev.map((b) => (b.id === bookId ? { ...b, rank } : b)));
   };
 
   return (
@@ -72,7 +70,9 @@ export function LibraryScreen({ bridge, onOpenBook }: LibraryScreenProps): JSX.E
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>📚</Text>
             <Text style={styles.emptyTitle}>No hay libros importados</Text>
-            <Text style={styles.emptyHint}>Toca &quot;Importar&quot; para agregar tu primer libro.</Text>
+            <Text style={styles.emptyHint}>
+              Toca &quot;Importar&quot; para agregar tu primer libro.
+            </Text>
           </View>
         ) : (
           <FlatList

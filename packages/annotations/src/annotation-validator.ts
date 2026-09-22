@@ -1,5 +1,3 @@
-import type { Bookmark, Note, ReaderLocator } from '@clio-reader/domain';
-
 import { AnnotationValidationError } from './errors.js';
 
 interface ValidationError {

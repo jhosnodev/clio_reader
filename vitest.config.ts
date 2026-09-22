@@ -11,6 +11,11 @@ export default defineConfig({
       '@clio-reader/domain': resolve(repositoryRoot, 'packages/domain/src/index.ts'),
       '@clio-reader/reader-core': resolve(repositoryRoot, 'packages/reader-core/src/index.ts'),
       '@clio-reader/storage': resolve(repositoryRoot, 'packages/storage/src/index.ts'),
+      '@clio-reader/storage/drizzle': resolve(repositoryRoot, 'packages/storage/src/drizzle.ts'),
+      '@clio-reader/storage/drizzle-test': resolve(
+        repositoryRoot,
+        'packages/storage/drizzle-test-src.ts',
+      ),
       '@clio-reader/library': resolve(repositoryRoot, 'packages/library/src/index.ts'),
       '@clio-reader/reader-cbz': resolve(repositoryRoot, 'packages/reader-cbz/src/index.ts'),
       '@clio-reader/reader-pdf': resolve(repositoryRoot, 'packages/reader-pdf/src/index.ts'),
@@ -22,10 +27,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: [
-      'packages/**/tests/**/*.test.ts',
-      'apps/desktop/src/**/*.test.ts',
-    ],
+    include: ['packages/**/tests/**/*.test.ts', 'apps/desktop/src/**/*.test.ts'],
     passWithNoTests: false,
     coverage: {
       reporter: ['text', 'json-summary'],

@@ -93,6 +93,31 @@ export interface Note {
   readonly updatedAt: number;
 }
 
+export interface Highlight {
+  readonly id: string;
+  readonly bookId: BookId;
+  readonly locatorStart: ReaderLocator;
+  readonly locatorEnd: ReaderLocator;
+  readonly selectedText?: string;
+  readonly color: string;
+  readonly style: 'highlight' | 'underline';
+  readonly note?: string;
+  readonly createdAt: number;
+  readonly updatedAt: number;
+}
+
+export type PaletteMode = 'dark' | 'light';
+
+export interface UserSettings {
+  readonly paletteId: string;
+  readonly mode: PaletteMode;
+}
+
+export const DEFAULT_USER_SETTINGS: UserSettings = {
+  paletteId: 'clio-3',
+  mode: 'dark',
+};
+
 export const DEFAULT_READER_PREFERENCES: ReaderPreferences = {
   theme: 'light',
   backgroundColor: '#ffffff',
@@ -106,7 +131,10 @@ export const DEFAULT_READER_PREFERENCES: ReaderPreferences = {
 };
 
 export function createBook(
-  input: Omit<Book, 'addedAt' | 'status'> & { addedAt?: number | undefined; status?: Book['status'] | undefined },
+  input: Omit<Book, 'addedAt' | 'status'> & {
+    addedAt?: number | undefined;
+    status?: Book['status'] | undefined;
+  },
 ): Book {
   const book: Book = {
     ...input,
@@ -119,6 +147,10 @@ export function createBook(
   assertNonEmpty(book.title, 'Book title');
   assertNonEmpty(book.uri, 'Book uri');
   return book;
+}
+
+export function createDefaultUserSettings(): UserSettings {
+  return { ...DEFAULT_USER_SETTINGS };
 }
 
 export function createDefaultPreferences(): ReaderPreferences {
@@ -153,7 +185,7 @@ export function normalizeRank(rank: number): Rank {
   }
 
   const clamped = Math.min(5, Math.max(0, rank));
-  return Math.round(clamped * 2) / 2 as Rank;
+  return (Math.round(clamped * 2) / 2) as Rank;
 }
 
 export function createReadingProgress(
@@ -167,6 +199,33 @@ export function createReadingProgress(
     percent: normalizePercent(input.percent),
     updatedAt: input.updatedAt ?? Date.now(),
   };
+}
+
+export function createHighlight(
+  input: Omit<Highlight, 'createdAt' | 'updatedAt'> & {
+    createdAt?: number;
+    updatedAt?: number;
+  },
+): Highlight {
+  const highlight: Highlight = {
+    ...input,
+    createdAt: input.createdAt ?? Date.now(),
+    updatedAt: input.updatedAt ?? Date.now(),
+  };
+
+  assertNonEmpty(highlight.id, 'Highlight id');
+  assertNonEmpty(highlight.bookId, 'Highlight bookId');
+  assertNonEmpty(highlight.color, 'Highlight color');
+  assertColor(highlight.color, 'Highlight color');
+  return highlight;
+}
+
+export function validateHighlightStyle(style: string): void {
+  if (style !== 'highlight' && style !== 'underline') {
+    throw new DomainValidationError(
+      `Highlight style must be 'highlight' or 'underline', got '${style}'`,
+    );
+  }
 }
 
 export class DomainValidationError extends Error {

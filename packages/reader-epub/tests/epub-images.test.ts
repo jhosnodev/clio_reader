@@ -44,11 +44,7 @@ describe('epub-images', () => {
         <img src="real.png"/>
       `;
       const srcs = extractImageSrcs(html);
-      expect(srcs).toEqual([
-        'data:image/png;base64,abc',
-        'blob:http://localhost/123',
-        'real.png',
-      ]);
+      expect(srcs).toEqual(['data:image/png;base64,abc', 'blob:http://localhost/123', 'real.png']);
     });
 
     it('handles self-closing and non-self-closing img tags', () => {
@@ -129,7 +125,8 @@ describe('epub-images', () => {
     });
 
     it('extracts from SVG image with extra attributes', () => {
-      const html = '<svg><image height="1920" width="1663" xlink:href="Image00001.jpg"></image></svg>';
+      const html =
+        '<svg><image height="1920" width="1663" xlink:href="Image00001.jpg"></image></svg>';
       expect(extractImageSrcs(html)).toEqual(['Image00001.jpg']);
     });
 

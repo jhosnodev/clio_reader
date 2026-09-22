@@ -4,14 +4,29 @@ import { getResumePositionOrder, locatorToPercent } from './reader-progress';
 
 describe('getResumePositionOrder', () => {
   it('returns noteLocator.positionOrder when both are provided', () => {
-    const note: EpubLocator = { format: 'epub', href: 'ch3.xhtml', positionOrder: 2, progression: 0.25 };
-    const saved: EpubLocator = { format: 'epub', href: 'ch5.xhtml', positionOrder: 4, progression: 0.5 };
+    const note: EpubLocator = {
+      format: 'epub',
+      href: 'ch3.xhtml',
+      positionOrder: 2,
+      progression: 0.25,
+    };
+    const saved: EpubLocator = {
+      format: 'epub',
+      href: 'ch5.xhtml',
+      positionOrder: 4,
+      progression: 0.5,
+    };
     expect(getResumePositionOrder(note, saved)).toBe(2);
   });
 
   it('returns savedLocator.positionOrder when noteLocator has no positionOrder', () => {
     const note: EpubLocator = { format: 'epub', href: 'ch1.xhtml' };
-    const saved: EpubLocator = { format: 'epub', href: 'ch4.xhtml', positionOrder: 3, progression: 0.375 };
+    const saved: EpubLocator = {
+      format: 'epub',
+      href: 'ch4.xhtml',
+      positionOrder: 3,
+      progression: 0.375,
+    };
     expect(getResumePositionOrder(note, saved)).toBe(3);
   });
 
@@ -33,7 +48,12 @@ describe('getResumePositionOrder', () => {
 
 describe('locatorToPercent', () => {
   it('returns progression for epub locator', () => {
-    const loc: EpubLocator = { format: 'epub', href: 'ch2.xhtml', progression: 0.375, positionOrder: 1 };
+    const loc: EpubLocator = {
+      format: 'epub',
+      href: 'ch2.xhtml',
+      progression: 0.375,
+      positionOrder: 1,
+    };
     expect(locatorToPercent(loc)).toBe(0.375);
   });
 

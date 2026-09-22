@@ -176,7 +176,10 @@ describe('NoteManager', () => {
       );
 
       const promise = updateNoteManaged(repo, note.id, 'book-1', '');
-      await expect(promise).rejects.toMatchObject({ name: 'AnnotationValidationError', field: 'body' });
+      await expect(promise).rejects.toMatchObject({
+        name: 'AnnotationValidationError',
+        field: 'body',
+      });
     });
   });
 

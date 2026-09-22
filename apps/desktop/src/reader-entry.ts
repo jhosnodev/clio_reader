@@ -39,7 +39,17 @@ const DEFAULT_PREFERENCES: ReaderPreferences = {
    Sanitización de HTML
    ========================================================================== */
 
-const BLOCKED_TAGS = ['script', 'iframe', 'object', 'embed', 'form', 'input', 'textarea', 'button', 'link'];
+const BLOCKED_TAGS = [
+  'script',
+  'iframe',
+  'object',
+  'embed',
+  'form',
+  'input',
+  'textarea',
+  'button',
+  'link',
+];
 const EVENT_HANDLER_REGEX = /\bon\w+\s*=/gi;
 const DANGEROUS_ATTRS = ['srcdoc', 'data', 'codebase', 'formaction'];
 
@@ -68,7 +78,11 @@ let previousBlobUrls: string[] = [];
 
 function revokePreviousBlobUrls(): void {
   for (const url of previousBlobUrls) {
-    try { URL.revokeObjectURL(url); } catch { /* ignore */ }
+    try {
+      URL.revokeObjectURL(url);
+    } catch {
+      /* ignore */
+    }
   }
   previousBlobUrls = [];
 }
@@ -90,11 +104,19 @@ async function resolveImagesInHtml(readerDoc: ReaderDocument, html: string): Pro
 
   const srcRegex = new RegExp(IMG_SRC_REGEX.source, 'gi');
   while ((m = srcRegex.exec(html)) !== null) {
-    if (m[2]) { const src = stripFragment(m[2]); allSrcs.push(src); srcTypes.set(src, 'img'); }
+    if (m[2]) {
+      const src = stripFragment(m[2]);
+      allSrcs.push(src);
+      srcTypes.set(src, 'img');
+    }
   }
   const svgRegex = new RegExp(SVG_IMAGE_HREF_RE.source, 'gi');
   while ((m = svgRegex.exec(html)) !== null) {
-    if (m[2]) { const src = stripFragment(m[2]); allSrcs.push(src); srcTypes.set(src, 'svg'); }
+    if (m[2]) {
+      const src = stripFragment(m[2]);
+      allSrcs.push(src);
+      srcTypes.set(src, 'svg');
+    }
   }
 
   if (allSrcs.length === 0) return html;
@@ -104,13 +126,18 @@ async function resolveImagesInHtml(readerDoc: ReaderDocument, html: string): Pro
   const newBlobUrls: string[] = [];
   const blobUrlCache = new Map<string, string>();
 
-  const srcsToResolve = [...new Set(allSrcs.filter((s) => !s.startsWith('data:') && !s.startsWith('blob:')))];
+  const srcsToResolve = [
+    ...new Set(allSrcs.filter((s) => !s.startsWith('data:') && !s.startsWith('blob:'))),
+  ];
   for (const src of srcsToResolve) {
     try {
       const result = await readerDoc.getImageData(src);
       if (result) {
         const buf = result.data.buffer as ArrayBuffer;
-        const blob = new Blob([buf.slice(result.data.byteOffset, result.data.byteOffset + result.data.byteLength)], { type: result.mimeType });
+        const blob = new Blob(
+          [buf.slice(result.data.byteOffset, result.data.byteOffset + result.data.byteLength)],
+          { type: result.mimeType },
+        );
         const blobUrl = URL.createObjectURL(blob);
         blobUrlCache.set(src, blobUrl);
         newBlobUrls.push(blobUrl);
@@ -127,33 +154,54 @@ async function resolveImagesInHtml(readerDoc: ReaderDocument, html: string): Pro
   for (const [src, blobUrl] of blobUrlCache) {
     const safeSrc = escapeRegExp(src);
     if (!blobUrl) {
-      resultHtml = resultHtml.replace(new RegExp(`(<img\\b[^>]*?src\\s*=\\s*["']${safeSrc}["'][^>]*?>)`, 'gi'), addFailedImgClass);
-      resultHtml = resultHtml.replace(new RegExp(`(<image\\b[^>]*?(?:xlink:)?href\\s*=\\s*["']${safeSrc}["'][^>]*?>)`, 'gi'), addFailedImgClass);
+      resultHtml = resultHtml.replace(
+        new RegExp(`(<img\\b[^>]*?src\\s*=\\s*["']${safeSrc}["'][^>]*?>)`, 'gi'),
+        addFailedImgClass,
+      );
+      resultHtml = resultHtml.replace(
+        new RegExp(`(<image\\b[^>]*?(?:xlink:)?href\\s*=\\s*["']${safeSrc}["'][^>]*?>)`, 'gi'),
+        addFailedImgClass,
+      );
       continue;
     }
-    resultHtml = resultHtml.replace(new RegExp(`(<img\\b[^>]*?)src\\s*=\\s*["']${safeSrc}["']([^>]*?>)`, 'gi'), `$1src="${blobUrl}"$2`);
-    resultHtml = resultHtml.replace(new RegExp(`(<image\\b[^>]*?)(xlink:)?href\\s*=\\s*["']${safeSrc}["']([^>]*?>)`, 'gi'), (_match, pre, xlinkPrefix, post) => {
-      return `${pre}${xlinkPrefix ? 'xlink:' : ''}href="${blobUrl}"${post}`;
-    });
+    resultHtml = resultHtml.replace(
+      new RegExp(`(<img\\b[^>]*?)src\\s*=\\s*["']${safeSrc}["']([^>]*?>)`, 'gi'),
+      `$1src="${blobUrl}"$2`,
+    );
+    resultHtml = resultHtml.replace(
+      new RegExp(`(<image\\b[^>]*?)(xlink:)?href\\s*=\\s*["']${safeSrc}["']([^>]*?>)`, 'gi'),
+      (_match, pre, xlinkPrefix, post) => {
+        return `${pre}${xlinkPrefix ? 'xlink:' : ''}href="${blobUrl}"${post}`;
+      },
+    );
   }
   return resultHtml;
 }
 
-function escapeRegExp(s: string): string { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
-function stripFragment(href: string): string { const i = href.indexOf('#'); return i >= 0 ? href.substring(0, i) : href; }
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+function stripFragment(href: string): string {
+  const i = href.indexOf('#');
+  return i >= 0 ? href.substring(0, i) : href;
+}
 
 /* ==========================================================================
    Query params
    ========================================================================== */
 
-interface QueryParams { readonly uri: string; readonly format: SupportedFormat; }
+interface QueryParams {
+  readonly uri: string;
+  readonly format: SupportedFormat;
+}
 
 function parseQueryParams(): QueryParams {
   const params = new URLSearchParams(window.location.search);
   const uri = params.get('uri');
   const format = params.get('format')?.toLowerCase();
   if (!uri) throw new ReaderError('Falta el parámetro "uri" en la URL');
-  if (!format || !isSupportedFormat(format)) throw new ReaderError(`Formato no soportado: "${format ?? 'desconocido'}"`);
+  if (!format || !isSupportedFormat(format))
+    throw new ReaderError(`Formato no soportado: "${format ?? 'desconocido'}"`);
   return { uri, format };
 }
 
@@ -162,14 +210,20 @@ function isSupportedFormat(value: string): value is SupportedFormat {
 }
 
 class ReaderError extends Error {
-  constructor(message: string) { super(message); this.name = 'ReaderError'; }
+  constructor(message: string) {
+    super(message);
+    this.name = 'ReaderError';
+  }
 }
 
 /* ==========================================================================
    UI State
    ========================================================================== */
 
-type UIState = { readonly type: 'loading' } | { readonly type: 'error'; readonly message: string } | { readonly type: 'content' };
+type UIState =
+  | { readonly type: 'loading' }
+  | { readonly type: 'error'; readonly message: string }
+  | { readonly type: 'content' };
 
 function setUIState(state: UIState): void {
   const reader = document.getElementById('reader');
@@ -206,10 +260,14 @@ function setUIState(state: UIState): void {
    Renderizado de capítulo
    ========================================================================== */
 
-async function renderChapter(readerDoc: ReaderDocument, preferences: ReaderPreferences): Promise<void> {
+async function renderChapter(
+  readerDoc: ReaderDocument,
+  preferences: ReaderPreferences,
+): Promise<void> {
   const contentEl = document.getElementById('page');
   if (!contentEl) return;
-  if (!readerDoc.getCurrentChapterContent) throw new ReaderError('El formato no soporta renderizado de contenido');
+  if (!readerDoc.getCurrentChapterContent)
+    throw new ReaderError('El formato no soporta renderizado de contenido');
 
   const htmlContent = await readerDoc.getCurrentChapterContent();
   const resolvedHtml = await resolveImagesInHtml(readerDoc, htmlContent);
@@ -251,8 +309,10 @@ async function updateChapterInfo(readerDoc: ReaderDocument): Promise<void> {
 function setupNavigation(readerDoc: ReaderDocument, preferences: ReaderPreferences): void {
   const btnPrev = document.getElementById('prev-page');
   const btnNext = document.getElementById('next-page');
-  if (btnPrev) btnPrev.addEventListener('click', () => navigateChapter(readerDoc, preferences, 'previous'));
-  if (btnNext) btnNext.addEventListener('click', () => navigateChapter(readerDoc, preferences, 'next'));
+  if (btnPrev)
+    btnPrev.addEventListener('click', () => navigateChapter(readerDoc, preferences, 'previous'));
+  if (btnNext)
+    btnNext.addEventListener('click', () => navigateChapter(readerDoc, preferences, 'next'));
 }
 
 async function syncLocator(): Promise<void> {
@@ -262,7 +322,11 @@ async function syncLocator(): Promise<void> {
   renderNotesList(currentNotes);
 }
 
-async function navigateChapter(readerDoc: ReaderDocument, preferences: ReaderPreferences, direction: 'next' | 'previous'): Promise<void> {
+async function navigateChapter(
+  readerDoc: ReaderDocument,
+  preferences: ReaderPreferences,
+  direction: 'next' | 'previous',
+): Promise<void> {
   try {
     if (direction === 'next') await readerDoc.goNext();
     else await readerDoc.goPrevious();
@@ -320,9 +384,16 @@ function setupDrawer(): void {
     btn.addEventListener('click', () => {
       const panelId = (btn as HTMLElement).dataset.panel;
       if (!panelId) return;
-      if (currentPanel === panelId) { closeDrawer(); return; }
+      if (currentPanel === panelId) {
+        closeDrawer();
+        return;
+      }
       const titles: Record<string, string> = {
-        info: 'Información', toc: 'Índice', search: 'Buscar', notes: 'Notas', settings: 'Ajustes de lectura',
+        info: 'Información',
+        toc: 'Índice',
+        search: 'Buscar',
+        notes: 'Notas',
+        settings: 'Ajustes de lectura',
       };
       openDrawer(panelId, titles[panelId] ?? panelId);
     });
@@ -348,7 +419,7 @@ function setupZen(): void {
    Settings: theme, font, size, line-height
    ========================================================================== */
 
-function setupSettings(preferences: ReaderPreferences): void {
+function setupSettings(_preferences: ReaderPreferences): void {
   const reader = document.getElementById('reader');
   const page = document.getElementById('page');
   if (!reader || !page) return;
@@ -409,27 +480,31 @@ async function renderTOC(readerDoc: ReaderDocument): Promise<void> {
   const doc = readerDoc as unknown as Record<string, unknown>;
   const getTOC = doc.getTOC as (() => Promise<Array<{ title: string; href?: string }>>) | undefined;
   if (!getTOC) {
-    tocPanel.innerHTML = '<p style="color:var(--read-tx-lo);font-size:14px">No hay índice disponible.</p>';
+    tocPanel.innerHTML =
+      '<p style="color:var(--read-tx-lo);font-size:14px">No hay índice disponible.</p>';
     return;
   }
 
   try {
     const toc = await getTOC();
     if (!toc || toc.length === 0) {
-      tocPanel.innerHTML = '<p style="color:var(--read-tx-lo);font-size:14px">No hay índice disponible.</p>';
+      tocPanel.innerHTML =
+        '<p style="color:var(--read-tx-lo);font-size:14px">No hay índice disponible.</p>';
       return;
     }
 
     const getCurrentIdx = doc.getCurrentChapterIndex as (() => Promise<number>) | undefined;
     const currentIndex = getCurrentIdx ? await getCurrentIdx() : -1;
 
-    tocPanel.innerHTML = toc.map((item: { title: string; href?: string }, i: number) => {
-      const isCurrent = i === currentIndex;
-      return `<button class="toc-item${isCurrent ? ' current' : ''}" data-chapter="${i}">
+    tocPanel.innerHTML = toc
+      .map((item: { title: string; href?: string }, i: number) => {
+        const isCurrent = i === currentIndex;
+        return `<button class="toc-item${isCurrent ? ' current' : ''}" data-chapter="${i}">
         <span class="n">${i + 1}</span>
         <span class="t">${item.title}</span>
       </button>`;
-    }).join('');
+      })
+      .join('');
 
     tocPanel.querySelectorAll('.toc-item').forEach((btn) => {
       btn.addEventListener('click', async () => {
@@ -444,7 +519,8 @@ async function renderTOC(readerDoc: ReaderDocument): Promise<void> {
       });
     });
   } catch {
-    tocPanel.innerHTML = '<p style="color:var(--read-tx-lo);font-size:14px">Error al cargar el índice.</p>';
+    tocPanel.innerHTML =
+      '<p style="color:var(--read-tx-lo);font-size:14px">Error al cargar el índice.</p>';
   }
 }
 
@@ -495,7 +571,11 @@ function setupBack(): void {
    Carga de documento
    ========================================================================== */
 
-async function loadDocument(uri: string, format: SupportedFormat, preloadedData?: Uint8Array): Promise<ReaderDocument> {
+async function loadDocument(
+  uri: string,
+  format: SupportedFormat,
+  preloadedData?: Uint8Array,
+): Promise<ReaderDocument> {
   switch (format) {
     case 'epub': {
       const doc = new EpubReaderDocument({ uri, name: '' });
@@ -534,7 +614,9 @@ declare global {
     __pendingNotes?: PendingNoteItem[];
     __pendingNoteUpdates?: PendingNoteUpdateItem[];
     __pendingNoteDelete?: string | null;
-    __updateNotes?: (notes: Array<{ id: string; body: string; createdAt: number; locator: string }>) => void;
+    __updateNotes?: (
+      notes: Array<{ id: string; body: string; createdAt: number; locator: string }>,
+    ) => void;
     __noteSaved?: () => void;
     __noteError?: (message: string) => void;
     __goToChapter?: (idx: number) => Promise<void>;
@@ -543,16 +625,20 @@ declare global {
   }
 }
 
-function log(...args: unknown[]): void { console.log('[reader-entry]', ...args); }
-
-function renderInfoPanel(metadata: { title: string; author?: string; coverImage?: string; format: string; rank: number }): void {
+function renderInfoPanel(metadata: {
+  title: string;
+  author?: string;
+  coverImage?: string;
+  format: string;
+  rank: number;
+}): void {
   const panel = document.getElementById('panel-info');
   if (!panel) return;
 
   const rankValue = metadata.rank ?? 0;
   const gradId = `reader-half-star`;
 
-  const authorLast = metadata.author ? metadata.author.split(' ').pop() ?? '' : '';
+  const authorLast = metadata.author ? (metadata.author.split(' ').pop() ?? '') : '';
   const glyphs = ['Η', 'Θ', 'Β', 'Α', 'C', '∞', 'H', '⁂', 'Μ', '❦', 'G', 'B', 'Σ', 'Ω', 'Δ', 'Φ'];
   let hash = 0;
   const idStr = metadata.title;
@@ -562,8 +648,12 @@ function renderInfoPanel(metadata: { title: string; author?: string; coverImage?
   const glyph = glyphs[Math.abs(hash) % glyphs.length];
 
   const palettes: [string, string][] = [
-    ['#3a2e5c', '#6b4ea3'], ['#173a34', '#2f6d61'], ['#4a2b2b', '#8a3f3f'],
-    ['#2c3a52', '#4a6a8a'], ['#453520', '#8a6a34'], ['#3a1f2e', '#7a3a55'],
+    ['#3a2e5c', '#6b4ea3'],
+    ['#173a34', '#2f6d61'],
+    ['#4a2b2b', '#8a3f3f'],
+    ['#2c3a52', '#4a6a8a'],
+    ['#453520', '#8a6a34'],
+    ['#3a1f2e', '#7a3a55'],
   ];
   const palette = palettes[Math.abs(hash) % palettes.length]!;
   const pc1 = palette[0];
@@ -571,13 +661,15 @@ function renderInfoPanel(metadata: { title: string; author?: string; coverImage?
 
   panel.innerHTML = `
     <div class="info-content">
-      ${metadata.coverImage
-        ? `<img src="${metadata.coverImage}" class="info-cover" alt="Portada" />`
-        : `<div class="info-cover-placeholder" style="background:linear-gradient(150deg,${pc1},${pc2})">
+      ${
+        metadata.coverImage
+          ? `<img src="${metadata.coverImage}" class="info-cover" alt="Portada" />`
+          : `<div class="info-cover-placeholder" style="background:linear-gradient(150deg,${pc1},${pc2})">
             <div class="info-cover-author">${authorLast}</div>
             <div class="info-cover-title">${metadata.title}</div>
             <div class="info-cover-glyph">${glyph}</div>
-          </div>`}
+          </div>`
+      }
       <h3 class="info-title">${metadata.title}</h3>
       ${metadata.author ? `<p class="info-author">${metadata.author}</p>` : ''}
       <p class="info-format">Formato: ${metadata.format.toUpperCase()}</p>
@@ -591,16 +683,18 @@ function renderInfoPanel(metadata: { title: string; author?: string; coverImage?
           </defs>
         </svg>
         <div class="info-stars" role="radiogroup" aria-label="Rating del libro" data-rank="${rankValue}">
-          ${[1, 2, 3, 4, 5].map((s) => {
-            const isHalf = rankValue >= s - 0.5 && rankValue < s;
-            const isFull = rankValue >= s;
-            const fillClass = isFull ? 'star-full' : isHalf ? 'star-half' : 'star-empty';
-            return `<span class="star-btn ${fillClass}" data-star="${s}" role="radio" aria-checked="${isFull || isHalf}" aria-label="${s} estrella${s > 1 ? 's' : ''}">
+          ${[1, 2, 3, 4, 5]
+            .map((s) => {
+              const isHalf = rankValue >= s - 0.5 && rankValue < s;
+              const isFull = rankValue >= s;
+              const fillClass = isFull ? 'star-full' : isHalf ? 'star-half' : 'star-empty';
+              return `<span class="star-btn ${fillClass}" data-star="${s}" role="radio" aria-checked="${isFull || isHalf}" aria-label="${s} estrella${s > 1 ? 's' : ''}">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="${isFull ? 'var(--gold)' : isHalf ? `url(#${gradId})` : 'var(--line)'}" stroke="none">
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
               </svg>
             </span>`;
-          }).join('')}
+            })
+            .join('')}
         </div>
         <span class="info-rank-value">${rankValue > 0 ? rankValue : ''}</span>
       </div>
@@ -624,7 +718,10 @@ function renderInfoPanel(metadata: { title: string; author?: string; coverImage?
       btn.classList.toggle('star-empty', !isFull && !isHalf);
       const svg = btn.querySelector('svg');
       if (svg) {
-        svg.setAttribute('fill', isFull ? 'var(--gold)' : isHalf ? `url(#${gradId})` : 'var(--line)');
+        svg.setAttribute(
+          'fill',
+          isFull ? 'var(--gold)' : isHalf ? `url(#${gradId})` : 'var(--line)',
+        );
       }
       btn.setAttribute('aria-checked', String(isFull || isHalf));
     });
@@ -665,7 +762,9 @@ function renderInfoPanel(metadata: { title: string; author?: string; coverImage?
   });
 }
 
-function renderNotesList(notes: Array<{ id: string; body: string; createdAt: number; locator: string }>): void {
+function renderNotesList(
+  notes: Array<{ id: string; body: string; createdAt: number; locator: string }>,
+): void {
   const list = document.getElementById('notes-list');
   if (!list) return;
 
@@ -841,7 +940,9 @@ async function main(): Promise<void> {
     };
 
     /* --- Notes update from host --- */
-    window.__updateNotes = (notes: Array<{ id: string; body: string; createdAt: number; locator: string }>) => {
+    window.__updateNotes = (
+      notes: Array<{ id: string; body: string; createdAt: number; locator: string }>,
+    ) => {
       currentNotes = notes;
       renderNotesList(currentNotes);
     };
@@ -863,7 +964,10 @@ async function main(): Promise<void> {
         btn.classList.toggle('star-empty', !isFull && !isHalf);
         const svg = btn.querySelector('svg');
         if (svg) {
-          svg.setAttribute('fill', isFull ? 'var(--gold)' : isHalf ? `url(#${gradId})` : 'var(--line)');
+          svg.setAttribute(
+            'fill',
+            isFull ? 'var(--gold)' : isHalf ? `url(#${gradId})` : 'var(--line)',
+          );
         }
         btn.setAttribute('aria-checked', String(isFull || isHalf));
       });

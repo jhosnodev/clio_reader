@@ -13,20 +13,20 @@
 
 ## Formatos soportados
 
-| Formato | Descripción |
-|---------|-------------|
-| `.epub` | Libros electrónicos estándar |
-| `.pdf` | Documentos PDF |
-| `.cbz` | Cómics comprimidos (imágenes ZIP) |
-| `.md`  | Documentos Markdown              |
+| Formato | Descripción                       |
+| ------- | --------------------------------- |
+| `.epub` | Libros electrónicos estándar      |
+| `.pdf`  | Documentos PDF                    |
+| `.cbz`  | Cómics comprimidos (imágenes ZIP) |
+| `.md`   | Documentos Markdown               |
 
 ## Requisitos previos
 
-| Requisito | Versión |
-|-----------|---------|
-| Node.js | 22+ |
-| pnpm | 10.15.1 |
-| Git | Cualquier versión reciente |
+| Requisito | Versión                    |
+| --------- | -------------------------- |
+| Node.js   | 22+                        |
+| pnpm      | 10.15.1                    |
+| Git       | Cualquier versión reciente |
 
 > No se requiere Rust, .NET ni ninguna otra herramienta. El proyecto es 100% TypeScript/JavaScript.
 
@@ -85,23 +85,23 @@ start "apps/desktop/release/Clio Reader Setup 0.1.0.exe"
 
 ### Raíz del monorepo
 
-| Script | Descripción |
-|--------|-------------|
-| `pnpm build` | Build recursivo de todos los paquetes |
-| `pnpm check` | Type-check completo |
-| `pnpm format` | Formateo de código con Prettier |
-| `pnpm lint` | Linting con ESLint |
-| `pnpm test` | Ejecutar tests con Vitest |
+| Script          | Descripción                                        |
+| --------------- | -------------------------------------------------- |
+| `pnpm build`    | Build recursivo de todos los paquetes              |
+| `pnpm check`    | Type-check completo                                |
+| `pnpm format`   | Formateo de código con Prettier                    |
+| `pnpm lint`     | Linting con ESLint                                 |
+| `pnpm test`     | Ejecutar tests con Vitest                          |
 | `pnpm validate` | Validación completa (format + check + lint + test) |
 
 ### Aplicación desktop
 
-| Script | Descripción |
-|--------|-------------|
-| `pnpm dev` | Desarrollo con HMR (Electron) |
-| `pnpm build` | Build de producción |
-| `pnpm build:win` | Build + instalador Windows NSIS |
-| `pnpm build:win:portable` | Build portable Windows |
+| Script                    | Descripción                     |
+| ------------------------- | ------------------------------- |
+| `pnpm dev`                | Desarrollo con HMR (Electron)   |
+| `pnpm build`              | Build de producción             |
+| `pnpm build:win`          | Build + instalador Windows NSIS |
+| `pnpm build:win:portable` | Build portable Windows          |
 
 ## Estructura del proyecto
 
@@ -146,17 +146,17 @@ La documentación completa se encuentra en [`documentation/`](./documentation/):
 
 ## Estado del proyecto
 
-| Fase | Estado |
-|------|--------|
-| Fase 0 — Preparación repo | ✅ Completa |
-| Fase 1 — Spike Windows | ✅ Completa |
-| Fase 2 — Dominio/contratos | ✅ Completa |
-| Fase 3 — Biblioteca/persistencia | ✅ Completa |
-| Fase 4 — Renderer CBZ | ✅ Completa |
-| Fase 5 — Renderer PDF | ✅ Completa |
-| Fase 6 — Renderer EPUB | ✅ Completa |
-| Fase 7 — Progreso/settings | ⚠️ Parcial |
-| Fase 8 — Marcadores/notas | ❌ Pendiente |
+| Fase                             | Estado       |
+| -------------------------------- | ------------ |
+| Fase 0 — Preparación repo        | ✅ Completa  |
+| Fase 1 — Spike Windows           | ✅ Completa  |
+| Fase 2 — Dominio/contratos       | ✅ Completa  |
+| Fase 3 — Biblioteca/persistencia | ✅ Completa  |
+| Fase 4 — Renderer CBZ            | ✅ Completa  |
+| Fase 5 — Renderer PDF            | ✅ Completa  |
+| Fase 6 — Renderer EPUB           | ✅ Completa  |
+| Fase 7 — Progreso/settings       | ⚠️ Parcial   |
+| Fase 8 — Marcadores/notas        | ❌ Pendiente |
 
 ## Plataformas objetivo
 

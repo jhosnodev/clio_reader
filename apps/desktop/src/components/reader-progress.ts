@@ -8,10 +8,18 @@ export function getResumePositionOrder(
   noteLocator?: ReaderLocator,
   savedLocator?: ReaderLocator,
 ): number | undefined {
-  if (noteLocator && 'positionOrder' in noteLocator && typeof noteLocator.positionOrder === 'number') {
+  if (
+    noteLocator &&
+    'positionOrder' in noteLocator &&
+    typeof noteLocator.positionOrder === 'number'
+  ) {
     return noteLocator.positionOrder;
   }
-  if (savedLocator && 'positionOrder' in savedLocator && typeof savedLocator.positionOrder === 'number') {
+  if (
+    savedLocator &&
+    'positionOrder' in savedLocator &&
+    typeof savedLocator.positionOrder === 'number'
+  ) {
     return savedLocator.positionOrder;
   }
   return undefined;

@@ -1,23 +1,24 @@
 # Plan: Manejo de Metadata de Libros
 
 ## Objetivo
+
 Corregir y completar la metadata que se muestra en los cards de libros: título real del EPUB, autor real, portada real, rank/rating interactivo, y progreso de lectura desde la DB.
 
 ## Estado Actual
 
-| Campo | Estado | Acción |
-|---|---|---|
-| Tag estatus | ✅ `Book.readingStatus` | Ninguna |
-| Porcentaje de lectura | ✅ `ReadingProgress.percent` | Consultar DB en BookCard |
-| Ruta archivo | ✅ `Book.uri` | Ninguna |
-| Marcadores | ✅ `Bookmark[]` CRUD completo | Ninguna |
-| Notas | ✅ `Note[]` CRUD completo | Ninguna |
-| Última fecha apertura | ✅ `Book.lastOpenedAt` | Ninguna |
-| Fecha agregado | ✅ `Book.addedAt` | Ninguna |
-| **Rank (rating)** | ❌ No existe | **Crear** |
-| **Cover image** | ❌ No existe | **Crear** |
-| **Título real EPUB** | ⚠️ Usa filename | **Corregir** |
-| **Autor real EPUB** | ⚠️ No se extrae | **Corregir** |
+| Campo                 | Estado                        | Acción                   |
+| --------------------- | ----------------------------- | ------------------------ |
+| Tag estatus           | ✅ `Book.readingStatus`       | Ninguna                  |
+| Porcentaje de lectura | ✅ `ReadingProgress.percent`  | Consultar DB en BookCard |
+| Ruta archivo          | ✅ `Book.uri`                 | Ninguna                  |
+| Marcadores            | ✅ `Bookmark[]` CRUD completo | Ninguna                  |
+| Notas                 | ✅ `Note[]` CRUD completo     | Ninguna                  |
+| Última fecha apertura | ✅ `Book.lastOpenedAt`        | Ninguna                  |
+| Fecha agregado        | ✅ `Book.addedAt`             | Ninguna                  |
+| **Rank (rating)**     | ❌ No existe                  | **Crear**                |
+| **Cover image**       | ❌ No existe                  | **Crear**                |
+| **Título real EPUB**  | ⚠️ Usa filename               | **Corregir**             |
+| **Autor real EPUB**   | ⚠️ No se extrae               | **Corregir**             |
 
 ## Decisiones de Diseño
 
@@ -34,22 +35,26 @@ Corregir y completar la metadata que se muestra en los cards de libros: título 
 **Archivo:** `packages/domain/src/index.ts`
 
 ### Cambios:
+
 1. Agregar tipo `Rank`:
+
 ```typescript
 export type Rank = 0 | 0.5 | 1 | 1.5 | 2 | 2.5 | 3 | 3.5 | 4 | 4.5 | 5;
 ```
 
 2. Agregar campos a la interfaz `Book`:
+
 ```typescript
 readonly rank?: Rank;
 readonly coverImage?: string; // base64 data URI
 ```
 
 3. Agregar función `normalizeRank()`:
+
 ```typescript
 export function normalizeRank(rank: number): Rank {
   const clamped = Math.min(5, Math.max(0, rank));
-  return Math.round(clamped * 2) / 2 as Rank;
+  return (Math.round(clamped * 2) / 2) as Rank;
 }
 ```
 
@@ -62,7 +67,9 @@ export function normalizeRank(rank: number): Rank {
 **Archivo:** `packages/reader-epub/src/epub-parser.ts`
 
 ### Cambios:
+
 1. Agregar a `OpfMetadata`:
+
 ```typescript
 readonly coverImageId?: string;
 ```
@@ -72,11 +79,12 @@ readonly coverImageId?: string;
    - Item con `properties="cover-image"` del manifest (EPUB 3)
 
 3. Agregar función `extractCoverImage()`:
+
 ```typescript
 export async function extractCoverImage(
   data: Uint8Array,
-  parsed: ParsedEpub
-): Promise<{ data: Uint8Array; mimeType: string } | null>
+  parsed: ParsedEpub,
+): Promise<{ data: Uint8Array; mimeType: string } | null>;
 ```
 
 ---
@@ -86,8 +94,10 @@ export async function extractCoverImage(
 **Archivo:** `packages/library/src/import-book.ts`
 
 ### Cambios:
+
 1. `ImportBookInput.title` y `.author` ahora opcionales
 2. Agregar campos:
+
 ```typescript
 readonly rank?: Rank;
 readonly coverImage?: string;
@@ -96,6 +106,7 @@ readonly coverImage?: string;
 **Archivo:** `apps/desktop/src/App.tsx`
 
 ### Cambios:
+
 1. En `handleImportBook()`, si el formato es EPUB:
    - Leer el archivo como `Uint8Array`
    - Llamar `parseEpub()` para obtener metadata del OPF
@@ -111,6 +122,7 @@ readonly coverImage?: string;
 **Archivo:** `packages/storage/src/index.ts`
 
 ### Cambios:
+
 1. Incrementar `CURRENT_SCHEMA_VERSION` a `2`
 2. En `migrateState()`, manejar books que no tengan los campos nuevos:
    - `rank` → `undefined`
@@ -123,6 +135,7 @@ readonly coverImage?: string;
 **Archivo:** `apps/desktop/src/components/LibraryView.tsx`
 
 ### Cambios:
+
 1. **Cover image**: En `BookCard`, si `book.coverImage` existe, renderizar `<img src={book.coverImage}>` con `object-fit: cover`. Fallback al gradiente placeholder actual.
 
 2. **Rank interactivo**: Reemplazar estrellas decorativas (líneas 709-715) con componente que:
@@ -142,7 +155,9 @@ readonly coverImage?: string;
 **Archivo:** `apps/mobile/src/components/BookCard.tsx`
 
 ### Cambios:
+
 Mismos cambios que desktop:
+
 - Cover image real con fallback a placeholder
 - Rank interactivo con medias estrellas
 - Progress real desde DB
@@ -154,6 +169,7 @@ Mismos cambios que desktop:
 **Archivo:** `docs/cover-image-optimization.md`
 
 Documentar:
+
 - Por qué se usó base64 en v1
 - Cuándo migrar a archivos separados (umbral de ~100 libros)
 - Cómo hacer la migración (guardar base64 como archivo, actualizar path)
@@ -163,21 +179,21 @@ Documentar:
 
 ## Archivos a Modificar
 
-| # | Archivo | Cambios |
-|---|---|---|
-| 1 | `packages/domain/src/index.ts` | Tipo Rank, campos Book, normalizeRank |
-| 2 | `packages/reader-epub/src/epub-parser.ts` | Cover image extraction |
-| 3 | `packages/library/src/import-book.ts` | ImportBookInput actualizado |
-| 4 | `apps/desktop/src/App.tsx` | Importar metadata real del EPUB |
-| 5 | `packages/storage/src/index.ts` | Migración schema v2 |
-| 6 | `apps/desktop/src/components/LibraryView.tsx` | Cover real, rank, progress |
-| 7 | `apps/mobile/src/components/BookCard.tsx` | Cover real, rank, progress |
+| #   | Archivo                                       | Cambios                               |
+| --- | --------------------------------------------- | ------------------------------------- |
+| 1   | `packages/domain/src/index.ts`                | Tipo Rank, campos Book, normalizeRank |
+| 2   | `packages/reader-epub/src/epub-parser.ts`     | Cover image extraction                |
+| 3   | `packages/library/src/import-book.ts`         | ImportBookInput actualizado           |
+| 4   | `apps/desktop/src/App.tsx`                    | Importar metadata real del EPUB       |
+| 5   | `packages/storage/src/index.ts`               | Migración schema v2                   |
+| 6   | `apps/desktop/src/components/LibraryView.tsx` | Cover real, rank, progress            |
+| 7   | `apps/mobile/src/components/BookCard.tsx`     | Cover real, rank, progress            |
 
 ## Archivos a Crear
 
-| # | Archivo | Contenido |
-|---|---|---|
-| 1 | `docs/cover-image-optimization.md` | Documentación de optimización futura |
+| #   | Archivo                            | Contenido                            |
+| --- | ---------------------------------- | ------------------------------------ |
+| 1   | `docs/cover-image-optimization.md` | Documentación de optimización futura |
 
 ---
 

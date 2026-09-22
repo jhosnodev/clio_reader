@@ -21,6 +21,31 @@ function copyPreloadScript(): Plugin {
     configResolved() {
       mkdirSync('dist-electron', { recursive: true });
       copyFileSync('electron/preload.cjs', 'dist-electron/preload.cjs');
+      copyFileSync(
+        '../../packages/storage/drizzle/0000_initial.sql',
+        'dist-electron/0000_initial.sql',
+      );
+    },
+  };
+}
+
+function nodeGlobals(): Plugin {
+  return {
+    name: 'node-globals',
+    enforce: 'pre',
+    transform(code, id) {
+      if (id.endsWith('electron/main.ts') || id.includes('electron/main.ts')) {
+        return {
+          code:
+            `
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+globalThis.__filename = fileURLToPath(import.meta.url);
+globalThis.__dirname = dirname(globalThis.__filename);
+` + code,
+          map: null,
+        };
+      }
     },
   };
 }
@@ -43,6 +68,23 @@ export default defineConfig({
     electron([
       {
         entry: 'electron/main.ts',
+        vite: {
+          plugins: [nodeGlobals()],
+          build: {
+            rollupOptions: {
+              external: ['better-sqlite3'],
+            },
+          },
+          resolve: {
+            alias: {
+              '@clio-reader/domain': resolve(__dirname, '../../packages/domain/src'),
+              '@clio-reader/storage': resolve(__dirname, '../../packages/storage/src'),
+              '@clio-reader/library': resolve(__dirname, '../../packages/library/src'),
+              '@clio-reader/annotations': resolve(__dirname, '../../packages/annotations/src'),
+              '@clio-reader/reader-core': resolve(__dirname, '../../packages/reader-core/src'),
+            },
+          },
+        },
       },
     ]),
     electronRenderer(),

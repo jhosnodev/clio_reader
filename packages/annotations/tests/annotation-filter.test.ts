@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Bookmark, Note } from '@clio-reader/domain';
+import type { Bookmark } from '@clio-reader/domain';
 
 import {
   filterByDateRange,
@@ -32,24 +32,6 @@ function makeBookmark(
     return { ...base, label: overrides.label };
   }
   return base;
-}
-
-function makeNote(
-  overrides: Partial<{
-    id: string;
-    body: string;
-    createdAt: number;
-    locator: { format: 'epub'; href: string };
-  }> = {},
-): Note {
-  return {
-    id: overrides.id ?? 'note-1',
-    bookId: 'book-1',
-    locator: overrides.locator ?? { format: 'epub' as const, href: 'ch1' },
-    body: overrides.body ?? 'Note body',
-    createdAt: overrides.createdAt ?? now,
-    updatedAt: overrides.createdAt ?? now,
-  };
 }
 
 describe('AnnotationFilter', () => {

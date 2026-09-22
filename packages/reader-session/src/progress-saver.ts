@@ -49,7 +49,11 @@ export class ProgressSaver {
     if (this.pendingBookId !== null && this.pendingLocator !== null) {
       const bookId = this.pendingBookId;
       const locator = this.pendingLocator;
-      const progress = createReadingProgress({ bookId, locator, percent: locator.progression ?? 0 });
+      const progress = createReadingProgress({
+        bookId,
+        locator,
+        percent: locator.progression ?? 0,
+      });
       await repository.saveProgress(progress);
       this.pendingBookId = null;
       this.pendingLocator = null;

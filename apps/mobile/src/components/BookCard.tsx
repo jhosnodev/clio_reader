@@ -114,15 +114,13 @@ export function BookCard({
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       <View style={[styles.cover, { backgroundColor: c1 }]}>
         {coverImage ? (
-          <Image
-            source={{ uri: coverImage }}
-            style={styles.coverImage}
-            resizeMode="cover"
-          />
+          <Image source={{ uri: coverImage }} style={styles.coverImage} resizeMode="cover" />
         ) : (
           <View style={styles.coverArt}>
             <Text style={styles.coverAuthor}>{authorLast}</Text>
-            <Text style={styles.coverTitle} numberOfLines={3}>{title}</Text>
+            <Text style={styles.coverTitle} numberOfLines={3}>
+              {title}
+            </Text>
             <Text style={styles.coverGlyph}>{glyph}</Text>
           </View>
         )}
@@ -140,8 +138,14 @@ export function BookCard({
         )}
       </View>
       <View style={styles.cardBody}>
-        <Text style={styles.cardTitle} numberOfLines={2}>{title}</Text>
-        {author && <Text style={styles.cardAuthor} numberOfLines={1}>{author}</Text>}
+        <Text style={styles.cardTitle} numberOfLines={2}>
+          {title}
+        </Text>
+        {author && (
+          <Text style={styles.cardAuthor} numberOfLines={1}>
+            {author}
+          </Text>
+        )}
         <View style={styles.cardMeta}>
           {lastOpenedAt ? (
             <Text style={styles.metaText}>Visto {relativeDate(lastOpenedAt)}</Text>
@@ -152,7 +156,7 @@ export function BookCard({
             <Text style={[styles.metaText, { color: '#4fa393' }]}>{progressPercent}% leído</Text>
           )}
         </View>
-        {(rank !== undefined && rank > 0 || onSaveRank) && (
+        {((rank !== undefined && rank > 0) || onSaveRank) && (
           <View style={styles.rankContainer}>
             <View
               style={styles.rankStarsRow}

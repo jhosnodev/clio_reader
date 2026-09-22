@@ -2,17 +2,17 @@
 
 ## 1. Estado del proyecto
 
-| Fase | Nombre | Estado |
-|------|--------|--------|
-| 0 | Preparación repo | ✅ Completa |
-| 1 | Spike Windows/Android | ✅ Completa |
-| 2 | Dominio/contratos | ✅ Completa |
-| 3 | Biblioteca/persistencia | ✅ Completa |
-| 4 | Renderer CBZ | ✅ Completa |
-| 5 | Renderer PDF | ✅ Completa |
-| 6 | Renderer EPUB | ✅ Completa |
-| 7 | Progreso/settings | ⚠️ Parcial |
-| 8 | Marcadores/notas | ⚠️ Parcial |
+| Fase | Nombre                  | Estado      |
+| ---- | ----------------------- | ----------- |
+| 0    | Preparación repo        | ✅ Completa |
+| 1    | Spike Windows/Android   | ✅ Completa |
+| 2    | Dominio/contratos       | ✅ Completa |
+| 3    | Biblioteca/persistencia | ✅ Completa |
+| 4    | Renderer CBZ            | ✅ Completa |
+| 5    | Renderer PDF            | ✅ Completa |
+| 6    | Renderer EPUB           | ✅ Completa |
+| 7    | Progreso/settings       | ⚠️ Parcial  |
+| 8    | Marcadores/notas        | ⚠️ Parcial  |
 
 ## 2. Arquitectura
 
@@ -32,20 +32,20 @@ Electron/Windows o Expo/Android
 
 ### Patrones
 
-| Patrón | Uso |
-|--------|-----|
-| Adapter | Convierte API de cada renderer en contrato común |
-| Factory | Construye adaptador según formato detectado |
-| Strategy | EPUB, PDF y CBZ resuelven navegación distinto |
-| Repository | Aísla SQLite, JSON o AsyncStorage |
+| Patrón        | Uso                                                           |
+| ------------- | ------------------------------------------------------------- |
+| Adapter       | Convierte API de cada renderer en contrato común              |
+| Factory       | Construye adaptador según formato detectado                   |
+| Strategy      | EPUB, PDF y CBZ resuelven navegación distinto                 |
+| Repository    | Aísla SQLite, JSON o AsyncStorage                             |
 | State machine | Controla idle → opening → ready → navigating → error → closed |
 
 ### Architecture Decision Records
 
-| ADR | Decisión |
-|-----|----------|
+| ADR                                                      | Decisión                                                                |
+| -------------------------------------------------------- | ----------------------------------------------------------------------- |
 | `documentation/adr/0001-dominio-y-persistencia-local.md` | Dominio TypeScript independiente, repositorio local, esquema versionado |
-| `documentation/adr/0002-reader-core-state-machine.md` | ReaderFactory, detectBookFormat, máquina de estados de sesión |
+| `documentation/adr/0002-reader-core-state-machine.md`    | ReaderFactory, detectBookFormat, máquina de estados de sesión           |
 
 ## 3. Tech stack
 
@@ -92,6 +92,7 @@ packages/
 type BookFormat = 'epub' | 'pdf' | 'cbz' | 'md';
 type ReadingStatus = 'unread' | 'opened' | 'reading';
 type BookStatus = 'available' | 'missing';
+type PaletteMode = 'dark' | 'light';
 
 interface Book {
   id: string;
@@ -105,23 +106,22 @@ interface Book {
   readingStatus?: ReadingStatus;
   language?: string;
   status: BookStatus;
+  rank?: Rank;
+  coverImage?: string;
 }
 
 interface ReadingProgress {
   bookId: string;
-  locator: string;
+  locator: ReaderLocator;
   percent: number;
-  positionOrder?: number;
-  zoom?: number;
-  scrollX?: number;
-  scrollY?: number;
   updatedAt: number;
 }
 
 interface ReaderPreferences {
   theme: 'light' | 'dark' | 'sepia' | 'custom';
-  backgroundColor?: string;
-  foregroundColor?: string;
+  backgroundColor: string;
+  foregroundColor: string;
+  accentColor: string;
   fontFamily: 'system' | 'serif' | 'sans' | 'dyslexic';
   fontScale: number;
   lineHeight: number;
@@ -132,21 +132,38 @@ interface ReaderPreferences {
 interface Bookmark {
   id: string;
   bookId: string;
-  locator: string;
-  positionOrder?: number;
+  locator: ReaderLocator;
   label?: string;
   createdAt: number;
+  updatedAt?: number;
 }
 
 interface Note {
   id: string;
   bookId: string;
-  locator: string;
-  positionOrder?: number;
+  locator: ReaderLocator;
   selectedText?: string;
   body: string;
   createdAt: number;
   updatedAt: number;
+}
+
+interface Highlight {
+  id: string;
+  bookId: string;
+  locatorStart: ReaderLocator;
+  locatorEnd: ReaderLocator;
+  selectedText?: string;
+  color: string;
+  style: 'highlight' | 'underline';
+  note?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+interface UserSettings {
+  paletteId: string;
+  mode: PaletteMode;
 }
 ```
 
@@ -217,12 +234,12 @@ function detectBookFormat(filename: string, mimeType?: string): BookFormat;
 
 El locator es específico por formato y es la fuente de verdad para reanudar. `percent` solo se usa para mostrar en UI.
 
-| Formato | Locator | Ejemplo | Notas |
-|---------|---------|---------|-------|
-| EPUB | CFI o capítulo + posición | `epubcfi(/6/4!/4/2/1:0)` | positionOrder calculado por adaptador |
-| PDF | Página + viewport | `{page: 5, zoom: 1.5, width: 800}` | Incluye dimensiones del viewport |
-| CBZ | Índice de imagen | `{imageIndex: 12}` | Orden natural por nombre |
-| MD | Offset o heading | `{line: 45, heading: "## Intro"}` | Contexto textual para recuperación |
+| Formato | Locator                   | Ejemplo                            | Notas                                 |
+| ------- | ------------------------- | ---------------------------------- | ------------------------------------- |
+| EPUB    | CFI o capítulo + posición | `epubcfi(/6/4!/4/2/1:0)`           | positionOrder calculado por adaptador |
+| PDF     | Página + viewport         | `{page: 5, zoom: 1.5, width: 800}` | Incluye dimensiones del viewport      |
+| CBZ     | Índice de imagen          | `{imageIndex: 12}`                 | Orden natural por nombre              |
+| MD      | Offset o heading          | `{line: 45, heading: "## Intro"}`  | Contexto textual para recuperación    |
 
 ### Recuperación de locator
 
@@ -236,14 +253,14 @@ idle → opening → ready → navigating → error → closed
                   └─────────┘
 ```
 
-| Estado | Descripción |
-|--------|-------------|
-| `idle` | Sin documento abierto |
-| `opening` | Cargando documento |
-| `ready` | Documento listo para lectura |
-| `navigating` | Navegando entre páginas/capítulos |
-| `error` | Error recuperable (archivo corrupto, formato inválido) |
-| `closed` | Documento cerrado |
+| Estado       | Descripción                                            |
+| ------------ | ------------------------------------------------------ |
+| `idle`       | Sin documento abierto                                  |
+| `opening`    | Cargando documento                                     |
+| `ready`      | Documento listo para lectura                           |
+| `navigating` | Navegando entre páginas/capítulos                      |
+| `error`      | Error recuperable (archivo corrupto, formato inválido) |
+| `closed`     | Documento cerrado                                      |
 
 ### Transiciones inválidas
 
@@ -256,66 +273,76 @@ transitionReaderSession('idle', 'NAVIGATE') → InvalidSessionTransitionError
 
 ## 9. Persistencia y migraciones
 
-### KeyValueStore (abstracción)
+### Arquitectura por plataforma
+
+| Plataforma             | Motor                               | Paquete                        | Entry point                              |
+| ---------------------- | ----------------------------------- | ------------------------------ | ---------------------------------------- |
+| **Desktop** (Electron) | SQLite via Drizzle + better-sqlite3 | `@clio-reader/storage/drizzle` | `electron/main.ts` → `DrizzleRepository` |
+| **Mobile** (Expo)      | JSON via KeyValueStore              | `@clio-reader/storage`         | `bridges/storage.ts` → `LocalRepository` |
+
+### KeyValueStore (abstracción para mobile)
 
 ```typescript
 interface KeyValueStore {
-  get<T>(key: string): Promise<T | undefined>;
-  set<T>(key: string, value: T): Promise<void>;
-  delete(key: string): Promise<void>;
+  get(key: string): Promise<string | undefined>;
+  set(key: string, value: string): Promise<void>;
+  remove(key: string): Promise<void>;
 }
 ```
 
-### Implementaciones
+### LocalRepository (JSON - mobile)
 
-| Implementación | Uso |
-|----------------|-----|
-| `InMemoryKeyValueStore` | Tests deterministas |
-| `LocalStorageKeyValueStore` | Browser/Electron |
-| `AsyncStorageKeyValueStore` | React Native |
+Implementa `LibraryRepository` usando `KeyValueStore`. Persiste un único blob JSON bajo la clave `clio-reader.state`.
 
-### LocalRepository
+### DrizzleRepository (SQLite - desktop)
 
-Implementa `LibraryRepository` usando `KeyValueStore`. Satisface la interfaz structuralmente (duck typing).
+Implementa `LibraryRepository` usando Drizzle ORM + better-sqlite3. Tablas normalizadas con FK cascade, soft delete para sync, y FTS5 para búsqueda.
+
+### Migración JSON → SQLite (one-time)
+
+La función `migrateJsonToSqlite()` en `packages/storage/src/migrate-json.ts` migra datos existentes del JSON a SQLite al iniciar la app.
 
 ### Esquema versionado
 
 ```typescript
-const CURRENT_SCHEMA_VERSION = 1;
+const CURRENT_SCHEMA_VERSION = 3;
 
-interface AppState {
+interface PersistenceState {
   schemaVersion: number;
   books: Book[];
   progress: ReadingProgress[];
-  globalPreferences: ReaderPreferences;
+  preferences: {
+    global: ReaderPreferences;
+    byBook: Record<string, Partial<ReaderPreferences>>;
+  };
   bookmarks: Bookmark[];
   notes: Note[];
+  highlights: Highlight[];
+  userSettings: UserSettings;
 }
-
-// Migración entre versiones
-function migrateState(oldState: unknown, fromVersion: number): AppState;
 ```
 
 ### Persistencia de palette
 
 ```typescript
-// localStorage key: "clio-palette"
-// Valor: { id: string, mode: 'dark' | 'light' }
-// Default: { id: 'clio-3', mode: 'dark' } (Forest)
+// En SQLite: tabla user_settings (singleton, id=1)
+// En JSON (mobile): dentro de PersistenceState.userSettings
+// Default: { paletteId: 'clio-3', mode: 'dark' }
 ```
 
 ## 10. Error handling
 
 ### Clores de error
 
-| Error | Package | Uso |
-|-------|---------|-----|
-| `BookNotFoundError` | library | Libro no encontrado por id |
-| `DuplicateBookError` | library | Importar libro con id existente |
-| `BookmarkNotFoundError` | library | Marcador no encontrado |
-| `NoteNotFoundError` | library | Nota no encontrada |
-| `DomainValidationError` | domain | Datos de entidad inválidos |
-| `InvalidSessionTransitionError` | reader-core | Transición de estado inválida |
+| Error                           | Package     | Uso                             |
+| ------------------------------- | ----------- | ------------------------------- |
+| `BookNotFoundError`             | library     | Libro no encontrado por id      |
+| `DuplicateBookError`            | library     | Importar libro con id existente |
+| `BookmarkNotFoundError`         | library     | Marcador no encontrado          |
+| `NoteNotFoundError`             | library     | Nota no encontrada              |
+| `HighlightNotFoundError`        | library     | Highlight no encontrado         |
+| `DomainValidationError`         | domain      | Datos de entidad inválidos      |
+| `InvalidSessionTransitionError` | reader-core | Transición de estado inválida   |
 
 ### Patrones
 
@@ -337,15 +364,15 @@ function migrateState(oldState: unknown, fromVersion: number): AppState;
 
 ## 12. Validaciones y rangos
 
-| Campo | Rango válido | Default |
-|-------|--------------|---------|
-| `fontScale` | 0.8 – 2.0 | 1.0 |
-| `lineHeight` | 1.0 – 2.5 | 1.5 |
-| `theme` | light, dark, sepia, custom | dark |
-| `fontFamily` | system, serif, sans, dyslexic | system |
-| `margin` | compact, comfortable, wide | comfortable |
-| `readingDirection` | ltr, rtl | ltr |
-| `percent` | 0 – 100 | 0 |
+| Campo              | Rango válido                  | Default     |
+| ------------------ | ----------------------------- | ----------- |
+| `fontScale`        | 0.8 – 2.0                     | 1.0         |
+| `lineHeight`       | 1.0 – 2.5                     | 1.5         |
+| `theme`            | light, dark, sepia, custom    | dark        |
+| `fontFamily`       | system, serif, sans, dyslexic | system      |
+| `margin`           | compact, comfortable, wide    | comfortable |
+| `readingDirection` | ltr, rtl                      | ltr         |
+| `percent`          | 0 – 100                       | 0           |
 
 ### Colores
 
@@ -387,44 +414,45 @@ pnpm --filter @clio-reader/desktop build:win  # Build + instalador NSIS
 
 ### Cobertura por use case
 
-| Use case | Escenarios a probar |
-|----------|---------------------|
-| importBook | Happy path, duplicado, validación |
-| listBooks | Filtros, sorting, vacío |
-| getBook | Encontrado, no encontrado |
-| removeBook | Cascada, no encontrado |
-| updateProgress | Validación, debounce |
-| managePreferences | Globales, por libro, rangos |
-| manageBookmarks | CRUD, aislamiento |
-| manageNotes | CRUD, body vacío |
+| Use case          | Escenarios a probar               |
+| ----------------- | --------------------------------- |
+| importBook        | Happy path, duplicado, validación |
+| listBooks         | Filtros, sorting, vacío           |
+| getBook           | Encontrado, no encontrado         |
+| removeBook        | Cascada, no encontrado            |
+| updateProgress    | Validación, debounce              |
+| managePreferences | Globales, por libro, rangos       |
+| manageBookmarks   | CRUD, aislamiento                 |
+| manageNotes       | CRUD, body vacío                  |
 
 ## 15. Definición de terminado por feature
 
-| Requisito | Evidencia |
-|-----------|-----------|
-| Código | Tipado estricto, responsabilidades separadas, sin duplicación |
-| Pruebas | Unitarias y de integración; manual multiplataforma cuando aplique |
-| Errores | Estados de carga, vacío, error y recuperación definidos |
+| Requisito     | Evidencia                                                                      |
+| ------------- | ------------------------------------------------------------------------------ |
+| Código        | Tipado estricto, responsabilidades separadas, sin duplicación                  |
+| Pruebas       | Unitarias y de integración; manual multiplataforma cuando aplique              |
+| Errores       | Estados de carga, vacío, error y recuperación definidos                        |
 | Documentación | README o especificación en `documentation/features/` si complejidad lo amerita |
-| Datos | Migración y compatibilidad si cambia esquema |
-| Accesibilidad | Labels, foco, teclado o targets táctiles |
-| Rendimiento | Métrica o límite para operaciones costosas |
-| Revisión | PR revisado y CI verde |
+| Datos         | Migración y compatibilidad si cambia esquema                                   |
+| Accesibilidad | Labels, foco, teclado o targets táctiles                                       |
+| Rendimiento   | Métrica o límite para operaciones costosas                                     |
+| Revisión      | PR revisado y CI verde                                                         |
 
 ## 16. Workflow de desarrollo
 
 ### Branches
 
-| Tipo | Prefijo | Ejemplo |
-|------|---------|---------|
-| Feature | `feature/` | `feature/bookmarks-crud` |
-| Fix | `fix/` | `fix/epub-locator-recovery` |
-| Chore | `chore/` | `chore/update-deps` |
-| Refactor | `refactor/` | `refactor/reader-session` |
+| Tipo     | Prefijo     | Ejemplo                     |
+| -------- | ----------- | --------------------------- |
+| Feature  | `feature/`  | `feature/bookmarks-crud`    |
+| Fix      | `fix/`      | `fix/epub-locator-recovery` |
+| Chore    | `chore/`    | `chore/update-deps`         |
+| Refactor | `refactor/` | `refactor/reader-session`   |
 
 ### Commits
 
 Convencional commits:
+
 ```
 feat: add bookmark CRUD operations
 fix: handle missing EPUB chapter gracefully
@@ -442,14 +470,14 @@ test: add integration tests for progress persistence
 
 ## 17. Performance objetivo
 
-| Métrica | Objetivo |
-|---------|----------|
-| Tiempo a primera página | < 2s |
-| Memoria (PDF 100 páginas) | < 150MB |
-| Scroll latency | < 16ms (60fps) |
-| Importación (100MB) | < 5s |
-| Apertura CBZ | < 1s |
-| Apertura EPUB | < 1.5s |
+| Métrica                   | Objetivo       |
+| ------------------------- | -------------- |
+| Tiempo a primera página   | < 2s           |
+| Memoria (PDF 100 páginas) | < 150MB        |
+| Scroll latency            | < 16ms (60fps) |
+| Importación (100MB)       | < 5s           |
+| Apertura CBZ              | < 1s           |
+| Apertura EPUB             | < 1.5s         |
 
 ### Estrategias
 
@@ -462,37 +490,37 @@ test: add integration tests for progress persistence
 
 ### Documentos principales
 
-| Documento | Descripción |
-|-----------|-------------|
-| `documentation/01-definicion-mvp.md` | Definición del MVP |
-| `documentation/02-arquitectura-tecnica.md` | Arquitectura técnica |
-| `documentation/03-arquitectura-data-y-metadata.md` | Datos y metadata |
-| `documentation/04-features-futuros.md` | Features futuros |
-| `documentation/05-plan-implementacion.md` | Plan de implementación por fases |
-| `documentation/STYLE-GUIDE.md` | Guía de estilos y tokens de diseño |
+| Documento                                          | Descripción                        |
+| -------------------------------------------------- | ---------------------------------- |
+| `documentation/01-definicion-mvp.md`               | Definición del MVP                 |
+| `documentation/02-arquitectura-tecnica.md`         | Arquitectura técnica               |
+| `documentation/03-arquitectura-data-y-metadata.md` | Datos y metadata                   |
+| `documentation/04-features-futuros.md`             | Features futuros                   |
+| `documentation/05-plan-implementacion.md`          | Plan de implementación por fases   |
+| `documentation/STYLE-GUIDE.md`                     | Guía de estilos y tokens de diseño |
 
 ### Architecture Decision Records
 
-| ADR | Decisión |
-|-----|----------|
+| ADR                                                      | Decisión                                                     |
+| -------------------------------------------------------- | ------------------------------------------------------------ |
 | `documentation/adr/0001-dominio-y-persistencia-local.md` | Dominio independiente, repositorio local, esquema versionado |
-| `documentation/adr/0002-reader-core-state-machine.md` | ReaderFactory, detección de formatos, máquina de estados |
+| `documentation/adr/0002-reader-core-state-machine.md`    | ReaderFactory, detección de formatos, máquina de estados     |
 
 ### Feature specifications
 
-| Feature | Documento |
-|---------|-----------|
-| Compartir metadata | `documentation/features/01-compartir-metadata-data.md` |
-| Sincronización nube | `documentation/features/02-sincronizacion-nube.md` |
-| Arquitectura SaaS | `documentation/features/03-arquitectura-saas.md` |
-| Otras plataformas | `documentation/features/04-otras-plataformas.md` |
-| Lectura Markdown | `documentation/features/05-lectura-markdown.md` |
-| Skill portabilidad | `documentation/features/06-skill-portabilidad-plataformas.md` |
-| Library use cases | `documentation/features/07-library-use-cases.md` |
-| Plan notas | `documentation/features/08-feature-notas-plan.md` |
-| Release MVP | `documentation/features/10-release-mvp.md` |
-| Paletas de color | `documentation/features/11-paletas-color-customizacion.md` |
-| Cover optimization | `documentation/features/cover-image-optimization.md` |
+| Feature             | Documento                                                     |
+| ------------------- | ------------------------------------------------------------- |
+| Compartir metadata  | `documentation/features/01-compartir-metadata-data.md`        |
+| Sincronización nube | `documentation/features/02-sincronizacion-nube.md`            |
+| Arquitectura SaaS   | `documentation/features/03-arquitectura-saas.md`              |
+| Otras plataformas   | `documentation/features/04-otras-plataformas.md`              |
+| Lectura Markdown    | `documentation/features/05-lectura-markdown.md`               |
+| Skill portabilidad  | `documentation/features/06-skill-portabilidad-plataformas.md` |
+| Library use cases   | `documentation/features/07-library-use-cases.md`              |
+| Plan notas          | `documentation/features/08-feature-notas-plan.md`             |
+| Release MVP         | `documentation/features/10-release-mvp.md`                    |
+| Paletas de color    | `documentation/features/11-paletas-color-customizacion.md`    |
+| Cover optimization  | `documentation/features/cover-image-optimization.md`          |
 
 ## 19. Plataformas objetivo
 
@@ -547,10 +575,10 @@ test: add integration tests for progress persistence
 
 ### Features futuros (fuera del MVP)
 
-| ID | Feature | Documento |
-|----|---------|-----------|
+| ID    | Feature                     | Documento                                |
+| ----- | --------------------------- | ---------------------------------------- |
 | F-001 | Compartir/exportar metadata | `features/01-compartir-metadata-data.md` |
-| F-002 | Sincronización nube | `features/02-sincronizacion-nube.md` |
-| F-003 | Arquitectura SaaS | `features/03-arquitectura-saas.md` |
-| F-004 | Otras plataformas | `features/04-otras-plataformas.md` |
-| F-005 | Lectura Markdown | `features/05-lectura-markdown.md` |
+| F-002 | Sincronización nube         | `features/02-sincronizacion-nube.md`     |
+| F-003 | Arquitectura SaaS           | `features/03-arquitectura-saas.md`       |
+| F-004 | Otras plataformas           | `features/04-otras-plataformas.md`       |
+| F-005 | Lectura Markdown            | `features/05-lectura-markdown.md`        |

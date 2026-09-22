@@ -6,7 +6,6 @@ import type { FileSource } from '@clio-reader/reader-core';
 import {
   PdfReaderDocument,
   PdfDocumentClosedError,
-  PdfDocumentNotOpenError,
   PdfPageOutOfBoundsError,
 } from '../src/pdf-document.js';
 

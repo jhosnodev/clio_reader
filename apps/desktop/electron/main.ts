@@ -1,13 +1,17 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import { join, dirname, extname } from 'path';
-import { fileURLToPath } from 'url';
-import { readFile, writeFile, mkdir, access, constants, unlink, readdir } from 'fs/promises';
-import { existsSync } from 'fs';
+import { readFile, writeFile, mkdir, access, constants, readdir } from 'fs/promises';
+import { existsSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { randomUUID } from 'crypto';
+import {
+  createDatabase,
+  DrizzleRepository,
+  migrateJsonToSqlite,
+} from '@clio-reader/storage/drizzle';
+import Database from 'better-sqlite3';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname = globalThis.__dirname ?? dirname(process.argv[1] ?? '');
 const isDev = !app.isPackaged;
 
 const gotTheLock = app.requestSingleInstanceLock();
@@ -16,6 +20,7 @@ if (!gotTheLock) {
   app.quit();
 } else {
   let mainWindow: BrowserWindow | null = null;
+  let repository: DrizzleRepository | null = null;
 
   function getDataPath(): string {
     const userDataPath = app.getPath('userData');
@@ -26,10 +31,65 @@ if (!gotTheLock) {
     return getDataPath();
   }
 
+  function getDbPath(): string {
+    return join(getDataPath(), 'clio.db');
+  }
+
+  function getJsonStatePath(): string {
+    return join(getDataPath(), 'clio-reader.state.json');
+  }
+
+  function getJsonBackupPath(): string {
+    return join(getDataPath(), 'clio-reader.state.backup.json');
+  }
+
   async function ensureDataDir(): Promise<void> {
     const dataPath = getDataPath();
     if (!existsSync(dataPath)) {
       await mkdir(dataPath, { recursive: true });
+    }
+  }
+
+  function initDatabase(): DrizzleRepository {
+    const dbPath = getDbPath();
+
+    const migrationPath = join(__dirname, '0000_initial.sql');
+    if (existsSync(migrationPath)) {
+      const sqlite = new Database(dbPath);
+      sqlite.pragma('journal_mode = WAL');
+      sqlite.pragma('foreign_keys = ON');
+      const migrationSQL = readFileSync(migrationPath, 'utf-8');
+      sqlite.exec(migrationSQL);
+      sqlite.close();
+    }
+
+    const db = createDatabase(dbPath);
+    return new DrizzleRepository(db);
+  }
+
+  async function migrateExistingJson(): Promise<void> {
+    if (!repository) return;
+
+    const jsonPath = getJsonStatePath();
+    const backupPath = getJsonBackupPath();
+
+    if (existsSync(jsonPath)) {
+      console.log('[main] Found existing JSON state, migrating to SQLite...');
+
+      try {
+        const result = await migrateJsonToSqlite(repository.rawDb, {
+          jsonPath,
+          backupPath,
+        });
+
+        if (result.migrated) {
+          console.log(
+            `[main] Migration complete: ${result.booksCount} books, ${result.notesCount} notes, ${result.bookmarksCount} bookmarks, ${result.highlightsCount} highlights`,
+          );
+        }
+      } catch (err) {
+        console.error('[main] Migration failed:', err);
+      }
     }
   }
 
@@ -194,7 +254,7 @@ if (!gotTheLock) {
       await ensureDataDir();
       const filePath = join(getDataPath(), `${key}.json`);
       if (existsSync(filePath)) {
-        await unlink(filePath);
+        await import('fs/promises').then((fs) => fs.unlink(filePath));
       }
     });
 
@@ -213,6 +273,121 @@ if (!gotTheLock) {
         return { exists: false };
       }
     });
+
+    ipcMain.handle('repo:list-books', async () => {
+      if (!repository) throw new Error('Database not initialized');
+      return repository.listBooks();
+    });
+
+    ipcMain.handle('repo:get-book', async (_event, bookId: string) => {
+      if (!repository) throw new Error('Database not initialized');
+      return repository.getBook(bookId);
+    });
+
+    ipcMain.handle('repo:upsert-book', async (_event, book) => {
+      if (!repository) throw new Error('Database not initialized');
+      await repository.upsertBook(book);
+    });
+
+    ipcMain.handle('repo:remove-book', async (_event, bookId: string) => {
+      if (!repository) throw new Error('Database not initialized');
+      await repository.removeBook(bookId);
+    });
+
+    ipcMain.handle('repo:get-progress', async (_event, bookId: string) => {
+      if (!repository) throw new Error('Database not initialized');
+      return repository.getProgress(bookId);
+    });
+
+    ipcMain.handle('repo:save-progress', async (_event, progress) => {
+      if (!repository) throw new Error('Database not initialized');
+      await repository.saveProgress(progress);
+    });
+
+    ipcMain.handle('repo:list-all-progress', async () => {
+      if (!repository) throw new Error('Database not initialized');
+      return repository.listAllProgress();
+    });
+
+    ipcMain.handle('repo:get-global-preferences', async () => {
+      if (!repository) throw new Error('Database not initialized');
+      return repository.getGlobalPreferences();
+    });
+
+    ipcMain.handle('repo:save-global-preferences', async (_event, preferences) => {
+      if (!repository) throw new Error('Database not initialized');
+      await repository.saveGlobalPreferences(preferences);
+    });
+
+    ipcMain.handle('repo:get-book-preferences', async (_event, bookId: string) => {
+      if (!repository) throw new Error('Database not initialized');
+      return repository.getBookPreferences(bookId);
+    });
+
+    ipcMain.handle('repo:save-book-preferences', async (_event, bookId: string, preferences) => {
+      if (!repository) throw new Error('Database not initialized');
+      await repository.saveBookPreferences(bookId, preferences);
+    });
+
+    ipcMain.handle('repo:list-all-bookmarks', async () => {
+      if (!repository) throw new Error('Database not initialized');
+      return repository.listAllBookmarks();
+    });
+
+    ipcMain.handle('repo:list-bookmarks', async (_event, bookId: string) => {
+      if (!repository) throw new Error('Database not initialized');
+      return repository.listBookmarks(bookId);
+    });
+
+    ipcMain.handle('repo:save-bookmark', async (_event, bookmark) => {
+      if (!repository) throw new Error('Database not initialized');
+      await repository.saveBookmark(bookmark);
+    });
+
+    ipcMain.handle('repo:remove-bookmark', async (_event, bookmarkId: string) => {
+      if (!repository) throw new Error('Database not initialized');
+      await repository.removeBookmark(bookmarkId);
+    });
+
+    ipcMain.handle('repo:list-notes', async (_event, bookId: string) => {
+      if (!repository) throw new Error('Database not initialized');
+      return repository.listNotes(bookId);
+    });
+
+    ipcMain.handle('repo:save-note', async (_event, note) => {
+      if (!repository) throw new Error('Database not initialized');
+      await repository.saveNote(note);
+    });
+
+    ipcMain.handle('repo:remove-note', async (_event, noteId: string) => {
+      if (!repository) throw new Error('Database not initialized');
+      await repository.removeNote(noteId);
+    });
+
+    ipcMain.handle('repo:list-highlights', async (_event, bookId: string) => {
+      if (!repository) throw new Error('Database not initialized');
+      return repository.listHighlights(bookId);
+    });
+
+    ipcMain.handle('repo:save-highlight', async (_event, highlight) => {
+      if (!repository) throw new Error('Database not initialized');
+      await repository.saveHighlight(highlight);
+    });
+
+    ipcMain.handle('repo:remove-highlight', async (_event, highlightId: string) => {
+      if (!repository) throw new Error('Database not initialized');
+      await repository.removeHighlight(highlightId);
+    });
+
+    ipcMain.handle('repo:get-user-settings', async () => {
+      if (!repository) throw new Error('Database not initialized');
+      return repository.getUserSettings();
+    });
+
+    ipcMain.handle('repo:save-user-settings', async (_event, settings) => {
+      if (!repository) throw new Error('Database not initialized');
+      await repository.saveUserSettings(settings);
+    });
   }
 
   app.on('second-instance', () => {
@@ -222,7 +397,12 @@ if (!gotTheLock) {
     }
   });
 
-  app.whenReady().then(() => {
+  app.whenReady().then(async () => {
+    await ensureDataDir();
+    repository = initDatabase();
+    await migrateExistingJson().catch((err) => {
+      console.error('[main] Migration failed:', err);
+    });
     setupIpcHandlers();
     createWindow();
 

@@ -5,7 +5,11 @@
   "description": "Biblioteca local multiplataforma para leer EPUB, PDF, CBZ y futuros formatos.",
   "packageManager": "pnpm@10.15.1",
   "pnpm": {
-    "onlyBuiltDependencies": ["better-sqlite3", "electron", "esbuild"]
+    "onlyBuiltDependencies": [
+      "better-sqlite3",
+      "electron",
+      "esbuild"
+    ]
   },
   "scripts": {
     "build": "pnpm --recursive --if-present run build",

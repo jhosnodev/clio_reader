@@ -5,7 +5,15 @@
  */
 
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import type { Book, Bookmark, Note, ReaderLocator, ReadingStatus, Rank, ReadingProgress } from '@clio-reader/domain';
+import type {
+  Book,
+  Bookmark,
+  Note,
+  ReaderLocator,
+  ReadingStatus,
+  Rank,
+  ReadingProgress,
+} from '@clio-reader/domain';
 import type { LibraryRepository } from '@clio-reader/library';
 import { listNotesManaged, removeNoteManaged } from '@clio-reader/annotations';
 import type { ThemePalette } from '../themes';
@@ -18,9 +26,15 @@ import type { ImportProgress } from '../App';
    ========================================================================== */
 
 const COVER_PALETTES: [string, string][] = [
-  ['#3a2e5c', '#6b4ea3'], ['#173a34', '#2f6d61'], ['#4a2b2b', '#8a3f3f'],
-  ['#2c3a52', '#4a6a8a'], ['#453520', '#8a6a34'], ['#3a1f2e', '#7a3a55'],
-  ['#1f3a3a', '#3a7a70'], ['#2e2540', '#5a4a8a'], ['#42301a', '#9a6a34'],
+  ['#3a2e5c', '#6b4ea3'],
+  ['#173a34', '#2f6d61'],
+  ['#4a2b2b', '#8a3f3f'],
+  ['#2c3a52', '#4a6a8a'],
+  ['#453520', '#8a6a34'],
+  ['#3a1f2e', '#7a3a55'],
+  ['#1f3a3a', '#3a7a70'],
+  ['#2e2540', '#5a4a8a'],
+  ['#42301a', '#9a6a34'],
   ['#22303f', '#3f6a8a'],
 ];
 const GLYPHS = ['Η', 'Θ', 'Β', 'Α', 'C', '∞', 'H', '⁂', 'Μ', '❦', 'G', 'B', 'Σ', 'Ω', 'Δ', 'Φ'];
@@ -113,7 +127,6 @@ export function LibraryView({
   onToggleTheme,
   onSetPalette,
   onOpenBook,
-  onImportBook,
   onImportFiles,
   onImportFolder,
   onRemoveBook,
@@ -128,7 +141,9 @@ export function LibraryView({
   const [homeSearch, setHomeSearch] = useState('');
   const [progressMap, setProgressMap] = useState<Map<string, ReadingProgress>>(new Map());
 
-  useEffect(() => { onLoadBooks(); }, [onLoadBooks]);
+  useEffect(() => {
+    onLoadBooks();
+  }, [onLoadBooks]);
 
   // Load progress for all books
   useEffect(() => {
@@ -147,15 +162,22 @@ export function LibraryView({
     loadProgress();
   }, [books, repository]);
 
-  const handleSaveRank = useCallback(async (bookId: string, rank: Rank) => {
-    const book = books.find((b) => b.id === bookId);
-    if (!book) return;
-    await repository.upsertBook({ ...book, rank });
-    onLoadBooks();
-  }, [books, repository, onLoadBooks]);
+  const handleSaveRank = useCallback(
+    async (bookId: string, rank: Rank) => {
+      const book = books.find((b) => b.id === bookId);
+      if (!book) return;
+      await repository.upsertBook({ ...book, rank });
+      onLoadBooks();
+    },
+    [books, repository, onLoadBooks],
+  );
 
   const recentBooks = useMemo(
-    () => [...books].filter((b) => b.lastOpenedAt).sort((a, b) => (b.lastOpenedAt ?? 0) - (a.lastOpenedAt ?? 0)).slice(0, 5),
+    () =>
+      [...books]
+        .filter((b) => b.lastOpenedAt)
+        .sort((a, b) => (b.lastOpenedAt ?? 0) - (a.lastOpenedAt ?? 0))
+        .slice(0, 5),
     [books],
   );
   const addedBooks = useMemo(
@@ -165,12 +187,17 @@ export function LibraryView({
 
   const availableLanguages = useMemo(() => {
     const langs = new Set<string>();
-    books.forEach((b) => { if (b.language) langs.add(b.language); });
+    books.forEach((b) => {
+      if (b.language) langs.add(b.language);
+    });
     return [...langs].sort();
   }, [books]);
 
   const colList = useMemo(() => {
-    let list = colStatusFilter === 'all' ? [...books] : books.filter((b) => getReadingStatus(b) === colStatusFilter);
+    let list =
+      colStatusFilter === 'all'
+        ? [...books]
+        : books.filter((b) => getReadingStatus(b) === colStatusFilter);
     if (colFormatFilter !== 'all') {
       list = list.filter((b) => b.format === colFormatFilter);
     }
@@ -179,16 +206,24 @@ export function LibraryView({
     }
     if (colQuery) {
       const q = colQuery.toLowerCase();
-      list = list.filter((b) => b.title.toLowerCase().includes(q) || (b.author && b.author.toLowerCase().includes(q)));
+      list = list.filter(
+        (b) =>
+          b.title.toLowerCase().includes(q) || (b.author && b.author.toLowerCase().includes(q)),
+      );
     }
     const statusOrder: Record<string, number> = { reading: 0, unread: 1, opened: 2 };
     list.sort((a, b) => {
       switch (colSort) {
-        case 'title': return a.title.localeCompare(b.title, 'es');
-        case 'author': return (a.author ?? '').localeCompare(b.author ?? '', 'es');
-        case 'language': return (a.language ?? '').localeCompare(b.language ?? '', 'es');
-        case 'status': return (statusOrder[getReadingStatus(a)] ?? 3) - (statusOrder[getReadingStatus(b)] ?? 3);
-        default: return 0;
+        case 'title':
+          return a.title.localeCompare(b.title, 'es');
+        case 'author':
+          return (a.author ?? '').localeCompare(b.author ?? '', 'es');
+        case 'language':
+          return (a.language ?? '').localeCompare(b.language ?? '', 'es');
+        case 'status':
+          return (statusOrder[getReadingStatus(a)] ?? 3) - (statusOrder[getReadingStatus(b)] ?? 3);
+        default:
+          return 0;
       }
     });
     return list;
@@ -207,7 +242,15 @@ export function LibraryView({
 
   return (
     <div style={S.app} className="app" data-app-theme={theme}>
-      <Rail active={activeView} onChange={setActiveView} theme={theme} paletteId={paletteId} palette={palette} onToggleTheme={onToggleTheme} onSetPalette={onSetPalette} />
+      <Rail
+        active={activeView}
+        onChange={setActiveView}
+        theme={theme}
+        paletteId={paletteId}
+        palette={palette}
+        onToggleTheme={onToggleTheme}
+        onSetPalette={onSetPalette}
+      />
       <main style={S.stage}>
         {activeView === 'home' && (
           <HomeView
@@ -250,18 +293,10 @@ export function LibraryView({
           />
         )}
         {activeView === 'bookmarks' && (
-          <BookmarksView
-            books={books}
-            repository={repository}
-            onOpen={onOpenBook}
-          />
+          <BookmarksView books={books} repository={repository} onOpen={onOpenBook} />
         )}
         {activeView === 'notes' && (
-          <NotesView
-            books={books}
-            repository={repository}
-            onOpen={onOpenBook}
-          />
+          <NotesView books={books} repository={repository} onOpen={onOpenBook} />
         )}
       </main>
     </div>
@@ -272,7 +307,15 @@ export function LibraryView({
    Rail (sidebar de navegación)
    ========================================================================== */
 
-function Rail({ active, onChange, theme, paletteId, palette, onToggleTheme, onSetPalette }: {
+function Rail({
+  active,
+  onChange,
+  theme,
+  paletteId,
+  palette,
+  onToggleTheme,
+  onSetPalette,
+}: {
   readonly active: ViewId;
   readonly onChange: (v: ViewId) => void;
   readonly theme: 'dark' | 'light';
@@ -286,20 +329,82 @@ function Rail({ active, onChange, theme, paletteId, palette, onToggleTheme, onSe
 
   const items: { id: ViewId; label: string; icon: JSX.Element }[] = [
     {
-      id: 'home', label: 'Inicio',
-      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/><path d="M9.5 20v-6h5v6"/></svg>,
+      id: 'home',
+      label: 'Inicio',
+      icon: (
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M3 10.5 12 3l9 7.5" />
+          <path d="M5 9.5V20h14V9.5" />
+          <path d="M9.5 20v-6h5v6" />
+        </svg>
+      ),
     },
     {
-      id: 'collection', label: 'Colección',
-      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="6.5" height="16" rx="1"/><rect x="13.5" y="4" width="6.5" height="16" rx="1"/><path d="M7.2 8h.01M16.7 8h.01"/></svg>,
+      id: 'collection',
+      label: 'Colección',
+      icon: (
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <rect x="4" y="4" width="6.5" height="16" rx="1" />
+          <rect x="13.5" y="4" width="6.5" height="16" rx="1" />
+          <path d="M7.2 8h.01M16.7 8h.01" />
+        </svg>
+      ),
     },
     {
-      id: 'bookmarks', label: 'Marcadores',
-      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M6 4h12v16l-6-4-6 4z"/></svg>,
+      id: 'bookmarks',
+      label: 'Marcadores',
+      icon: (
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M6 4h12v16l-6-4-6 4z" />
+        </svg>
+      ),
     },
     {
-      id: 'notes', label: 'Notas',
-      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M4 5h16v11l-4 4H4z"/><path d="M16 20v-4h4"/><path d="M8 9h8M8 13h5"/></svg>,
+      id: 'notes',
+      label: 'Notas',
+      icon: (
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M4 5h16v11l-4 4H4z" />
+          <path d="M16 20v-4h4" />
+          <path d="M8 9h8M8 13h5" />
+        </svg>
+      ),
     },
   ];
 
@@ -346,14 +451,21 @@ function Rail({ active, onChange, theme, paletteId, palette, onToggleTheme, onSe
           onMouseLeave={() => setHovered(null)}
           aria-label="Selector de tema"
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={palette.dark.gold} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <circle cx="12" cy="12" r="4"/>
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={palette.dark.gold}
+            strokeWidth="1.7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <circle cx="12" cy="12" r="4" />
           </svg>
         </button>
-        {hovered === 'palette' && (
-          <span style={S.tooltip}>Tema</span>
-        )}
+        {hovered === 'palette' && <span style={S.tooltip}>Tema</span>}
         {showPalettePicker && (
           <div style={S.palettePopover}>
             <div style={S.palettePopoverTitle}>Tema</div>
@@ -392,17 +504,35 @@ function Rail({ active, onChange, theme, paletteId, palette, onToggleTheme, onSe
         onMouseLeave={() => setHovered(null)}
         aria-label={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
       >
-        <svg className="i-sun" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="4.2"/>
-          <path d="M12 2.5v2.4M12 19.1v2.4M4.4 4.4l1.7 1.7M17.9 17.9l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.4 19.6l1.7-1.7M17.9 6.1l1.7-1.7"/>
+        <svg
+          className="i-sun"
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="12" cy="12" r="4.2" />
+          <path d="M12 2.5v2.4M12 19.1v2.4M4.4 4.4l1.7 1.7M17.9 17.9l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.4 19.6l1.7-1.7M17.9 6.1l1.7-1.7" />
         </svg>
-        <svg className="i-moon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M20 14.5A8 8 0 1 1 9.5 4a6.3 6.3 0 0 0 10.5 10.5z"/>
+        <svg
+          className="i-moon"
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M20 14.5A8 8 0 1 1 9.5 4a6.3 6.3 0 0 0 10.5 10.5z" />
         </svg>
         {hovered === 'theme' && (
-          <span style={S.tooltip}>
-            {theme === 'dark' ? 'Tema claro' : 'Tema oscuro'}
-          </span>
+          <span style={S.tooltip}>{theme === 'dark' ? 'Tema claro' : 'Tema oscuro'}</span>
         )}
       </button>
     </aside>
@@ -414,9 +544,20 @@ function Rail({ active, onChange, theme, paletteId, palette, onToggleTheme, onSe
    ========================================================================== */
 
 function HomeView({
-  books, recentBooks, addedBooks, readingCount,
-  searchValue, progressMap, importProgress, onSearchChange, onSearchFocus,
-  onOpen, onRemove, onImportFiles, onImportFolder, onSaveRank,
+  books,
+  recentBooks,
+  addedBooks,
+  readingCount,
+  searchValue,
+  progressMap,
+  importProgress,
+  onSearchChange,
+  onSearchFocus,
+  onOpen,
+  onRemove,
+  onImportFiles,
+  onImportFolder,
+  onSaveRank,
 }: {
   books: readonly Book[];
   recentBooks: readonly Book[];
@@ -434,13 +575,17 @@ function HomeView({
   onSaveRank: (bookId: string, rank: Rank) => void;
 }): JSX.Element {
   const h = new Date().getHours();
-  const greeting = h < 6 ? 'Buenas noches' : h < 13 ? 'Buenos días' : h < 20 ? 'Buenas tardes' : 'Buenas noches';
+  const greeting =
+    h < 6 ? 'Buenas noches' : h < 13 ? 'Buenos días' : h < 20 ? 'Buenas tardes' : 'Buenas noches';
 
   if (books.length === 0) {
     return (
       <div style={S.wrap}>
         <header style={S.topbar}>
-          <div><h1 style={S.h1}>{greeting}</h1><div style={S.sub}>Tu biblioteca bajo la mirada de Clio</div></div>
+          <div>
+            <h1 style={S.h1}>{greeting}</h1>
+            <div style={S.sub}>Tu biblioteca bajo la mirada de Clio</div>
+          </div>
         </header>
         <div style={S.meander} />
         <EmptyState onImportFiles={onImportFiles} onImportFolder={onImportFolder} />
@@ -464,15 +609,24 @@ function HomeView({
   return (
     <div style={S.wrap}>
       <header style={S.topbar}>
-        <div><h1 style={S.h1}>{greeting}</h1><div style={S.sub}>Tu biblioteca bajo la mirada de Clio</div></div>
+        <div>
+          <h1 style={S.h1}>{greeting}</h1>
+          <div style={S.sub}>Tu biblioteca bajo la mirada de Clio</div>
+        </div>
         <div style={{ flex: 1 }} />
         <div style={{ position: 'relative' }} ref={importMenuRef}>
-          <button
-            style={S.importBtn}
-            onClick={() => setShowImportMenu(!showImportMenu)}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 5v14M5 12h14"/>
+          <button style={S.importBtn} onClick={() => setShowImportMenu(!showImportMenu)}>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M12 5v14M5 12h14" />
             </svg>
             Importar
           </button>
@@ -485,9 +639,18 @@ function HomeView({
                   onImportFiles();
                 }}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                  <polyline points="14 2 14 8 20 8"/>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
                 </svg>
                 Importar archivo(s)
               </button>
@@ -498,8 +661,17 @@ function HomeView({
                   onImportFolder();
                 }}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                 </svg>
                 Importar carpeta
               </button>
@@ -507,7 +679,18 @@ function HomeView({
           )}
         </div>
         <label style={S.search}>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <svg
+            width="17"
+            height="17"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" />
+          </svg>
           <input
             style={S.searchInput}
             placeholder="Buscar en tu biblioteca…"
@@ -528,8 +711,13 @@ function HomeView({
             />
           </div>
           <div style={S.importProgressText}>
-            Importando: {importProgress.current} ({importProgress.imported + importProgress.skipped}/{importProgress.total})
-            {importProgress.skipped > 0 && <span style={{ color: 'var(--gold)', marginLeft: 8 }}>({importProgress.skipped} omitidos)</span>}
+            Importando: {importProgress.current} ({importProgress.imported + importProgress.skipped}
+            /{importProgress.total})
+            {importProgress.skipped > 0 && (
+              <span style={{ color: 'var(--gold)', marginLeft: 8 }}>
+                ({importProgress.skipped} omitidos)
+              </span>
+            )}
           </div>
         </div>
       )}
@@ -599,11 +787,24 @@ const SORT_OPTIONS: { key: string; label: string }[] = [
 ];
 
 function CollectionView({
-  books, totalCount, readingCount,
-  statusFilter, formatFilter, languageFilter, sort, query,
-  availableLanguages, progressMap,
-  onStatusFilterChange, onFormatFilterChange, onLanguageFilterChange, onSortChange,
-  onQueryChange, onOpen, onRemove, onSaveRank,
+  books,
+  totalCount,
+  readingCount,
+  statusFilter,
+  formatFilter,
+  languageFilter,
+  sort,
+  query,
+  availableLanguages,
+  progressMap,
+  onStatusFilterChange,
+  onFormatFilterChange,
+  onLanguageFilterChange,
+  onSortChange,
+  onQueryChange,
+  onOpen,
+  onRemove,
+  onSaveRank,
 }: {
   books: readonly Book[];
   totalCount: number;
@@ -629,11 +830,24 @@ function CollectionView({
       <header style={S.topbar}>
         <div>
           <h1 style={S.h1}>Colección</h1>
-          <div style={S.sub}>{totalCount} documentos · {readingCount} en lectura</div>
+          <div style={S.sub}>
+            {totalCount} documentos · {readingCount} en lectura
+          </div>
         </div>
         <div style={{ flex: 1 }} />
         <label style={S.search}>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <svg
+            width="17"
+            height="17"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" />
+          </svg>
           <input
             style={S.searchInput}
             placeholder="Buscar por título o autor…"
@@ -683,7 +897,9 @@ function CollectionView({
             >
               <option value="all">Todos</option>
               {availableLanguages.map((lang) => (
-                <option key={lang} value={lang}>{lang}</option>
+                <option key={lang} value={lang}>
+                  {lang}
+                </option>
               ))}
             </select>
           </div>
@@ -691,13 +907,11 @@ function CollectionView({
 
         <div style={S.filterGroup}>
           <span style={S.filterLabel}>Ordenar por</span>
-          <select
-            style={S.select}
-            value={sort}
-            onChange={(e) => onSortChange(e.target.value)}
-          >
+          <select style={S.select} value={sort} onChange={(e) => onSortChange(e.target.value)}>
             {SORT_OPTIONS.map((o) => (
-              <option key={o.key} value={o.key}>{o.label}</option>
+              <option key={o.key} value={o.key}>
+                {o.label}
+              </option>
             ))}
           </select>
         </div>
@@ -705,7 +919,18 @@ function CollectionView({
 
       {books.length === 0 ? (
         <div style={S.emptyCol}>
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--tx-faint)" strokeWidth="1.5" strokeLinecap="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
+          <svg
+            width="36"
+            height="36"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--tx-faint)"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          >
+            <rect x="4" y="4" width="16" height="16" rx="2" />
+            <path d="M9 9l6 6M15 9l-6 6" />
+          </svg>
           <h3 style={S.emptyTitle}>Sin resultados</h3>
           <p style={S.emptyHint}>Prueba con otro filtro o término de búsqueda.</p>
         </div>
@@ -761,25 +986,34 @@ function BookmarksView({
     loadBookmarks();
   }, [repository, books]);
 
-  const handleDelete = useCallback(async (bookmarkId: string) => {
-    try {
-      await repository.removeBookmark(bookmarkId);
-      setBookmarks((prev) => prev.filter((b) => b.id !== bookmarkId));
-    } catch (err) {
-      console.error('Error eliminando marcador:', err);
-    }
-  }, [repository]);
+  const handleDelete = useCallback(
+    async (bookmarkId: string) => {
+      try {
+        await repository.removeBookmark(bookmarkId);
+        setBookmarks((prev) => prev.filter((b) => b.id !== bookmarkId));
+      } catch (err) {
+        console.error('Error eliminando marcador:', err);
+      }
+    },
+    [repository],
+  );
 
-  const handleOpenBook = useCallback((bookId: string) => {
-    const book = books.find((b) => b.id === bookId);
-    if (book) onOpen(book);
-  }, [books, onOpen]);
+  const handleOpenBook = useCallback(
+    (bookId: string) => {
+      const book = books.find((b) => b.id === bookId);
+      if (book) onOpen(book);
+    },
+    [books, onOpen],
+  );
 
   if (loading) {
     return (
       <div style={S.wrap}>
         <header style={S.topbar}>
-          <div><h1 style={S.h1}>Marcadores</h1><div style={S.sub}>Páginas que guardaste para volver</div></div>
+          <div>
+            <h1 style={S.h1}>Marcadores</h1>
+            <div style={S.sub}>Páginas que guardaste para volver</div>
+          </div>
         </header>
         <div style={S.meander} />
         <div style={S.emptyBookmarks}>
@@ -794,12 +1028,24 @@ function BookmarksView({
     return (
       <div style={S.wrap}>
         <header style={S.topbar}>
-          <div><h1 style={S.h1}>Marcadores</h1><div style={S.sub}>Páginas que guardaste para volver</div></div>
+          <div>
+            <h1 style={S.h1}>Marcadores</h1>
+            <div style={S.sub}>Páginas que guardaste para volver</div>
+          </div>
         </header>
         <div style={S.meander} />
         <div style={S.emptyBookmarks}>
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--tx-faint)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M6 4h12v16l-6-4-6 4z"/>
+          <svg
+            width="40"
+            height="40"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--tx-faint)"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M6 4h12v16l-6-4-6 4z" />
           </svg>
           <h3 style={S.emptyTitle}>Aún no hay marcadores</h3>
           <p style={S.emptyHint}>Mientras lees, toca el marcador para guardar la página actual.</p>
@@ -811,7 +1057,12 @@ function BookmarksView({
   return (
     <div style={S.wrap}>
       <header style={S.topbar}>
-        <div><h1 style={S.h1}>Marcadores</h1><div style={S.sub}>{bookmarks.length} marcador{bookmarks.length !== 1 ? 'es' : ''}</div></div>
+        <div>
+          <h1 style={S.h1}>Marcadores</h1>
+          <div style={S.sub}>
+            {bookmarks.length} marcador{bookmarks.length !== 1 ? 'es' : ''}
+          </div>
+        </div>
       </header>
       <div style={S.meander} />
       <div style={S.bookmarksList}>
@@ -820,13 +1071,24 @@ function BookmarksView({
             <div
               style={S.bookmarkContent}
               onClick={() => handleOpenBook(bookmark.bookId)}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleOpenBook(bookmark.bookId); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleOpenBook(bookmark.bookId);
+              }}
               role="button"
               tabIndex={0}
             >
               <div style={S.bookmarkIcon}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M6 4h12v16l-6-4-6 4z"/>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--gold)"
+                  strokeWidth="1.7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M6 4h12v16l-6-4-6 4z" />
                 </svg>
               </div>
               <div style={S.bookmarkInfo}>
@@ -843,8 +1105,18 @@ function BookmarksView({
               onClick={() => handleDelete(bookmark.id)}
               aria-label={`Eliminar marcador de ${bookmark.bookTitle}`}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M3 6h18" />
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
               </svg>
             </button>
           </div>
@@ -904,23 +1176,34 @@ function NotesView({
       let found = '';
       for (const b of books) {
         const list = await repository.listNotes(b.id).catch(() => []);
-        if (list.length > 0) { found = b.id; break; }
+        if (list.length > 0) {
+          found = b.id;
+          break;
+        }
       }
       if (cancelled) return;
       setSelectedBookId(found || books[0]?.id || '');
     };
     pick();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [books, repository, selectedBookId]);
 
   const loadNotes = useCallback(async () => {
-    if (!selectedBookId) { setNotes([]); return; }
+    if (!selectedBookId) {
+      setNotes([]);
+      return;
+    }
     setLoading(true);
     try {
       const sortOptions =
         sort === 'position'
           ? { field: 'position' as const }
-          : { field: 'date' as const, order: sort === 'date-asc' ? ('asc' as const) : ('desc' as const) };
+          : {
+              field: 'date' as const,
+              order: sort === 'date-asc' ? ('asc' as const) : ('desc' as const),
+            };
       const list = await listNotesManaged(repository, selectedBookId, { sort: sortOptions });
       setNotes(list);
     } catch (err) {
@@ -931,21 +1214,29 @@ function NotesView({
     }
   }, [repository, selectedBookId, sort]);
 
-  useEffect(() => { loadNotes(); }, [loadNotes]);
+  useEffect(() => {
+    loadNotes();
+  }, [loadNotes]);
 
-  const handleDelete = useCallback(async (noteId: string) => {
-    try {
-      await removeNoteManaged(repository, noteId, selectedBookId);
-      setNotes((prev) => prev.filter((n) => n.id !== noteId));
-    } catch (err) {
-      console.error('Error eliminando nota:', err);
-    }
-  }, [repository, selectedBookId]);
+  const handleDelete = useCallback(
+    async (noteId: string) => {
+      try {
+        await removeNoteManaged(repository, noteId, selectedBookId);
+        setNotes((prev) => prev.filter((n) => n.id !== noteId));
+      } catch (err) {
+        console.error('Error eliminando nota:', err);
+      }
+    },
+    [repository, selectedBookId],
+  );
 
-  const handleOpenBook = useCallback((bookId: string, locator?: string) => {
-    const book = books.find((b) => b.id === bookId);
-    if (book) onOpen(book, locator);
-  }, [books, onOpen]);
+  const handleOpenBook = useCallback(
+    (bookId: string, locator?: string) => {
+      const book = books.find((b) => b.id === bookId);
+      if (book) onOpen(book, locator);
+    },
+    [books, onOpen],
+  );
 
   const bookOptions = useMemo(
     () => [...books].sort((a, b) => a.title.localeCompare(b.title, 'es')),
@@ -956,12 +1247,26 @@ function NotesView({
     return (
       <div style={S.wrap}>
         <header style={S.topbar}>
-          <div><h1 style={S.h1}>Notas</h1><div style={S.sub}>Tus anotaciones, guardadas localmente</div></div>
+          <div>
+            <h1 style={S.h1}>Notas</h1>
+            <div style={S.sub}>Tus anotaciones, guardadas localmente</div>
+          </div>
         </header>
         <div style={S.meander} />
         <div style={S.emptyBookmarks}>
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--tx-faint)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 5h16v11l-4 4H4z"/><path d="M16 20v-4h4"/><path d="M8 9h8M8 13h5"/>
+          <svg
+            width="40"
+            height="40"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--tx-faint)"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M4 5h16v11l-4 4H4z" />
+            <path d="M16 20v-4h4" />
+            <path d="M8 9h8M8 13h5" />
           </svg>
           <h3 style={S.emptyTitle}>No hay libros todavía</h3>
           <p style={S.emptyHint}>Importa un libro para empezar a tomar notas.</p>
@@ -975,7 +1280,9 @@ function NotesView({
       <header style={S.topbar}>
         <div>
           <h1 style={S.h1}>Notas</h1>
-          <div style={S.sub}>{notes.length} nota{notes.length !== 1 ? 's' : ''} en {bookTitle(selectedBookId)}</div>
+          <div style={S.sub}>
+            {notes.length} nota{notes.length !== 1 ? 's' : ''} en {bookTitle(selectedBookId)}
+          </div>
         </div>
       </header>
       <div style={S.meander} />
@@ -988,7 +1295,9 @@ function NotesView({
           aria-label="Filtrar notas por libro"
         >
           {bookOptions.map((b) => (
-            <option key={b.id} value={b.id}>{b.title}</option>
+            <option key={b.id} value={b.id}>
+              {b.title}
+            </option>
           ))}
         </select>
         <select
@@ -1010,8 +1319,19 @@ function NotesView({
         </div>
       ) : notes.length === 0 ? (
         <div style={S.emptyBookmarks}>
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--tx-faint)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 5h16v11l-4 4H4z"/><path d="M16 20v-4h4"/><path d="M8 9h8M8 13h5"/>
+          <svg
+            width="40"
+            height="40"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--tx-faint)"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M4 5h16v11l-4 4H4z" />
+            <path d="M16 20v-4h4" />
+            <path d="M8 9h8M8 13h5" />
           </svg>
           <h3 style={S.emptyTitle}>Sin notas en este libro</h3>
           <p style={S.emptyHint}>Selecciona otro libro o abre uno para escribir una nota.</p>
@@ -1023,13 +1343,26 @@ function NotesView({
               <div
                 style={S.bookmarkContent}
                 onClick={() => handleOpenBook(note.bookId, JSON.stringify(note.locator))}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleOpenBook(note.bookId, JSON.stringify(note.locator)); }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleOpenBook(note.bookId, JSON.stringify(note.locator));
+                }}
                 role="button"
                 tabIndex={0}
               >
                 <div style={S.bookmarkIcon}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 5h16v11l-4 4H4z"/><path d="M16 20v-4h4"/><path d="M8 9h8M8 13h5"/>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="var(--gold)"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M4 5h16v11l-4 4H4z" />
+                    <path d="M16 20v-4h4" />
+                    <path d="M8 9h8M8 13h5" />
                   </svg>
                 </div>
                 <div style={S.bookmarkInfo}>
@@ -1049,8 +1382,18 @@ function NotesView({
                 onClick={() => handleDelete(note.id)}
                 aria-label="Eliminar nota"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M3 6h18" />
+                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
                 </svg>
               </button>
             </div>
@@ -1065,7 +1408,13 @@ function NotesView({
    Subcomponentes compartidos
    ========================================================================== */
 
-function EmptyState({ onImportFiles, onImportFolder }: { readonly onImportFiles: () => void; readonly onImportFolder: () => void }): JSX.Element {
+function EmptyState({
+  onImportFiles,
+  onImportFolder,
+}: {
+  readonly onImportFiles: () => void;
+  readonly onImportFolder: () => void;
+}): JSX.Element {
   const [showImportMenu, setShowImportMenu] = useState(false);
   const importMenuRef = useRef<HTMLDivElement>(null);
 
@@ -1081,16 +1430,22 @@ function EmptyState({ onImportFiles, onImportFolder }: { readonly onImportFiles:
 
   return (
     <div style={S.empty}>
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--tx-faint)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
+      <svg
+        width="40"
+        height="40"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="var(--tx-faint)"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
       </svg>
       <h3 style={S.emptyTitle}>No hay libros importados</h3>
       <p style={S.emptyHint}>Importa tu primer libro para comenzar a leer.</p>
       <div style={{ position: 'relative' }} ref={importMenuRef}>
-        <button
-          style={S.emptyBtn}
-          onClick={() => setShowImportMenu(!showImportMenu)}
-        >
+        <button style={S.emptyBtn} onClick={() => setShowImportMenu(!showImportMenu)}>
           Importar libro
         </button>
         {showImportMenu && (
@@ -1102,9 +1457,18 @@ function EmptyState({ onImportFiles, onImportFolder }: { readonly onImportFiles:
                 onImportFiles();
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
               </svg>
               Importar archivo(s)
             </button>
@@ -1115,8 +1479,17 @@ function EmptyState({ onImportFiles, onImportFolder }: { readonly onImportFiles:
                 onImportFolder();
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
               </svg>
               Importar carpeta
             </button>
@@ -1127,7 +1500,13 @@ function EmptyState({ onImportFiles, onImportFolder }: { readonly onImportFiles:
   );
 }
 
-function SectionHead({ title, count }: { readonly title: string; readonly count: string }): JSX.Element {
+function SectionHead({
+  title,
+  count,
+}: {
+  readonly title: string;
+  readonly count: string;
+}): JSX.Element {
   return (
     <div style={S.sectionHead}>
       <span style={S.sectionAccent} />
@@ -1161,7 +1540,10 @@ function BookCard({ book, progress, onOpen, onRemove, onSaveRank }: BookCardProp
   const progressPercent = progress ? Math.round(progress.percent * 100) : 0;
 
   const handleKey = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(book); }
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onOpen(book);
+    }
   };
   const handleRemove = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -1222,13 +1604,15 @@ function BookCard({ book, progress, onOpen, onRemove, onSaveRank }: BookCardProp
       tabIndex={0}
       aria-label={`Abrir ${book.title}`}
     >
-      <div style={{
-        ...S.cover,
-        background: book.coverImage ? undefined : `linear-gradient(150deg, ${c1}, ${c2})`,
-        boxShadow: hovered
-          ? '0 22px 46px -16px rgba(0,0,0,.9), inset 0 0 0 1px rgba(230,200,116,.35)'
-          : '0 12px 30px -14px rgba(0,0,0,.85), inset 0 0 0 1px rgba(255,255,255,.05)',
-      }}>
+      <div
+        style={{
+          ...S.cover,
+          background: book.coverImage ? undefined : `linear-gradient(150deg, ${c1}, ${c2})`,
+          boxShadow: hovered
+            ? '0 22px 46px -16px rgba(0,0,0,.9), inset 0 0 0 1px rgba(230,200,116,.35)'
+            : '0 12px 30px -14px rgba(0,0,0,.85), inset 0 0 0 1px rgba(255,255,255,.05)',
+        }}
+      >
         {book.coverImage ? (
           <img
             src={book.coverImage}
@@ -1251,12 +1635,18 @@ function BookCard({ book, progress, onOpen, onRemove, onSaveRank }: BookCardProp
         )}
         <span style={S.docType}>{book.format.toUpperCase()}</span>
         <span style={S.statusTag}>
-          <span style={{
-            ...S.dot,
-            backgroundColor: cfg.dot,
-            boxShadow: status === 'reading' ? '0 0 0 3px rgba(133,179,150,.25)'
-              : status === 'opened' ? '0 0 0 3px rgba(169,171,58,.25)' : 'none',
-          }} />
+          <span
+            style={{
+              ...S.dot,
+              backgroundColor: cfg.dot,
+              boxShadow:
+                status === 'reading'
+                  ? '0 0 0 3px rgba(133,179,150,.25)'
+                  : status === 'opened'
+                    ? '0 0 0 3px rgba(169,171,58,.25)'
+                    : 'none',
+            }}
+          />
           {cfg.label}
         </span>
         {status === 'reading' && progressPercent > 0 && (
@@ -1271,15 +1661,39 @@ function BookCard({ book, progress, onOpen, onRemove, onSaveRank }: BookCardProp
         <div style={S.cardMeta}>
           {book.lastOpenedAt ? (
             <>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: .75 }}>
-                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="2.5"/>
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ opacity: 0.75 }}
+              >
+                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+                <circle cx="12" cy="12" r="2.5" />
               </svg>
               Visto {relDate(book.lastOpenedAt)}
             </>
           ) : (
             <>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: .75 }}>
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ opacity: 0.75 }}
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
               </svg>
               Añadido {relDate(book.addedAt)}
             </>
@@ -1321,27 +1735,42 @@ function BookCard({ book, progress, onOpen, onRemove, onSaveRank }: BookCardProp
                   onMouseMove={(e) => handleStarMouseMove(e, s)}
                   onClick={(e) => handleRankClick(e, isHalf ? s - 0.5 : s)}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill={isFull ? 'var(--gold)' : isHalf ? `url(#${gradientId})` : 'var(--line)'} stroke="none">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill={isFull ? 'var(--gold)' : isHalf ? `url(#${gradientId})` : 'var(--line)'}
+                    stroke="none"
+                  >
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                   </svg>
                 </span>
               );
             })}
-            {hoverRank !== null && (
-              <span style={S.rankTooltip}>{hoverRank}</span>
-            )}
+            {hoverRank !== null && <span style={S.rankTooltip}>{hoverRank}</span>}
           </div>
           {currentRank > 0 && (
-            <button
-              style={S.clearRankBtn}
-              onClick={handleClearRank}
-              aria-label="Limpiar rating"
-            >
+            <button style={S.clearRankBtn} onClick={handleClearRank} aria-label="Limpiar rating">
               ×
             </button>
           )}
           <button style={S.removeBtn} onClick={handleRemove} aria-label={`Eliminar ${book.title}`}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M3 6h18" />
+              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+              <path d="M10 11v6" />
+              <path d="M14 11v6" />
+            </svg>
           </button>
         </div>
       </div>
@@ -1355,23 +1784,36 @@ function BookCard({ book, progress, onOpen, onRemove, onSaveRank }: BookCardProp
 
 const S: Record<string, React.CSSProperties> = {
   app: {
-    display: 'flex', height: '100vh',
-    background: 'radial-gradient(1200px 600px at 80% -10%, rgba(var(--verdigris-rgb),.06), transparent 60%), radial-gradient(1000px 500px at -5% 110%, rgba(var(--gold-rgb),.06), transparent 55%), var(--ink-950)',
-    fontFamily: '"Hanken Grotesk", system-ui, sans-serif', color: 'var(--tx)',
+    display: 'flex',
+    height: '100vh',
+    background:
+      'radial-gradient(1200px 600px at 80% -10%, rgba(var(--verdigris-rgb),.06), transparent 60%), radial-gradient(1000px 500px at -5% 110%, rgba(var(--gold-rgb),.06), transparent 55%), var(--ink-950)',
+    fontFamily: '"Hanken Grotesk", system-ui, sans-serif',
+    color: 'var(--tx)',
     transition: 'background .3s var(--ease)',
   },
 
   /* --- Rail --- */
   rail: {
-    width: 76, flexShrink: 0,
+    width: 76,
+    flexShrink: 0,
     background: 'linear-gradient(180deg, var(--ink-900), var(--ink-950))',
     borderRight: '1px solid var(--line)',
-    display: 'flex', flexDirection: 'column', alignItems: 'center',
-    padding: '18px 0', gap: 6, position: 'relative', zIndex: 20,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: '18px 0',
+    gap: 6,
+    position: 'relative',
+    zIndex: 20,
   },
   brand: {
-    width: 46, height: 46, borderRadius: 13,
-    display: 'grid', placeItems: 'center', marginBottom: 18,
+    width: 46,
+    height: 46,
+    borderRadius: 13,
+    display: 'grid',
+    placeItems: 'center',
+    marginBottom: 18,
     background: 'radial-gradient(120% 120% at 30% 20%, var(--ink-800), var(--ink-950))',
     border: '1px solid var(--gold-dim)',
     boxShadow: 'inset 0 1px 0 rgba(var(--gold-rgb),.25), 0 6px 18px -8px rgba(0,0,0,.8)',
@@ -1381,342 +1823,658 @@ const S: Record<string, React.CSSProperties> = {
   },
   nav: { display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center', flex: 1 },
   navBtn: {
-    width: 48, height: 48, borderRadius: 13,
-    display: 'grid', placeItems: 'center', color: 'var(--tx-lo)',
-    position: 'relative', transition: '.22s cubic-bezier(.22,.61,.36,1)',
-    cursor: 'pointer', background: 'none', border: 'none', padding: 0,
+    width: 48,
+    height: 48,
+    borderRadius: 13,
+    display: 'grid',
+    placeItems: 'center',
+    color: 'var(--tx-lo)',
+    position: 'relative',
+    transition: '.22s cubic-bezier(.22,.61,.36,1)',
+    cursor: 'pointer',
+    background: 'none',
+    border: 'none',
+    padding: 0,
   },
   navBtnActive: {
     color: 'var(--on-gold)',
     background: 'linear-gradient(180deg, var(--gold-bright), var(--gold))',
   },
   navIndicator: {
-    position: 'absolute', left: -18, top: '50%', transform: 'translateY(-50%)',
-    width: 4, height: 22, borderRadius: '0 4px 4px 0', background: 'var(--gold-bright)',
+    position: 'absolute',
+    left: -18,
+    top: '50%',
+    transform: 'translateY(-50%)',
+    width: 4,
+    height: 22,
+    borderRadius: '0 4px 4px 0',
+    background: 'var(--gold-bright)',
   },
   tooltip: {
-    position: 'absolute', left: 58, top: '50%', transform: 'translateY(-50%)',
-    background: 'var(--ink-800)', color: 'var(--tx-hi)', border: '1px solid var(--line)',
-    padding: '6px 11px', borderRadius: 9, fontSize: 12.5, whiteSpace: 'nowrap',
-    zIndex: 40, boxShadow: '0 18px 50px -20px rgba(0,0,0,.7)', fontWeight: 500,
+    position: 'absolute',
+    left: 58,
+    top: '50%',
+    transform: 'translateY(-50%)',
+    background: 'var(--ink-800)',
+    color: 'var(--tx-hi)',
+    border: '1px solid var(--line)',
+    padding: '6px 11px',
+    borderRadius: 9,
+    fontSize: 12.5,
+    whiteSpace: 'nowrap',
+    zIndex: 40,
+    boxShadow: '0 18px 50px -20px rgba(0,0,0,.7)',
+    fontWeight: 500,
   },
 
   /* --- Stage --- */
   stage: { flex: 1, position: 'relative', overflow: 'hidden' },
   wrap: {
-    maxWidth: 1180, margin: '0 auto', padding: '34px 40px 60px',
-    height: '100%', overflowY: 'auto',
+    maxWidth: 1180,
+    margin: '0 auto',
+    padding: '34px 40px 60px',
+    height: '100%',
+    overflowY: 'auto',
   } as React.CSSProperties,
 
   /* --- Topbar --- */
   topbar: { display: 'flex', alignItems: 'center', gap: 18, marginBottom: 30 },
   h1: {
-    fontFamily: '"Fraunces", serif', fontWeight: 600, color: 'var(--tx-hi)',
-    fontSize: 30, letterSpacing: '-.01em', lineHeight: 1.1, margin: 0,
+    fontFamily: '"Fraunces", serif',
+    fontWeight: 600,
+    color: 'var(--tx-hi)',
+    fontSize: 30,
+    letterSpacing: '-.01em',
+    lineHeight: 1.1,
+    margin: 0,
   },
   sub: { color: 'var(--tx-lo)', fontSize: 13.5, marginTop: 2 },
   search: {
-    display: 'flex', alignItems: 'center', gap: 9, background: 'var(--ink-850)',
-    border: '1px solid var(--line)', borderRadius: 11, padding: '0 12px', height: 42,
-    minWidth: 230, transition: '.2s', color: 'var(--tx-lo)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 9,
+    background: 'var(--ink-850)',
+    border: '1px solid var(--line)',
+    borderRadius: 11,
+    padding: '0 12px',
+    height: 42,
+    minWidth: 230,
+    transition: '.2s',
+    color: 'var(--tx-lo)',
   },
   searchInput: {
-    background: 'none', border: 'none', outline: 'none', color: 'var(--tx-hi)',
-    fontSize: 14, width: '100%', fontFamily: 'inherit',
+    background: 'none',
+    border: 'none',
+    outline: 'none',
+    color: 'var(--tx-hi)',
+    fontSize: 14,
+    width: '100%',
+    fontFamily: 'inherit',
   } as React.CSSProperties,
 
   /* --- Meander --- */
   meander: {
-    height: 8, width: '100%', marginBottom: 34,
-    backgroundImage: 'repeating-linear-gradient(90deg, rgba(var(--gold-rgb),.55) 0 2px, transparent 2px 14px)',
-    WebkitMask: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'8\' viewBox=\'0 0 24 8\'%3E%3Cpath d=\'M0 7h4V3h4v4h4V1h4v6h4\' fill=\'none\' stroke=\'%23000\' stroke-width=\'1.4\'/%3E%3C/svg%3E") repeat-x',
-    mask: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'8\' viewBox=\'0 0 24 8\'%3E%3Cpath d=\'M0 7h4V3h4v4h4V1h4v6h4\' fill=\'none\' stroke=\'%23000\' stroke-width=\'1.4\'/%3E%3C/svg%3E") repeat-x',
+    height: 8,
+    width: '100%',
+    marginBottom: 34,
+    backgroundImage:
+      'repeating-linear-gradient(90deg, rgba(var(--gold-rgb),.55) 0 2px, transparent 2px 14px)',
+    WebkitMask:
+      "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='8' viewBox='0 0 24 8'%3E%3Cpath d='M0 7h4V3h4v4h4V1h4v6h4' fill='none' stroke='%23000' stroke-width='1.4'/%3E%3C/svg%3E\") repeat-x",
+    mask: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='8' viewBox='0 0 24 8'%3E%3Cpath d='M0 7h4V3h4v4h4V1h4v6h4' fill='none' stroke='%23000' stroke-width='1.4'/%3E%3C/svg%3E\") repeat-x",
     opacity: 0.7,
   },
 
   /* --- Section headers --- */
   sectionHead: { display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 16 },
-  sectionAccent: { width: 26, height: 2, background: 'var(--gold)', borderRadius: 2, alignSelf: 'center', opacity: 0.8, flexShrink: 0 },
-  sectionTitle: { fontFamily: '"Fraunces", serif', fontWeight: 600, color: 'var(--tx-hi)', fontSize: 19, letterSpacing: '-.01em', margin: 0 },
+  sectionAccent: {
+    width: 26,
+    height: 2,
+    background: 'var(--gold)',
+    borderRadius: 2,
+    alignSelf: 'center',
+    opacity: 0.8,
+    flexShrink: 0,
+  },
+  sectionTitle: {
+    fontFamily: '"Fraunces", serif',
+    fontWeight: 600,
+    color: 'var(--tx-hi)',
+    fontSize: 19,
+    letterSpacing: '-.01em',
+    margin: 0,
+  },
   sectionCount: { color: 'var(--tx-faint)', fontSize: 13 },
 
   /* --- Rows / Grid --- */
   row: {
-    display: 'grid', gridAutoFlow: 'column', gridAutoColumns: 200,
-    gap: 20, overflowX: 'auto', paddingBottom: 14, scrollSnapType: 'x proximity',
+    display: 'grid',
+    gridAutoFlow: 'column',
+    gridAutoColumns: 200,
+    gap: 20,
+    overflowX: 'auto',
+    paddingBottom: 14,
+    scrollSnapType: 'x proximity',
   } as React.CSSProperties,
   grid: {
-    display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 24,
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))',
+    gap: 24,
   },
 
   /* --- Chips --- */
   chips: { display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 28 },
   chip: {
-    padding: '8px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500,
-    background: 'var(--ink-850)', border: '1px solid var(--line)', color: 'var(--tx-lo)',
-    transition: '.18s', cursor: 'pointer', fontFamily: 'inherit',
+    padding: '8px 14px',
+    borderRadius: 20,
+    fontSize: 13,
+    fontWeight: 500,
+    background: 'var(--ink-850)',
+    border: '1px solid var(--line)',
+    color: 'var(--tx-lo)',
+    transition: '.18s',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
   },
   chipActive: {
     background: 'linear-gradient(180deg, var(--gold-bright), var(--gold))',
-    color: 'var(--on-gold)', border: '1px solid transparent', fontWeight: 600,
+    color: 'var(--on-gold)',
+    border: '1px solid transparent',
+    fontWeight: 600,
   },
 
   /* --- Filter row (format / language / sort) --- */
   filterRow: {
-    display: 'flex', alignItems: 'center', gap: 16,
-    padding: '0 0 6px', flexWrap: 'wrap', marginBottom: 28,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 16,
+    padding: '0 0 6px',
+    flexWrap: 'wrap',
+    marginBottom: 28,
   },
   filterGroup: {
-    display: 'flex', alignItems: 'center', gap: 8,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
   },
   filterLabel: {
-    fontSize: 13, color: 'var(--tx-lo)', fontWeight: 500, letterSpacing: '.02em',
+    fontSize: 13,
+    color: 'var(--tx-lo)',
+    fontWeight: 500,
+    letterSpacing: '.02em',
   },
   chipsSmall: { display: 'flex', gap: 8 },
   chipSm: {
-    padding: '8px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500,
-    background: 'var(--ink-850)', border: '1px solid var(--line)', color: 'var(--tx-lo)',
-    transition: '.18s', cursor: 'pointer', fontFamily: 'inherit',
+    padding: '8px 14px',
+    borderRadius: 20,
+    fontSize: 13,
+    fontWeight: 500,
+    background: 'var(--ink-850)',
+    border: '1px solid var(--line)',
+    color: 'var(--tx-lo)',
+    transition: '.18s',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
   },
   chipSmActive: {
     background: 'linear-gradient(180deg, var(--gold-bright), var(--gold))',
-    color: 'var(--on-gold)', border: '1px solid transparent', fontWeight: 600,
+    color: 'var(--on-gold)',
+    border: '1px solid transparent',
+    fontWeight: 600,
   },
   select: {
-    padding: '8px 14px', borderRadius: 20, fontSize: 13,
-    background: 'var(--ink-850)', border: '1px solid var(--line)', color: 'var(--tx)',
-    fontFamily: 'inherit', cursor: 'pointer', outline: 'none',
+    padding: '8px 14px',
+    borderRadius: 20,
+    fontSize: 13,
+    background: 'var(--ink-850)',
+    border: '1px solid var(--line)',
+    color: 'var(--tx)',
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+    outline: 'none',
     appearance: 'auto' as const,
   },
 
   /* --- Import button & menu --- */
   importBtn: {
-    display: 'flex', alignItems: 'center', gap: 8,
-    padding: '9px 16px', borderRadius: 10, fontSize: 13.5, fontWeight: 600,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '9px 16px',
+    borderRadius: 10,
+    fontSize: 13.5,
+    fontWeight: 600,
     background: 'linear-gradient(180deg, var(--gold-bright), var(--gold))',
-    color: 'var(--on-gold)', border: 'none', cursor: 'pointer',
-    fontFamily: 'inherit', transition: '.18s',
+    color: 'var(--on-gold)',
+    border: 'none',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: '.18s',
   },
   importMenu: {
-    position: 'absolute', top: '100%', right: 0, marginTop: 6,
-    background: 'var(--ink-800)', border: '1px solid var(--line)',
-    borderRadius: 10, padding: 6, zIndex: 50,
+    position: 'absolute',
+    top: '100%',
+    right: 0,
+    marginTop: 6,
+    background: 'var(--ink-800)',
+    border: '1px solid var(--line)',
+    borderRadius: 10,
+    padding: 6,
+    zIndex: 50,
     boxShadow: '0 18px 50px -20px rgba(0,0,0,.7)',
     minWidth: 200,
   },
   importMenuItem: {
-    display: 'flex', alignItems: 'center', gap: 10,
-    width: '100%', padding: '10px 14px', borderRadius: 8,
-    background: 'none', border: 'none', color: 'var(--tx)',
-    fontSize: 13.5, cursor: 'pointer', fontFamily: 'inherit',
-    transition: '.15s', textAlign: 'left',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    width: '100%',
+    padding: '10px 14px',
+    borderRadius: 8,
+    background: 'none',
+    border: 'none',
+    color: 'var(--tx)',
+    fontSize: 13.5,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: '.15s',
+    textAlign: 'left',
   },
   importProgress: {
-    marginBottom: 20, padding: '14px 16px',
-    background: 'var(--ink-850)', border: '1px solid var(--line)',
+    marginBottom: 20,
+    padding: '14px 16px',
+    background: 'var(--ink-850)',
+    border: '1px solid var(--line)',
     borderRadius: 10,
   },
   importProgressBar: {
-    height: 6, background: 'var(--ink-800)', borderRadius: 4,
-    overflow: 'hidden', marginBottom: 10,
+    height: 6,
+    background: 'var(--ink-800)',
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 10,
   },
   importProgressFill: {
-    display: 'block', height: '100%',
+    display: 'block',
+    height: '100%',
     background: 'linear-gradient(90deg, var(--verdigris), var(--gold-bright))',
-    borderRadius: 4, transition: 'width .3s',
+    borderRadius: 4,
+    transition: 'width .3s',
   },
   importProgressText: {
-    fontSize: 13, color: 'var(--tx-lo)',
+    fontSize: 13,
+    color: 'var(--tx-lo)',
   },
 
   /* --- Empty states --- */
   empty: {
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
-    padding: '80px 20px', color: 'var(--tx-lo)', textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 12,
+    padding: '80px 20px',
+    color: 'var(--tx-lo)',
+    textAlign: 'center',
   },
   emptyCol: {
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
-    padding: '60px 20px', color: 'var(--tx-lo)', textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 12,
+    padding: '60px 20px',
+    color: 'var(--tx-lo)',
+    textAlign: 'center',
   },
   emptyBookmarks: {
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
-    padding: '80px 20px', color: 'var(--tx-lo)', textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 12,
+    padding: '80px 20px',
+    color: 'var(--tx-lo)',
+    textAlign: 'center',
   },
   bookmarksList: {
-    display: 'flex', flexDirection: 'column', gap: 8,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
   },
   bookmarkItem: {
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '12px 16px', borderRadius: 10,
-    background: 'var(--ink-850)', border: '1px solid var(--line)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '12px 16px',
+    borderRadius: 10,
+    background: 'var(--ink-850)',
+    border: '1px solid var(--line)',
     transition: '.15s',
   },
   bookmarkContent: {
-    display: 'flex', alignItems: 'center', gap: 12, flex: 1, cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+    cursor: 'pointer',
   },
   bookmarkIcon: {
-    width: 32, height: 32, borderRadius: 8,
-    display: 'grid', placeItems: 'center',
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    display: 'grid',
+    placeItems: 'center',
     background: 'rgba(var(--gold-rgb),.12)',
   },
   bookmarkInfo: { flex: 1, minWidth: 0 },
   bookmarkTitle: {
-    fontFamily: '"Fraunces", serif', fontWeight: 600, color: 'var(--tx-hi)',
-    fontSize: 14, lineHeight: 1.3, marginBottom: 2,
-    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+    fontFamily: '"Fraunces", serif',
+    fontWeight: 600,
+    color: 'var(--tx-hi)',
+    fontSize: 14,
+    lineHeight: 1.3,
+    marginBottom: 2,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
   bookmarkMeta: {
-    display: 'flex', alignItems: 'center', gap: 6,
-    color: 'var(--tx-faint)', fontSize: 12,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    color: 'var(--tx-faint)',
+    fontSize: 12,
   },
   bookmarkDot: { opacity: 0.5 },
   bookmarkDelete: {
-    padding: '6px 8px', background: 'transparent',
-    border: '1px solid transparent', borderRadius: 6,
-    color: 'var(--tx-faint)', cursor: 'pointer', display: 'grid', placeItems: 'center',
-    fontFamily: 'inherit', transition: '.15s', flexShrink: 0,
+    padding: '6px 8px',
+    background: 'transparent',
+    border: '1px solid transparent',
+    borderRadius: 6,
+    color: 'var(--tx-faint)',
+    cursor: 'pointer',
+    display: 'grid',
+    placeItems: 'center',
+    fontFamily: 'inherit',
+    transition: '.15s',
+    flexShrink: 0,
   },
   notesToolbar: {
-    display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap',
+    display: 'flex',
+    gap: 10,
+    marginBottom: 16,
+    flexWrap: 'wrap',
   },
   notesSelect: {
-    padding: '8px 12px', borderRadius: 8, background: 'var(--ink-850)',
-    border: '1px solid var(--line)', color: 'var(--tx)', fontSize: 13,
-    fontFamily: 'inherit', cursor: 'pointer', minWidth: 180,
+    padding: '8px 12px',
+    borderRadius: 8,
+    background: 'var(--ink-850)',
+    border: '1px solid var(--line)',
+    color: 'var(--tx)',
+    fontSize: 13,
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+    minWidth: 180,
   },
   noteBody: {
-    fontSize: 14, color: 'var(--tx)', lineHeight: 1.45, marginBottom: 2,
-    whiteSpace: 'pre-wrap', overflowWrap: 'anywhere',
+    fontSize: 14,
+    color: 'var(--tx)',
+    lineHeight: 1.45,
+    marginBottom: 2,
+    whiteSpace: 'pre-wrap',
+    overflowWrap: 'anywhere',
   },
   noteQuote: {
-    fontSize: 13, fontStyle: 'italic', color: 'var(--tx-lo)',
-    borderLeft: '2px solid var(--line)', paddingLeft: 8, marginBottom: 4,
-    overflow: 'hidden', textOverflow: 'ellipsis',
+    fontSize: 13,
+    fontStyle: 'italic',
+    color: 'var(--tx-lo)',
+    borderLeft: '2px solid var(--line)',
+    paddingLeft: 8,
+    marginBottom: 4,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
   },
-  emptyTitle: { fontFamily: '"Fraunces", serif', color: 'var(--tx)', fontWeight: 600, fontSize: 18, margin: 0 },
+  emptyTitle: {
+    fontFamily: '"Fraunces", serif',
+    color: 'var(--tx)',
+    fontWeight: 600,
+    fontSize: 18,
+    margin: 0,
+  },
   emptyHint: { fontSize: 14, color: 'var(--tx-faint)', margin: 0, maxWidth: 340 },
   emptyBtn: {
-    marginTop: 8, padding: '10px 20px',
+    marginTop: 8,
+    padding: '10px 20px',
     background: 'linear-gradient(180deg, var(--gold-bright), var(--gold))',
-    color: 'var(--on-gold)', border: 'none', borderRadius: 10,
-    fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+    color: 'var(--on-gold)',
+    border: 'none',
+    borderRadius: 10,
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
   },
 
   /* --- Card --- */
   card: {
-    width: '100%', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 11,
+    width: '100%',
+    textAlign: 'left',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 11,
     transition: 'transform .22s cubic-bezier(.22,.61,.36,1)',
-    cursor: 'pointer', background: 'none', border: 'none', padding: 0, fontFamily: 'inherit',
+    cursor: 'pointer',
+    background: 'none',
+    border: 'none',
+    padding: 0,
+    fontFamily: 'inherit',
   },
   cover: {
-    position: 'relative', aspectRatio: '2/3', borderRadius: 12, overflow: 'hidden',
+    position: 'relative',
+    aspectRatio: '2/3',
+    borderRadius: 12,
+    overflow: 'hidden',
     transition: 'box-shadow .22s cubic-bezier(.22,.61,.36,1)',
   },
   docType: {
-    position: 'absolute', top: 10, right: 10, zIndex: 4,
-    fontSize: 9.5, fontWeight: 700, letterSpacing: '.09em',
-    padding: '4px 7px', borderRadius: 6, color: '#fff',
-    background: 'rgba(var(--ink950-rgb),.6)', backdropFilter: 'blur(6px)',
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 4,
+    fontSize: 9.5,
+    fontWeight: 700,
+    letterSpacing: '.09em',
+    padding: '4px 7px',
+    borderRadius: 6,
+    color: '#fff',
+    background: 'rgba(var(--ink950-rgb),.6)',
+    backdropFilter: 'blur(6px)',
     border: '1px solid rgba(255,255,255,.18)',
   },
   statusTag: {
-    position: 'absolute', left: 10, top: 10, zIndex: 4,
-    display: 'flex', alignItems: 'center', gap: 5,
-    fontSize: 10, fontWeight: 600, letterSpacing: '.02em',
-    padding: '4px 8px 4px 6px', borderRadius: 20,
-    background: 'rgba(var(--ink950-rgb),.62)', backdropFilter: 'blur(6px)',
-    color: 'var(--tx-hi)', border: '1px solid rgba(255,255,255,.12)',
+    position: 'absolute',
+    left: 10,
+    top: 10,
+    zIndex: 4,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 5,
+    fontSize: 10,
+    fontWeight: 600,
+    letterSpacing: '.02em',
+    padding: '4px 8px 4px 6px',
+    borderRadius: 20,
+    background: 'rgba(var(--ink950-rgb),.62)',
+    backdropFilter: 'blur(6px)',
+    color: 'var(--tx-hi)',
+    border: '1px solid rgba(255,255,255,.12)',
   },
   dot: { width: 7, height: 7, borderRadius: '50%', flexShrink: 0 },
   coverArt: {
-    position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
-    justifyContent: 'space-between', padding: '16px 14px 14px 18px',
+    position: 'absolute',
+    inset: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    padding: '16px 14px 14px 18px',
   },
   coverAuthor: {
-    fontSize: 10.5, letterSpacing: '.14em', textTransform: 'uppercase',
-    color: 'rgba(255,255,255,.72)', fontWeight: 600,
+    fontSize: 10.5,
+    letterSpacing: '.14em',
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,.72)',
+    fontWeight: 600,
   },
   coverTitle: {
-    fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 16,
-    lineHeight: 1.15, color: '#fff', textShadow: '0 1px 12px rgba(0,0,0,.4)',
+    fontFamily: '"Fraunces", serif',
+    fontWeight: 600,
+    fontSize: 16,
+    lineHeight: 1.15,
+    color: '#fff',
+    textShadow: '0 1px 12px rgba(0,0,0,.4)',
     letterSpacing: '-.01em',
-    display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+    display: '-webkit-box',
+    WebkitLineClamp: 3,
+    WebkitBoxOrient: 'vertical',
+    overflow: 'hidden',
   } as React.CSSProperties,
   coverGlyph: {
-    fontFamily: '"Fraunces", serif', fontSize: 38,
-    color: 'rgba(255,255,255,.24)', alignSelf: 'flex-end', lineHeight: 1,
+    fontFamily: '"Fraunces", serif',
+    fontSize: 38,
+    color: 'rgba(255,255,255,.24)',
+    alignSelf: 'flex-end',
+    lineHeight: 1,
   },
   coverProgress: {
-    position: 'absolute', left: 0, right: 0, bottom: 0, height: 4,
-    background: 'rgba(0,0,0,.4)', zIndex: 4,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 4,
+    background: 'rgba(0,0,0,.4)',
+    zIndex: 4,
   },
   coverProgressFill: {
-    display: 'block', height: '100%',
-    background: 'linear-gradient(90deg, var(--verdigris), var(--gold-bright))', borderRadius: 20,
+    display: 'block',
+    height: '100%',
+    background: 'linear-gradient(90deg, var(--verdigris), var(--gold-bright))',
+    borderRadius: 20,
   },
   cardBody: { display: 'flex', flexDirection: 'column', gap: 3, padding: '0 2px' },
   cardTitle: {
-    fontFamily: '"Fraunces", serif', fontWeight: 600, color: 'var(--tx-hi)',
-    fontSize: 15, lineHeight: 1.25, letterSpacing: '-.005em',
-    display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+    fontFamily: '"Fraunces", serif',
+    fontWeight: 600,
+    color: 'var(--tx-hi)',
+    fontSize: 15,
+    lineHeight: 1.25,
+    letterSpacing: '-.005em',
+    display: '-webkit-box',
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: 'vertical',
+    overflow: 'hidden',
   } as React.CSSProperties,
   cardAuthor: {
-    color: 'var(--tx-lo)', fontSize: 12.5,
-    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+    color: 'var(--tx-lo)',
+    fontSize: 12.5,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
   cardMeta: {
-    display: 'flex', alignItems: 'center', gap: 7, marginTop: 5,
-    color: 'var(--tx-faint)', fontSize: 11.5,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 7,
+    marginTop: 5,
+    color: 'var(--tx-faint)',
+    fontSize: 11.5,
   },
   cardFooter: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    marginTop: 6, paddingTop: 8, borderTop: '1px solid var(--ink-800)',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 6,
+    paddingTop: 8,
+    borderTop: '1px solid var(--ink-800)',
   },
   starRating: { display: 'flex', gap: 2, alignItems: 'center', outline: 'none' },
   starBtn: {
-    cursor: 'pointer', display: 'inline-flex', padding: 2, borderRadius: 3,
+    cursor: 'pointer',
+    display: 'inline-flex',
+    padding: 2,
+    borderRadius: 3,
     transition: 'transform .1s',
   },
   rankTooltip: {
-    fontSize: 10, color: 'var(--gold)', fontWeight: 600, marginLeft: 4,
+    fontSize: 10,
+    color: 'var(--gold)',
+    fontWeight: 600,
+    marginLeft: 4,
     fontFamily: 'var(--font-body)',
   },
   clearRankBtn: {
-    padding: '1px 5px', background: 'transparent', border: 'none',
-    color: 'var(--tx-faint)', cursor: 'pointer', fontSize: 13, lineHeight: 1,
-    fontFamily: 'inherit', borderRadius: 4, transition: '.15s',
+    padding: '1px 5px',
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--tx-faint)',
+    cursor: 'pointer',
+    fontSize: 13,
+    lineHeight: 1,
+    fontFamily: 'inherit',
+    borderRadius: 4,
+    transition: '.15s',
   },
   removeBtn: {
-    padding: '3px 8px', background: 'transparent',
-    border: '1px solid var(--line)', borderRadius: 6,
-    color: 'var(--tx-faint)', cursor: 'pointer', display: 'grid', placeItems: 'center',
-    fontFamily: 'inherit', transition: '.15s',
+    padding: '3px 8px',
+    background: 'transparent',
+    border: '1px solid var(--line)',
+    borderRadius: 6,
+    color: 'var(--tx-faint)',
+    cursor: 'pointer',
+    display: 'grid',
+    placeItems: 'center',
+    fontFamily: 'inherit',
+    transition: '.15s',
   },
 
   /* --- Palette picker --- */
   palettePopover: {
-    position: 'absolute', left: 58, bottom: 0,
-    background: 'var(--ink-800)', border: '1px solid var(--line)',
-    borderRadius: 12, padding: 14, zIndex: 50,
+    position: 'absolute',
+    left: 58,
+    bottom: 0,
+    background: 'var(--ink-800)',
+    border: '1px solid var(--line)',
+    borderRadius: 12,
+    padding: 14,
+    zIndex: 50,
     boxShadow: '0 18px 50px -20px rgba(0,0,0,.7)',
     minWidth: 200,
   },
   palettePopoverTitle: {
-    fontSize: 12, fontWeight: 600, letterSpacing: '.08em',
-    textTransform: 'uppercase', color: 'var(--tx-lo)',
+    fontSize: 12,
+    fontWeight: 600,
+    letterSpacing: '.08em',
+    textTransform: 'uppercase',
+    color: 'var(--tx-lo)',
     marginBottom: 10,
   },
   paletteGrid: {
-    display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8,
+    display: 'grid',
+    gridTemplateColumns: 'repeat(5, 1fr)',
+    gap: 8,
   },
   paletteSwatch: {
-    width: 32, height: 32, borderRadius: 8,
-    border: '2px solid transparent', cursor: 'pointer',
-    position: 'relative', transition: '.15s',
-    display: 'grid', placeItems: 'center',
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    border: '2px solid transparent',
+    cursor: 'pointer',
+    position: 'relative',
+    transition: '.15s',
+    display: 'grid',
+    placeItems: 'center',
     padding: 0,
   },
   paletteSwatchAccent: {
-    width: 8, height: 8, borderRadius: '50%',
+    width: 8,
+    height: 8,
+    borderRadius: '50%',
   },
 };

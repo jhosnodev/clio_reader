@@ -2,14 +2,17 @@ import {
   Bookmark,
   Book,
   createDefaultPreferences,
+  createDefaultUserSettings,
   DomainValidationError,
+  Highlight,
   Note,
   ReaderPreferences,
   ReadingProgress,
+  UserSettings,
   validateReaderPreferences,
 } from '@clio-reader/domain';
 
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 const DEFAULT_STATE_KEY = 'clio-reader.state';
 
 type StoredPreferences = {
@@ -24,6 +27,8 @@ export interface PersistenceState {
   preferences: StoredPreferences;
   bookmarks: Bookmark[];
   notes: Note[];
+  highlights: Highlight[];
+  userSettings: UserSettings;
 }
 
 export interface KeyValueStore {
@@ -106,6 +111,7 @@ export class LocalRepository {
     state.progress = state.progress.filter((item) => item.bookId !== bookId);
     state.bookmarks = state.bookmarks.filter((item) => item.bookId !== bookId);
     state.notes = state.notes.filter((item) => item.bookId !== bookId);
+    state.highlights = state.highlights.filter((item) => item.bookId !== bookId);
     delete state.preferences.byBook[bookId];
     await this.saveState(state);
   }
@@ -203,6 +209,37 @@ export class LocalRepository {
     state.notes = state.notes.filter((item) => item.id !== noteId);
     await this.saveState(state);
   }
+
+  async listHighlights(bookId: string): Promise<readonly Highlight[]> {
+    return (await this.getState()).highlights.filter((item) => item.bookId === bookId);
+  }
+
+  async saveHighlight(highlight: Highlight): Promise<void> {
+    const state = await this.getState();
+    const index = state.highlights.findIndex((item) => item.id === highlight.id);
+    if (index === -1) {
+      state.highlights.push(highlight);
+    } else {
+      state.highlights[index] = highlight;
+    }
+    await this.saveState(state);
+  }
+
+  async removeHighlight(highlightId: string): Promise<void> {
+    const state = await this.getState();
+    state.highlights = state.highlights.filter((item) => item.id !== highlightId);
+    await this.saveState(state);
+  }
+
+  async getUserSettings(): Promise<UserSettings> {
+    return (await this.getState()).userSettings;
+  }
+
+  async saveUserSettings(settings: UserSettings): Promise<void> {
+    const state = await this.getState();
+    state.userSettings = { ...settings };
+    await this.saveState(state);
+  }
 }
 
 export function createInitialState(): PersistenceState {
@@ -216,6 +253,8 @@ export function createInitialState(): PersistenceState {
     },
     bookmarks: [],
     notes: [],
+    highlights: [],
+    userSettings: createDefaultUserSettings(),
   };
 }
 
@@ -234,10 +273,12 @@ export function migrateState(input: unknown): PersistenceState {
     : initial.preferences.global;
   validateReaderPreferences(global);
 
+  const rawUserSettings: Record<string, unknown> = isRecord(candidate.userSettings)
+    ? candidate.userSettings
+    : {};
+
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
-    // Books from v1 won't have rank/coverImage fields - they'll be undefined (optional)
-    // Books imported after v2 will have these fields populated
     books: Array.isArray(candidate.books) ? candidate.books : [],
     progress: Array.isArray(candidate.progress) ? candidate.progress : [],
     preferences: {
@@ -248,6 +289,17 @@ export function migrateState(input: unknown): PersistenceState {
     },
     bookmarks: Array.isArray(candidate.bookmarks) ? candidate.bookmarks : [],
     notes: Array.isArray(candidate.notes) ? candidate.notes : [],
+    highlights: Array.isArray(candidate.highlights) ? candidate.highlights : [],
+    userSettings: {
+      paletteId:
+        typeof rawUserSettings.paletteId === 'string'
+          ? rawUserSettings.paletteId
+          : initial.userSettings.paletteId,
+      mode:
+        rawUserSettings.mode === 'dark' || rawUserSettings.mode === 'light'
+          ? rawUserSettings.mode
+          : initial.userSettings.mode,
+    },
   };
 }
 

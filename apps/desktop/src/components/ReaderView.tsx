@@ -9,7 +9,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { bridge } from '../bridges/bridge-singleton';
 import type { LibraryRepository } from '@clio-reader/library';
-import { createNoteManaged, listNotesManaged, removeNoteManaged, updateNoteManaged } from '@clio-reader/annotations';
+import {
+  createNoteManaged,
+  listNotesManaged,
+  removeNoteManaged,
+  updateNoteManaged,
+} from '@clio-reader/annotations';
 import type { ReaderPreferences } from '@clio-reader/domain';
 import { createReadingProgress, createDefaultPreferences } from '@clio-reader/domain';
 import { getPalette, LIGHT_DEFAULTS } from '../themes';
@@ -179,7 +184,9 @@ export function ReaderView({
         };
         const initCode = `window.__initFromHost(${JSON.stringify(initData)})`;
 
-        const wv = webviewRef.current as unknown as { executeJavaScript: (code: string) => Promise<unknown> } | null;
+        const wv = webviewRef.current as unknown as {
+          executeJavaScript: (code: string) => Promise<unknown>;
+        } | null;
         await wv?.executeJavaScript(initCode);
 
         // Inject palette CSS variables into the webview
@@ -192,7 +199,9 @@ export function ReaderView({
           : undefined;
         const resumeOrder = getResumePositionOrder(noteLocator, savedProgress?.locator);
         if (typeof resumeOrder === 'number') {
-          await wv?.executeJavaScript(`window.__goToChapter && window.__goToChapter(${resumeOrder})`);
+          await wv?.executeJavaScript(
+            `window.__goToChapter && window.__goToChapter(${resumeOrder})`,
+          );
         }
 
         setWebviewLoaded(true);
@@ -201,12 +210,27 @@ export function ReaderView({
         setWebviewLoaded(true);
       }
     };
-  }, [loadPreferences, loadProgress, fileUri, paletteId, theme, bookId, title, author, coverImage, format, repository, initialLocator]);
+  }, [
+    loadPreferences,
+    loadProgress,
+    fileUri,
+    paletteId,
+    theme,
+    bookId,
+    title,
+    author,
+    coverImage,
+    format,
+    repository,
+    initialLocator,
+  ]);
 
   /* ----- Cleanup del listener en unmount ----- */
   useEffect(() => {
     return () => {
-      const webview = webviewRef.current as (HTMLElement & { removeEventListener: (event: string, handler: () => void) => void }) | null;
+      const webview = webviewRef.current as
+        | (HTMLElement & { removeEventListener: (event: string, handler: () => void) => void })
+        | null;
       if (webview && handleFinishLoadRef.current) {
         webview.removeEventListener('did-finish-load', handleFinishLoadRef.current);
       }
@@ -214,18 +238,21 @@ export function ReaderView({
   }, []);
 
   /* ----- Helper: empujar notas actualizadas al webview ----- */
-  const pushNotesToWebview = useCallback(async (wv: {
-    executeJavaScript: (code: string) => Promise<unknown>;
-  }): Promise<void> => {
-    const notes = await listNotesManaged(repository, bookId).catch(() => []);
-    const notesData = notes.map((n) => ({
-      id: n.id,
-      body: n.body,
-      createdAt: n.createdAt,
-      locator: JSON.stringify(n.locator),
-    }));
-    await wv.executeJavaScript(`window.__updateNotes && window.__updateNotes(${JSON.stringify(notesData)})`);
-  }, [repository, bookId]);
+  const pushNotesToWebview = useCallback(
+    async (wv: { executeJavaScript: (code: string) => Promise<unknown> }): Promise<void> => {
+      const notes = await listNotesManaged(repository, bookId).catch(() => []);
+      const notesData = notes.map((n) => ({
+        id: n.id,
+        body: n.body,
+        createdAt: n.createdAt,
+        locator: JSON.stringify(n.locator),
+      }));
+      await wv.executeJavaScript(
+        `window.__updateNotes && window.__updateNotes(${JSON.stringify(notesData)})`,
+      );
+    },
+    [repository, bookId],
+  );
 
   type NoteQueueItem = { readonly key: string; readonly body: string; readonly locator: string };
   type NoteUpdateItem = { readonly key: string; readonly noteId: string; readonly body: string };
@@ -235,11 +262,14 @@ export function ReaderView({
     if (drainPromiseRef.current) return drainPromiseRef.current;
 
     const run = (async (): Promise<void> => {
-      const wv = webviewRef.current as unknown as { executeJavaScript: (code: string) => Promise<unknown> } | null;
+      const wv = webviewRef.current as unknown as {
+        executeJavaScript: (code: string) => Promise<unknown>;
+      } | null;
       if (!wv) return;
 
       try {
-        const pendingDelete = await wv.executeJavaScript('window.__pendingNoteDelete') as string | null | undefined;
+        const pendingDelete = (await wv.executeJavaScript('window.__pendingNoteDelete')) as
+          string | null | undefined;
         if (pendingDelete) {
           try {
             await removeNoteManaged(repository, pendingDelete, bookId);
@@ -250,7 +280,8 @@ export function ReaderView({
         }
 
         // Guardado en cola: procesa cada ítem y lo quita siempre (éxito o error)
-        const queue = await wv.executeJavaScript('window.__pendingNotes') as NoteQueueItem[] | null | undefined;
+        const queue = (await wv.executeJavaScript('window.__pendingNotes')) as
+          NoteQueueItem[] | null | undefined;
         if (queue && queue.length > 0) {
           for (const item of queue) {
             try {
@@ -260,7 +291,9 @@ export function ReaderView({
             } catch (err) {
               const message = err instanceof Error ? err.message : 'No se pudo guardar la nota';
               console.error('[reader] error guardando nota:', err);
-              await wv.executeJavaScript(`window.__noteError && window.__noteError(${JSON.stringify(message)})`);
+              await wv.executeJavaScript(
+                `window.__noteError && window.__noteError(${JSON.stringify(message)})`,
+              );
             }
             await wv.executeJavaScript(
               `window.__pendingNotes = (window.__pendingNotes ?? []).filter((n) => n.key !== ${JSON.stringify(item.key)})`,
@@ -270,7 +303,8 @@ export function ReaderView({
         }
 
         // Actualizaciones en cola
-        const updateQueue = await wv.executeJavaScript('window.__pendingNoteUpdates') as NoteUpdateItem[] | null | undefined;
+        const updateQueue = (await wv.executeJavaScript('window.__pendingNoteUpdates')) as
+          NoteUpdateItem[] | null | undefined;
         if (updateQueue && updateQueue.length > 0) {
           for (const item of updateQueue) {
             try {
@@ -279,7 +313,9 @@ export function ReaderView({
             } catch (err) {
               const message = err instanceof Error ? err.message : 'No se pudo actualizar la nota';
               console.error('[reader] error actualizando nota:', err);
-              await wv.executeJavaScript(`window.__noteError && window.__noteError(${JSON.stringify(message)})`);
+              await wv.executeJavaScript(
+                `window.__noteError && window.__noteError(${JSON.stringify(message)})`,
+              );
             }
             await wv.executeJavaScript(
               `window.__pendingNoteUpdates = (window.__pendingNoteUpdates ?? []).filter((n) => n.key !== ${JSON.stringify(item.key)})`,
@@ -293,7 +329,9 @@ export function ReaderView({
     })();
 
     drainPromiseRef.current = run;
-    void run.finally(() => { drainPromiseRef.current = null; });
+    void run.finally(() => {
+      drainPromiseRef.current = null;
+    });
     return run;
   }, [repository, bookId, pushNotesToWebview]);
 
@@ -329,10 +367,13 @@ export function ReaderView({
     if (!webviewLoaded) return;
 
     const interval = setInterval(() => {
-      const wv = webviewRef.current as unknown as { executeJavaScript: (code: string) => Promise<unknown> } | null;
+      const wv = webviewRef.current as unknown as {
+        executeJavaScript: (code: string) => Promise<unknown>;
+      } | null;
       if (!wv) return;
 
-      void wv.executeJavaScript('window.__getCurrentLocator && window.__getCurrentLocator()')
+      void wv
+        .executeJavaScript('window.__getCurrentLocator && window.__getCurrentLocator()')
         .then((result) => {
           if (typeof result !== 'string') return;
           try {
@@ -361,7 +402,9 @@ export function ReaderView({
   /* ----- Push rank updates al webview sin re-inicializar ----- */
   useEffect(() => {
     if (!webviewLoaded) return;
-    const wv = webviewRef.current as unknown as { executeJavaScript: (code: string) => Promise<unknown> } | null;
+    const wv = webviewRef.current as unknown as {
+      executeJavaScript: (code: string) => Promise<unknown>;
+    } | null;
     if (!wv) return;
     const currentRank = rank ?? 0;
     void wv.executeJavaScript(`window.__updateRank && window.__updateRank(${currentRank})`);
@@ -372,8 +415,11 @@ export function ReaderView({
     const prevEl = webviewRef.current;
 
     if (prevEl && handleFinishLoadRef.current) {
-      (prevEl as HTMLElement & { removeEventListener: (event: string, handler: () => void) => void })
-        .removeEventListener('did-finish-load', handleFinishLoadRef.current);
+      (
+        prevEl as HTMLElement & {
+          removeEventListener: (event: string, handler: () => void) => void;
+        }
+      ).removeEventListener('did-finish-load', handleFinishLoadRef.current);
     }
 
     webviewRef.current = el;
@@ -381,14 +427,20 @@ export function ReaderView({
     if (el) {
       el.setAttribute('src', readerUrlRef.current ?? '');
       setWebviewLoaded(false);
-      (el as HTMLElement & { addEventListener: (event: string, handler: () => void) => void })
-        .addEventListener('did-finish-load', handleFinishLoadRef.current!);
+      (
+        el as HTMLElement & { addEventListener: (event: string, handler: () => void) => void }
+      ).addEventListener('did-finish-load', handleFinishLoadRef.current!);
     }
   }, []);
 
   /* ----- Cerrar lector vía sentinel del webview + fallbacks de navegación ----- */
   useEffect(() => {
-    const webview = webviewRef.current as (HTMLElement & { addEventListener: (event: string, handler: (...args: unknown[]) => void) => void; removeEventListener: (event: string, handler: (...args: unknown[]) => void) => void }) | null;
+    const webview = webviewRef.current as
+      | (HTMLElement & {
+          addEventListener: (event: string, handler: (...args: unknown[]) => void) => void;
+          removeEventListener: (event: string, handler: (...args: unknown[]) => void) => void;
+        })
+      | null;
     if (!webview) return;
 
     const CLOSE_SENTINEL = '__clio_back__';
@@ -402,7 +454,11 @@ export function ReaderView({
       } catch {
         return false;
       }
-      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:' && parsed.protocol !== 'file:') {
+      if (
+        parsed.protocol !== 'http:' &&
+        parsed.protocol !== 'https:' &&
+        parsed.protocol !== 'file:'
+      ) {
         return false;
       }
       return parsed.pathname === '/' || parsed.pathname === '';
@@ -418,7 +474,9 @@ export function ReaderView({
       if (closingRef.current) return;
       closeOnce();
       // Flush progress + drain notes (fire-and-forget, repo stays valid)
-      void flushProgress().then(() => drainNotes()).catch(() => {});
+      void flushProgress()
+        .then(() => drainNotes())
+        .catch(() => {});
     };
 
     const handleConsoleMessage = (event: unknown): void => {
@@ -428,7 +486,9 @@ export function ReaderView({
         try {
           const payload = JSON.parse(message.slice(RANK_SENTINEL.length)) as { rank: number };
           onSaveRank?.(payload.rank);
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       }
     };
 
@@ -510,7 +570,12 @@ export function ReaderView({
             partition="persist:reader"
           />
           {!webviewLoaded && (
-            <div style={styles.loadingOverlay} role="status" aria-busy="true" aria-label="Abriendo libro">
+            <div
+              style={styles.loadingOverlay}
+              role="status"
+              aria-busy="true"
+              aria-label="Abriendo libro"
+            >
               <div style={styles.spinner} aria-hidden="true" />
               <p style={styles.loadingText}>Abriendo libro…</p>
             </div>
@@ -547,7 +612,18 @@ function FileNotFoundState({
 }: FileNotFoundStateProps): JSX.Element {
   return (
     <div style={styles.stateContainer}>
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6a657a" strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+      <svg
+        width="40"
+        height="40"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#6a657a"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      >
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 8v4M12 16h.01" />
+      </svg>
       <p style={styles.errorTitle}>Archivo no encontrado</p>
       <p style={styles.errorDetail}>El archivo no se encuentra en la ubicación original:</p>
       <p style={styles.errorPath}>{fileUri}</p>

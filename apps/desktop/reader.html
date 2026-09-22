@@ -8,36 +8,115 @@
   </head>
   <body>
     <section class="reader" id="reader" data-theme="paper" data-font="serif" aria-hidden="true">
-
       <!-- toolbar -->
       <header class="r-bar" id="r-bar">
         <button class="r-btn" id="r-back" title="Volver a la biblioteca">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M15 6l-6 6 6 6" />
+          </svg>
         </button>
         <div class="r-title" id="r-title">Título<small id="r-author">Autor</small></div>
-        <div style="flex:1"></div>
+        <div style="flex: 1"></div>
         <div class="r-tools">
           <button class="r-btn" data-panel="info" title="Información">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 11v5M12 8h.01" />
+            </svg>
           </button>
           <button class="r-btn" data-panel="toc" title="Índice">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h12M8 12h12M8 18h12"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M8 6h12M8 12h12M8 18h12" />
+              <path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01" />
+            </svg>
           </button>
           <button class="r-btn" data-panel="search" title="Buscar en el documento">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" />
+            </svg>
           </button>
           <button class="r-btn" data-panel="notes" title="Notas">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11l-4 4H4z"/><path d="M16 20v-4h4"/><path d="M8 9h8M8 13h5"/></svg>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M4 5h16v11l-4 4H4z" />
+              <path d="M16 20v-4h4" />
+              <path d="M8 9h8M8 13h5" />
+            </svg>
           </button>
           <button class="r-btn" id="r-mark" title="Añadir marcador">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12v16l-6-4-6 4z"/></svg>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M6 4h12v16l-6-4-6 4z" />
+            </svg>
           </button>
           <span class="r-sep"></span>
           <button class="r-btn" data-panel="settings" title="Ajustes de lectura">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2.3"/><circle cx="8" cy="17" r="2.3"/></svg>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
+              <circle cx="16" cy="7" r="2.3" />
+              <circle cx="8" cy="17" r="2.3" />
+            </svg>
           </button>
           <button class="r-btn" id="r-zen" title="Modo Zen">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"/></svg>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"
+              />
+            </svg>
           </button>
         </div>
       </header>
@@ -45,7 +124,16 @@
       <!-- zona de lectura -->
       <div class="r-scroll" id="r-scroll">
         <button class="zen-exit" id="zen-exit" title="Salir de Zen">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
         </button>
         <article class="page" id="page"></article>
       </div>
@@ -53,20 +141,39 @@
       <!-- navegación inferior -->
       <footer class="r-foot" id="r-foot">
         <button class="pg-btn" id="prev-page">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>Anterior
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M15 6l-6 6 6 6" /></svg
+          >Anterior
         </button>
         <div class="r-progress">
           <div class="track" id="track"><i id="track-fill"></i></div>
           <span class="pct" id="pct">Cap. 1</span>
         </div>
         <button class="pg-btn" id="next-page">
-          Siguiente <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+          Siguiente
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M9 6l6 6-6 6" />
+          </svg>
         </button>
       </footer>
 
       <!-- toast -->
       <div class="toast" id="toast">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12v18l-6-4-6 4z"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12v18l-6-4-6 4z" /></svg>
         <span id="toast-tx">Marcador añadido</span>
       </div>
 
@@ -76,7 +183,15 @@
         <div class="drawer-head">
           <h3 id="drawer-title">Índice</h3>
           <button class="x" id="drawer-x">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            >
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
           </button>
         </div>
         <div class="drawer-body">
@@ -85,14 +200,27 @@
           <!-- buscar -->
           <div class="panel" id="panel-search">
             <div class="dsearch">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-              <input id="doc-search" placeholder="Buscar palabra o frase…">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <path d="m20 20-3.5-3.5" />
+              </svg>
+              <input id="doc-search" placeholder="Buscar palabra o frase…" />
             </div>
             <div id="doc-results"></div>
           </div>
           <!-- notas -->
           <div class="panel" id="panel-notes">
-            <textarea class="note-add" id="note-input" placeholder="Escribe una nota sobre esta página…"></textarea>
+            <textarea
+              class="note-add"
+              id="note-input"
+              placeholder="Escribe una nota sobre esta página…"
+            ></textarea>
             <button class="note-save" id="note-save">Guardar nota</button>
             <div id="notes-list"></div>
           </div>
@@ -140,11 +268,10 @@
         <div class="spinner" aria-hidden="true"></div>
         <p>Cargando libro…</p>
       </div>
-      <div class="reader-overlay" id="reader-error" style="display:none" role="alert">
+      <div class="reader-overlay" id="reader-error" style="display: none" role="alert">
         <p id="reader-error-message"></p>
         <button id="reader-error-retry" class="r-action-btn">Reintentar</button>
       </div>
-
     </section>
 
     <script type="module" src="/src/reader-entry.ts"></script>
