@@ -11,6 +11,7 @@ export default tseslint.config(
       '**/.agents/**',
       '**/scripts/**',
       '**/*.cjs',
+      '**/repro-*.mjs',
     ],
   },
   eslint.configs.recommended,

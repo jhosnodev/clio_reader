@@ -26,8 +26,7 @@ export async function updateProgress(
   repo: LibraryRepository,
   input: UpdateProgressInput,
 ): Promise<ReadingProgress> {
-  const books = await repo.listBooks();
-  const book = books.find((b) => b.id === input.bookId);
+  const book = await repo.getBook(input.bookId);
 
   if (!book) {
     throw new BookNotFoundError(input.bookId);

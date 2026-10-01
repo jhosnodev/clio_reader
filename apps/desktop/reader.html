@@ -153,7 +153,19 @@
           >Anterior
         </button>
         <div class="r-progress">
-          <div class="track" id="track"><i id="track-fill"></i></div>
+          <div
+            class="track"
+            id="track"
+            role="slider"
+            tabindex="0"
+            aria-label="Progreso de lectura"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
+            aria-valuetext="Cap. 1"
+          >
+            <i id="track-fill"></i>
+          </div>
           <span class="pct" id="pct">Cap. 1</span>
         </div>
         <button class="pg-btn" id="next-page">

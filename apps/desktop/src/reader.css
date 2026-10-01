@@ -330,6 +330,10 @@ button {
   overflow: hidden;
   cursor: pointer;
 }
+.track:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 4px;
+}
 .track i {
   display: block;
   height: 100%;

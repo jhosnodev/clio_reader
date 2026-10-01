@@ -24,6 +24,9 @@ import {
   webviewFontFor,
   webviewThemeFor,
 } from './reader-prefs';
+import { createProgressBar } from './reader-progress-controller';
+import type { ProgressBarController } from './reader-progress-controller';
+import { scrollRatio } from './reader-progress-bar';
 import type { WebviewTheme } from './reader-prefs';
 
 /* ==========================================================================
@@ -293,24 +296,34 @@ async function renderChapter(
     contentEl.append(styleEl);
   }
 
-  updateChapterInfo(readerDoc);
+  await updateChapterInfo(readerDoc);
 
   const scroll = document.getElementById('r-scroll');
-  if (scroll) scroll.scrollTop = 0;
+  if (scroll) {
+    scroll.scrollTop = 0;
+    refreshProgressFromScroll();
+  }
 }
 
 async function updateChapterInfo(readerDoc: ReaderDocument): Promise<void> {
-  const pct = document.getElementById('pct');
   const btnPrev = document.getElementById('prev-page') as HTMLButtonElement | null;
   const btnNext = document.getElementById('next-page') as HTMLButtonElement | null;
 
-  if (readerDoc.getCurrentChapterIndex && readerDoc.getChapterCount) {
-    const currentIndex = await readerDoc.getCurrentChapterIndex();
-    const totalChapters = await readerDoc.getChapterCount();
-    if (pct) pct.textContent = `Cap. ${currentIndex + 1} de ${totalChapters}`;
-    if (btnPrev) btnPrev.disabled = currentIndex <= 0;
-    if (btnNext) btnNext.disabled = currentIndex >= totalChapters - 1;
+  const canNavigateByChapter = Boolean(
+    readerDoc.getCurrentChapterIndex && readerDoc.getChapterCount,
+  );
+  if (!canNavigateByChapter) {
+    paintProgressBar(0, 0);
+    if (btnPrev) btnPrev.disabled = true;
+    if (btnNext) btnNext.disabled = true;
+    return;
   }
+
+  const currentIndex = await readerDoc.getCurrentChapterIndex!();
+  const totalChapters = await readerDoc.getChapterCount!();
+  paintProgressBar(currentIndex, totalChapters);
+  if (btnPrev) btnPrev.disabled = currentIndex <= 0;
+  if (btnNext) btnNext.disabled = currentIndex >= totalChapters - 1;
 }
 
 async function refreshReaderStyle(
@@ -324,6 +337,70 @@ async function refreshReaderStyle(
   const styleEl = document.createElement('style');
   styleEl.textContent = await readerDoc.applyPreferences(preferences);
   contentEl.append(styleEl);
+}
+
+/* ==========================================================================
+   Barra de progreso
+   ========================================================================== */
+
+let progressBar: ProgressBarController | null = null;
+
+function readScrollRatio(): number {
+  const scroll = document.getElementById('r-scroll');
+  if (!scroll) return 0;
+  return scrollRatio(scroll.scrollTop, scroll.scrollHeight, scroll.clientHeight);
+}
+
+function paintProgressBar(currentIndex: number, totalCount: number): void {
+  progressBar?.setPosition(currentIndex, totalCount);
+  progressBar?.paint();
+}
+
+function refreshProgressFromScroll(): void {
+  progressBar?.notify();
+}
+
+function setupProgressBar(readerDoc: ReaderDocument, preferences: ReaderPreferences): void {
+  const track = document.getElementById('track');
+  const fill = document.getElementById('track-fill');
+  const label = document.getElementById('pct');
+  if (!track || !fill || !label) return;
+
+  progressBar = createProgressBar({
+    elements: { track, fill, label },
+    getScrollRatio: readScrollRatio,
+    onSeek: (idx) => {
+      if (!readerDoc.goToChapter) return;
+      void seekChapter(readerDoc, preferences, idx);
+    },
+  });
+
+  const scroll = document.getElementById('r-scroll');
+  if (!scroll) return;
+  scroll.addEventListener('scroll', () => progressBar?.notify(), { passive: true });
+
+  if (typeof ResizeObserver !== 'undefined') {
+    const observer = new ResizeObserver(() => progressBar?.notify());
+    observer.observe(scroll);
+    const content = document.getElementById('page');
+    if (content) observer.observe(content);
+  }
+}
+
+async function seekChapter(
+  readerDoc: ReaderDocument,
+  preferences: ReaderPreferences,
+  idx: number,
+): Promise<void> {
+  try {
+    await readerDoc.goToChapter?.(idx);
+    await renderChapter(readerDoc, preferences);
+    await syncLocator();
+    await updateTocCurrent(readerDoc);
+  } catch (error) {
+    if (error instanceof Error && error.name === 'EpubNavigationError') return;
+    throw error;
+  }
 }
 
 /* ==========================================================================
@@ -1075,6 +1152,7 @@ async function main(): Promise<void> {
         await renderChapter(currentReaderDoc, currentPreferences);
         await syncLocator();
         setupNavigation(currentReaderDoc, currentPreferences);
+        setupProgressBar(currentReaderDoc, currentPreferences);
         setupDrawer();
         setupZen();
         setupSettings();

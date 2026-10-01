@@ -9,6 +9,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { bridge } from '../bridges/bridge-singleton';
 import type { LibraryRepository } from '@clio-reader/library';
+import { updateProgress } from '@clio-reader/library';
 import {
   createNoteManaged,
   listNotesManaged,
@@ -16,7 +17,7 @@ import {
   updateNoteManaged,
 } from '@clio-reader/annotations';
 import type { ReaderPreferences } from '@clio-reader/domain';
-import { createReadingProgress, createDefaultPreferences } from '@clio-reader/domain';
+import { createDefaultPreferences } from '@clio-reader/domain';
 import { getPalette, LIGHT_DEFAULTS } from '../themes';
 import { getResumePositionOrder, locatorToPercent } from './reader-progress';
 
@@ -355,12 +356,11 @@ export function ReaderView({
       progressTimerRef.current = null;
     }
 
-    const progress = createReadingProgress({
+    await updateProgress(repository, {
       bookId,
       locator: lastLocatorRef.current,
       percent: lastPercentRef.current,
     });
-    await repository.saveProgress(progress);
   }, [repository, bookId]);
 
   useEffect(() => {
@@ -534,12 +534,11 @@ export function ReaderView({
       }
 
       if (lastLocatorRef.current !== null) {
-        const progress = createReadingProgress({
+        updateProgress(repository, {
           bookId,
           locator: lastLocatorRef.current,
           percent: lastPercentRef.current,
-        });
-        repository.saveProgress(progress).catch(() => {});
+        }).catch(() => {});
       }
     };
 

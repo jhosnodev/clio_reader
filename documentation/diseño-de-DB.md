@@ -15,11 +15,11 @@
 
 La BD vive en el directorio `userData` de Electron + la carpeta `clio-reader`. Se deriva de `app.getPath('userData')` en `apps/desktop/electron/main.ts` (funciones `getDataPath()` / `getDbPath()`):
 
-| Plataforma | Ruta del archivo `clio.db` |
-| ---------- | -------------------------- |
-| **Linux**  | `~/.config/@clio-reader/desktop/clio-reader/clio.db` |
-| **Windows**| `%APPDATA%\@clio-reader\desktop\clio-reader\clio.db` |
-| **macOS**  | `~/Library/Application Support/@clio-reader/desktop/clio-reader/clio.db` |
+| Plataforma  | Ruta del archivo `clio.db`                                               |
+| ----------- | ------------------------------------------------------------------------ |
+| **Linux**   | `~/.config/@clio-reader/desktop/clio-reader/clio.db`                     |
+| **Windows** | `%APPDATA%\@clio-reader\desktop\clio-reader\clio.db`                     |
+| **macOS**   | `~/Library/Application Support/@clio-reader/desktop/clio-reader/clio.db` |
 
 ```text
 <userData>/
@@ -30,6 +30,7 @@ La BD vive en el directorio `userData` de Electron + la carpeta `clio-reader`. S
 ```
 
 **Notas:**
+
 - WAL habilitado: los archivos `-shm`/`-wal` son temporales y no deben copiarse como respaldo (se regeneran al abrir). Para respaldar, copiar solo `clio.db`.
 - Durante la migración, el JSON original se renombra a `clio-reader.state.backup.json` en el mismo directorio.
 - Abrir con cualquier cliente SQLite (`sqlite3`, DBeaver, VS Code + extensión).
@@ -38,10 +39,10 @@ La BD vive en el directorio `userData` de Electron + la carpeta `clio-reader`. S
 
 En mobile no hay SQLite: se persiste un blob JSON por clave bajo el directorio de documentos de la app (`expo-file-system`, `apps/mobile/src/bridges/storage.ts`). La clave principal es `clio-reader.state` + `.json`, en `documentDirectory`:
 
-| Plataforma | Ruta del directorio de datos |
-| ---------- | ---------------------------- |
-| **Android**| `/data/user/0/<applicationId>/files/clio-reader/` |
-| **iOS**    | `<AppContainer>/Documents/clio-reader/` (solo accesible por la app) |
+| Plataforma  | Ruta del directorio de datos                                        |
+| ----------- | ------------------------------------------------------------------- |
+| **Android** | `/data/user/0/<applicationId>/files/clio-reader/`                   |
+| **iOS**     | `<AppContainer>/Documents/clio-reader/` (solo accesible por la app) |
 
 Dentro de ese directorio se guardan `clio-reader.state.json` (blob principal), `clio-reader.progress.json`, etc. (un archivo por clave de estado).
 

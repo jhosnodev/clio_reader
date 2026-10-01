@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { InMemoryKeyValueStore, LocalRepository } from '@clio-reader/storage';
 
@@ -121,5 +121,47 @@ describe('updateProgress', () => {
     });
 
     expect(progress.locator.format).toBe('epub');
+  });
+
+  it('refreshes lastOpenedAt so recency survives a progress-only write', async () => {
+    const repo = createRepo();
+    await importBook(repo, {
+      id: 'book-1',
+      title: 'My Book',
+      format: 'pdf',
+      uri: 'file:///book.pdf',
+    });
+
+    const before = (await repo.getBook('book-1'))!.lastOpenedAt ?? 0;
+    await updateProgress(repo, {
+      bookId: 'book-1',
+      locator: { format: 'pdf', page: 3 },
+      percent: 0.3,
+    });
+    const after = (await repo.getBook('book-1'))!.lastOpenedAt ?? 0;
+
+    expect(after).toBeGreaterThanOrEqual(before);
+  });
+
+  it('looks the book up by id instead of listing the whole library', async () => {
+    const repo = createRepo();
+    await importBook(repo, {
+      id: 'book-1',
+      title: 'My Book',
+      format: 'pdf',
+      uri: 'file:///book.pdf',
+    });
+
+    const getBook = vi.spyOn(repo, 'getBook');
+    const listBooks = vi.spyOn(repo, 'listBooks');
+
+    await updateProgress(repo, {
+      bookId: 'book-1',
+      locator: { format: 'pdf', page: 3 },
+      percent: 0.3,
+    });
+
+    expect(getBook).toHaveBeenCalledWith('book-1');
+    expect(listBooks).not.toHaveBeenCalled();
   });
 });
