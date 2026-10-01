@@ -1,5 +1,11 @@
 import type { EpubLocator, ReaderPreferences, ReaderLocator } from '@clio-reader/domain';
-import type { FileSource, ReaderCapabilities, ReaderDocument } from '@clio-reader/reader-core';
+import type {
+  FileSource,
+  ReaderCapabilities,
+  ReaderDocument,
+  TocNavEntry,
+  TocTree,
+} from '@clio-reader/reader-core';
 
 import JSZip from 'jszip';
 import { parseEpub, type ParsedEpub } from './epub-parser.js';
@@ -36,6 +42,11 @@ const EPUB_CAPABILITIES: ReaderCapabilities = {
 
 function epubLog(...args: unknown[]): void {
   console.log('[epub-doc]', ...args);
+}
+
+function stripFragment(href: string): string {
+  const hash = href.indexOf('#');
+  return hash >= 0 ? href.substring(0, hash) : href;
 }
 
 export class EpubReaderDocument implements ReaderDocument {
@@ -215,9 +226,41 @@ export class EpubReaderDocument implements ReaderDocument {
     return this.getLocator();
   }
 
-  async getToc(): Promise<readonly TocEntry[]> {
+  async goToTocHref(href: string): Promise<ReaderLocator> {
     this.assertOpen();
-    return this.toc;
+    const idx = this.findChapterIndexByHref(href);
+    if (idx === undefined) {
+      throw new EpubNavigationError(`Cannot go to TOC href: ${href}`);
+    }
+    return this.goToChapter(idx);
+  }
+
+  private findChapterIndexByHref(href: string): number | undefined {
+    const chapters = this.parsedEpub!.chapters;
+    const basePath = this.parsedEpub!.opf.basePath;
+
+    const candidates = [href, this.resolveHref(basePath, href)];
+    for (const candidate of candidates) {
+      const clean = stripFragment(candidate);
+      const exact = chapters.findIndex((chapter) => chapter.fullPath === clean);
+      if (exact >= 0) return exact;
+    }
+
+    const baseName = stripFragment(href).split('/').pop();
+    if (!baseName) return undefined;
+    const byName = chapters.findIndex((chapter) => chapter.fullPath.split('/').pop() === baseName);
+    return byName >= 0 ? byName : undefined;
+  }
+
+  async getToc(): Promise<TocTree> {
+    this.assertOpen();
+    const decorate = (entries: readonly TocEntry[]): TocNavEntry[] =>
+      entries.map((entry) => ({
+        ...entry,
+        chapterIndex: entry.href != null ? this.findChapterIndexByHref(entry.href) : undefined,
+        children: entry.children?.length ? decorate(entry.children) : [],
+      }));
+    return decorate(this.toc);
   }
 
   async applyPreferences(prefs: ReaderPreferences): Promise<string> {

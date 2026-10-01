@@ -12,7 +12,7 @@ window.addEventListener('unhandledrejection', (e) => {
   console.error('[reader-entry] UNHANDLED REJECTION:', e.reason);
 });
 
-import type { ReaderDocument } from '@clio-reader/reader-core';
+import type { ReaderDocument, TocNavEntry, TocTree } from '@clio-reader/reader-core';
 import type { ReaderPreferences } from '@clio-reader/domain';
 import { EpubReaderDocument } from '@clio-reader/reader-epub';
 import {
@@ -356,6 +356,7 @@ async function navigateChapter(
     else await readerDoc.goPrevious();
     await renderChapter(readerDoc, preferences);
     await syncLocator();
+    await updateTocCurrent(readerDoc);
   } catch (error) {
     if (error instanceof Error && error.name === 'EpubNavigationError') return;
     throw error;
@@ -544,55 +545,151 @@ function setupSettings(): void {
    TOC rendering
    ========================================================================== */
 
+function escapeHtml(value: unknown): string {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
 async function renderTOC(readerDoc: ReaderDocument): Promise<void> {
+  console.log(
+    '[renderTOC] renderTOC() inició — doc:',
+    (readerDoc as { constructor?: { name?: string } }).constructor?.name,
+  );
   const tocPanel = document.getElementById('panel-toc');
-  if (!tocPanel) return;
+  if (!tocPanel) {
+    console.log('[renderTOC] panel-toc NO encontrado — abortando.');
+    return;
+  }
 
   // Check if the document supports TOC via capabilities or optional methods
   const doc = readerDoc as unknown as Record<string, unknown>;
-  const getTOC = doc.getTOC as (() => Promise<Array<{ title: string; href?: string }>>) | undefined;
-  if (!getTOC) {
+  const getTocFn = (doc.getToc ?? doc.getTOC) as (() => Promise<TocTree>) | undefined;
+  if (!getTocFn) {
+    console.log('[renderTOC] getTocFn undefined — mostrando "No hay índice disponible."');
     tocPanel.innerHTML =
       '<p style="color:var(--chrome-fg-lo);font-size:14px">No hay índice disponible.</p>';
     return;
   }
+  const getToc = (): Promise<TocTree> => getTocFn.call(doc);
 
   try {
-    const toc = await getTOC();
+    const toc = await getToc();
+    // Diagnóstico: siempre visible en la terminal del main (reenvía el webview)
+    console.log(
+      `[renderTOC] getToc() → ${toc.length} entradas` +
+        (toc.length > 0
+          ? ` | primera: "${toc[0]?.title}"`
+          : ` (epub sin nav/ncx → spine fallback)`),
+    );
     if (!toc || toc.length === 0) {
       tocPanel.innerHTML =
         '<p style="color:var(--chrome-fg-lo);font-size:14px">No hay índice disponible.</p>';
       return;
     }
 
-    const getCurrentIdx = doc.getCurrentChapterIndex as (() => Promise<number>) | undefined;
-    const currentIndex = getCurrentIdx ? await getCurrentIdx() : -1;
+    let currentIndex = -1;
+    const getCurrentIdxFn = doc.getCurrentChapterIndex as (() => Promise<number>) | undefined;
+    const getCurrentIdx = getCurrentIdxFn
+      ? (): Promise<number> => getCurrentIdxFn.call(doc)
+      : undefined;
+    if (getCurrentIdx) {
+      try {
+        currentIndex = await getCurrentIdx();
+      } catch (error) {
+        console.warn('[reader-entry] getCurrentChapterIndex falló:', error);
+      }
+    }
 
-    tocPanel.innerHTML = toc
-      .map((item: { title: string; href?: string }, i: number) => {
-        const isCurrent = i === currentIndex;
-        return `<button class="toc-item${isCurrent ? ' current' : ''}" data-chapter="${i}">
-        <span class="n">${i + 1}</span>
-        <span class="t">${item.title}</span>
-      </button>`;
-      })
-      .join('');
+    const renderEntries = (entries: readonly TocNavEntry[], depth = 0): string => {
+      if (depth > 48) return '';
+      return entries
+        .map((item: TocNavEntry, i: number) => {
+          const isCurrent = item.chapterIndex !== undefined && item.chapterIndex === currentIndex;
+          const pad = depth * 16;
+          const safeTitle = escapeHtml(item.title ?? '');
+          const hrefAttr = item.href != null ? ` data-href="${escapeHtml(String(item.href))}"` : '';
+          const indexAttr =
+            item.chapterIndex !== undefined ? ` data-index="${item.chapterIndex}"` : '';
+          const childrenHtml =
+            item.children && item.children.length > 0
+              ? renderEntries(item.children, depth + 1)
+              : '';
+          return `<button class="toc-item${isCurrent ? ' current' : ''}" data-chapter="${i}"${indexAttr}${hrefAttr} style="padding-left:${pad}px">
+              <span class="n">${i + 1}</span>
+              <span class="t">${safeTitle}</span>
+            </button>${childrenHtml}`;
+        })
+        .join('');
+    };
+
+    tocPanel.innerHTML = renderEntries(toc);
 
     tocPanel.querySelectorAll('.toc-item').forEach((btn) => {
       btn.addEventListener('click', async () => {
-        const idx = parseInt((btn as HTMLElement).dataset.chapter ?? '0', 10);
-        const goToChapter = doc.goToChapter as ((i: number) => Promise<void>) | undefined;
-        if (goToChapter) {
-          await goToChapter(idx);
+        const el = btn as HTMLElement;
+        try {
+          const navigated = await navigateToTocEntry(readerDoc, el);
+          if (!navigated) return;
           await renderChapter(readerDoc, currentPreferences);
-          closeDrawer();
           await syncLocator();
+          await updateTocCurrent(readerDoc);
+          closeDrawer();
+        } catch (error) {
+          console.error('[reader-entry] navegación por índice falló:', error);
+          showToast('No se pudo abrir ese capítulo');
         }
       });
     });
-  } catch {
+  } catch (error) {
+    console.error('[reader-entry] renderTOC falló:', error);
+    const message = error instanceof Error ? error.message : String(error);
     tocPanel.innerHTML =
-      '<p style="color:var(--chrome-fg-lo);font-size:14px">Error al cargar el índice.</p>';
+      `<p style="color:var(--chrome-fg-lo);font-size:14px">Error al cargar el índice.</p>` +
+      `<p style="color:var(--chrome-fg-lo);font-size:12px;opacity:0.7">${escapeHtml(message)}</p>`;
+  }
+}
+
+async function navigateToTocEntry(readerDoc: ReaderDocument, el: HTMLElement): Promise<boolean> {
+  const doc = readerDoc as unknown as Record<string, unknown>;
+  const href = el.getAttribute('data-href');
+  const goToTocHref = doc.goToTocHref as ((h: string) => Promise<unknown>) | undefined;
+
+  if (href && goToTocHref) {
+    try {
+      await goToTocHref.call(doc, href);
+      return true;
+    } catch (error) {
+      console.warn('[reader-entry] goToTocHref falló, reintento por índice:', href, error);
+    }
+  }
+
+  const rawIndex = el.getAttribute('data-index');
+  const idx = rawIndex !== null ? Number(rawIndex) : Number(el.dataset.chapter ?? '0');
+  const goToChapter = doc.goToChapter as ((i: number) => Promise<unknown>) | undefined;
+  if (!goToChapter || !Number.isFinite(idx)) return false;
+
+  await goToChapter.call(doc, idx);
+  return true;
+}
+
+async function updateTocCurrent(readerDoc: ReaderDocument): Promise<void> {
+  const tocPanel = document.getElementById('panel-toc');
+  if (!tocPanel) return;
+  const doc = readerDoc as unknown as Record<string, unknown>;
+  const getCurrentIdx = doc.getCurrentChapterIndex as (() => Promise<number>) | undefined;
+  if (!getCurrentIdx) return;
+  try {
+    const currentIndex = await getCurrentIdx.call(doc);
+    tocPanel.querySelectorAll('.toc-item').forEach((el) => {
+      const c = el.getAttribute('data-index');
+      el.classList.toggle('current', c !== null && Number(c) === currentIndex);
+    });
+  } catch {
+    // ignore
   }
 }
 

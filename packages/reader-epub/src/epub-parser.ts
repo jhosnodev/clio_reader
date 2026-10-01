@@ -149,7 +149,7 @@ function parseSpine(xml: string): OpfSpineItem[] {
 
 function resolveBasePath(opfPath: string): string {
   const lastSlash = opfPath.lastIndexOf('/');
-  return lastSlash >= 0 ? opfPath.substring(0, lastSlash + 1) : '';
+  return lastSlash >= 0 ? opfPath.substring(0, lastSlash) : '';
 }
 
 function resolveHref(basePath: string, href: string): string {

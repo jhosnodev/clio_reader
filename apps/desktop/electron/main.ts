@@ -400,6 +400,16 @@ if (!gotTheLock) {
   app.whenReady().then(async () => {
     await ensureDataDir();
     repository = initDatabase();
+
+    // Reenvía la consola de cualquier webContents (incluido el <webview> del lector)
+    // al proceso principal para ver los errores del lector en la terminal.
+    app.on('web-contents-created', (_event, contents) => {
+      contents.on('console-message', (_e, _level, message, line, sourceId) => {
+        const tag = contents.getType() === 'webview' ? '[reader-webview]' : '[contents]';
+        console.log(tag, message, `${sourceId}:${line}`);
+      });
+    });
+
     await migrateExistingJson().catch((err) => {
       console.error('[main] Migration failed:', err);
     });
