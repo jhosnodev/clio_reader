@@ -13,7 +13,7 @@ window.addEventListener('unhandledrejection', (e) => {
 });
 
 import type { ReaderDocument, TocNavEntry, TocTree } from '@clio-reader/reader-core';
-import type { ReaderPreferences } from '@clio-reader/domain';
+import type { ReaderPreferences, ReaderLocator } from '@clio-reader/domain';
 import { EpubReaderDocument } from '@clio-reader/reader-epub';
 import {
   PREFERENCES_SENTINEL,
@@ -26,7 +26,12 @@ import {
 } from './reader-prefs';
 import { createProgressBar } from './reader-progress-controller';
 import type { ProgressBarController } from './reader-progress-controller';
-import { scrollRatio } from './reader-progress-bar';
+import { scrollRatio, scrollTopForRatio } from './reader-progress-bar';
+import {
+  isSameDocumentPosition,
+  parseLocator,
+  withScrollRatio,
+} from './components/reader-progress';
 import type { WebviewTheme } from './reader-prefs';
 
 /* ==========================================================================
@@ -35,6 +40,22 @@ import type { WebviewTheme } from './reader-prefs';
 
 const SUPPORTED_FORMATS = ['epub', 'pdf', 'cbz', 'md'] as const;
 type SupportedFormat = (typeof SUPPORTED_FORMATS)[number];
+
+const SCROLL_SETTLE_MS = 300;
+const LOCATOR_REFRESH_MS = 250;
+const SCROLL_KEYS = new Set([
+  'ArrowUp',
+  'ArrowDown',
+  'ArrowLeft',
+  'ArrowRight',
+  'PageUp',
+  'PageDown',
+  'Home',
+  'End',
+  ' ',
+]);
+
+let scrollSettleTimer: ReturnType<typeof setTimeout> | null = null;
 
 const DEFAULT_PREFERENCES: ReaderPreferences = {
   theme: 'light',
@@ -276,6 +297,7 @@ function setUIState(state: UIState): void {
 async function renderChapter(
   readerDoc: ReaderDocument,
   preferences: ReaderPreferences,
+  restoreRatio?: number,
 ): Promise<void> {
   const contentEl = document.getElementById('page');
   if (!contentEl) return;
@@ -300,9 +322,55 @@ async function renderChapter(
 
   const scroll = document.getElementById('r-scroll');
   if (scroll) {
-    scroll.scrollTop = 0;
+    cancelScrollSettle();
+    applyScrollRatio(scroll, restoreRatio);
     refreshProgressFromScroll();
+    if (typeof restoreRatio === 'number') scheduleScrollSettle(scroll, restoreRatio);
   }
+}
+
+function applyScrollRatio(scroll: HTMLElement, ratio?: number): void {
+  scroll.scrollTop =
+    typeof ratio === 'number'
+      ? scrollTopForRatio(ratio, scroll.scrollHeight, scroll.clientHeight)
+      : 0;
+}
+
+/** Las imágenes del EPUB se decodifican tras el render y desplazan el texto: reaplicamos la
+ *  posición restaurada cuando el layout asienta, salvo que el usuario ya se haya movido. */
+function scheduleScrollSettle(scroll: HTMLElement, ratio: number): void {
+  let interacted = false;
+  const stopListening = (): void => {
+    scroll.removeEventListener('wheel', markInteraction);
+    scroll.removeEventListener('touchstart', markInteraction);
+    window.removeEventListener('keydown', markKeyboardInteraction);
+  };
+  const markInteraction = (): void => {
+    interacted = true;
+    stopListening();
+  };
+  // El teclado no pasa por #r-scroll (no es focusable), así que se escucha en window.
+  const markKeyboardInteraction = (event: KeyboardEvent): void => {
+    if (SCROLL_KEYS.has(event.key)) markInteraction();
+  };
+
+  scroll.addEventListener('wheel', markInteraction, { passive: true });
+  scroll.addEventListener('touchstart', markInteraction, { passive: true });
+  window.addEventListener('keydown', markKeyboardInteraction);
+
+  scrollSettleTimer = setTimeout(() => {
+    scrollSettleTimer = null;
+    stopListening();
+    if (interacted) return;
+    applyScrollRatio(scroll, ratio);
+    refreshProgressFromScroll();
+  }, SCROLL_SETTLE_MS);
+}
+
+function cancelScrollSettle(): void {
+  if (scrollSettleTimer === null) return;
+  clearTimeout(scrollSettleTimer);
+  scrollSettleTimer = null;
 }
 
 async function updateChapterInfo(readerDoc: ReaderDocument): Promise<void> {
@@ -377,7 +445,14 @@ function setupProgressBar(readerDoc: ReaderDocument, preferences: ReaderPreferen
 
   const scroll = document.getElementById('r-scroll');
   if (!scroll) return;
-  scroll.addEventListener('scroll', () => progressBar?.notify(), { passive: true });
+  scroll.addEventListener(
+    'scroll',
+    () => {
+      progressBar?.notify();
+      scheduleLocatorRefresh();
+    },
+    { passive: true },
+  );
 
   if (typeof ResizeObserver !== 'undefined') {
     const observer = new ResizeObserver(() => progressBar?.notify());
@@ -419,8 +494,31 @@ function setupNavigation(readerDoc: ReaderDocument, preferences: ReaderPreferenc
 async function syncLocator(): Promise<void> {
   if (!currentReaderDoc) return;
   const locator = await currentReaderDoc.getLocator();
-  currentLocator = JSON.stringify(locator);
+  currentLocator = JSON.stringify(composeCurrentLocator(locator));
   renderNotesList(currentNotes);
+}
+
+/** Añade la posición vertical al locator cuando el formato es reflowable. */
+function composeCurrentLocator(locator: ReaderLocator): ReaderLocator {
+  if (!currentReaderDoc?.capabilities.reflowable) return locator;
+  return withScrollRatio(locator, readScrollRatio());
+}
+
+let locatorRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** Mantiene el locator al día mientras el usuario scrollea, para que el progreso
+ *  guardado por el host incluya la posición exacta y no solo el capítulo. */
+function scheduleLocatorRefresh(): void {
+  if (locatorRefreshTimer !== null) return;
+  locatorRefreshTimer = setTimeout(() => {
+    locatorRefreshTimer = null;
+    void refreshLocatorPosition();
+  }, LOCATOR_REFRESH_MS);
+}
+
+async function refreshLocatorPosition(): Promise<void> {
+  if (!currentReaderDoc?.capabilities.reflowable) return;
+  currentLocator = JSON.stringify(composeCurrentLocator(await currentReaderDoc.getLocator()));
 }
 
 async function navigateChapter(
@@ -865,7 +963,7 @@ declare global {
     ) => void;
     __noteSaved?: () => void;
     __noteError?: (message: string) => void;
-    __goToChapter?: (idx: number) => Promise<void>;
+    __goToChapter?: (idx: number, restoreRatio?: number) => Promise<void>;
     __getCurrentLocator?: () => string | undefined;
     __updateRank?: (rank: number) => void;
   }
@@ -1017,7 +1115,14 @@ function renderNotesList(
   const list = document.getElementById('notes-list');
   if (!list) return;
 
-  const pageNotes = notes.filter((n) => n.locator === currentLocator);
+  // El locator lleva la posición vertical, así que comparamos por documento (capítulo).
+  const activeLocator = parseLocator(currentLocator);
+  const pageNotes = activeLocator
+    ? notes.filter((n) => {
+        const noteLocator = parseLocator(n.locator);
+        return noteLocator !== null && isSameDocumentPosition(noteLocator, activeLocator);
+      })
+    : [];
 
   if (pageNotes.length === 0) {
     list.innerHTML = '<p class="notes-empty">No hay notas en esta página.</p>';
@@ -1222,11 +1327,11 @@ async function main(): Promise<void> {
       showToast(message);
     };
 
-    /* --- Go to chapter by index (for initial locator from host) --- */
-    window.__goToChapter = async (idx: number) => {
+    /* --- Go to chapter by index + position within it (for initial locator from host) --- */
+    window.__goToChapter = async (idx: number, restoreRatio?: number) => {
       if (!currentReaderDoc) return;
       await currentReaderDoc.goToChapter?.(idx);
-      await renderChapter(currentReaderDoc, currentPreferences);
+      await renderChapter(currentReaderDoc, currentPreferences, restoreRatio);
       await syncLocator();
     };
 
