@@ -11,6 +11,16 @@ export function scrollRatio(scrollTop: number, scrollHeight: number, clientHeigh
   return clamp01(scrollTop / scrollable);
 }
 
+export function scrollTopForRatio(
+  ratio: number,
+  scrollHeight: number,
+  clientHeight: number,
+): number {
+  const scrollable = scrollHeight - clientHeight;
+  if (scrollable <= 0) return 0;
+  return clamp01(ratio) * scrollable;
+}
+
 export function progressPercent(currentIndex: number, totalCount: number, ratio: number): number {
   if (totalCount <= 0) return 0;
   const safeIndex = Math.min(Math.max(currentIndex, 0), totalCount - 1);

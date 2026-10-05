@@ -5,6 +5,7 @@ import {
   formatProgressLabel,
   progressPercent,
   scrollRatio,
+  scrollTopForRatio,
 } from './reader-progress-bar';
 
 describe('clamp01', () => {
@@ -49,6 +50,33 @@ describe('scrollRatio', () => {
 
   it('clamps overshoot from layout changes mid-read', () => {
     expect(scrollRatio(5000, 2000, 800)).toBe(1);
+  });
+});
+
+describe('scrollTopForRatio', () => {
+  it('round-trips with scrollRatio', () => {
+    [0, 0.25, 0.5, 0.8, 1].forEach((ratio) => {
+      const top = scrollTopForRatio(ratio, 2000, 800);
+      expect(scrollRatio(top, 2000, 800)).toBeCloseTo(ratio, 10);
+    });
+  });
+
+  it('returns 0 at the top of a scrollable chapter', () => {
+    expect(scrollTopForRatio(0, 2000, 800)).toBe(0);
+  });
+
+  it('returns the bottom at ratio 1', () => {
+    expect(scrollTopForRatio(1, 2000, 800)).toBe(1200);
+  });
+
+  it('returns 0 when the chapter does not scroll', () => {
+    expect(scrollTopForRatio(0.5, 800, 800)).toBe(0);
+    expect(scrollTopForRatio(0.5, 500, 800)).toBe(0);
+  });
+
+  it('clamps stored ratios outside 0..1', () => {
+    expect(scrollTopForRatio(-1, 2000, 800)).toBe(0);
+    expect(scrollTopForRatio(4, 2000, 800)).toBe(1200);
   });
 });
 
