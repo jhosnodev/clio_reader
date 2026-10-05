@@ -25,6 +25,8 @@ export interface EpubLocator {
   readonly cfi?: string;
   readonly progression?: number;
   readonly positionOrder?: number;
+  /** Posición vertical dentro del capítulo actual, 0..1 (0 = inicio del capítulo) */
+  readonly scrollRatio?: number;
 }
 
 export interface PdfLocator {
