@@ -19,7 +19,12 @@ import {
 import type { ReaderPreferences } from '@clio-reader/domain';
 import { createDefaultPreferences } from '@clio-reader/domain';
 import { getPalette, LIGHT_DEFAULTS } from '../themes';
-import { getResumePositionOrder, locatorToPercent } from './reader-progress';
+import {
+  getResumePositionOrder,
+  getResumeScrollRatio,
+  locatorToPercent,
+  parseLocator,
+} from './reader-progress';
 
 /* ==========================================================================
    Props
@@ -194,14 +199,14 @@ export function ReaderView({
         const paletteCss = buildPaletteCss(paletteId, theme);
         await wv?.executeJavaScript(`window.__applyPalette(${JSON.stringify(paletteCss)})`);
 
-        // Resume to saved chapter: note locator takes priority over saved progress
-        const noteLocator = initialLocator
-          ? (JSON.parse(initialLocator) as import('@clio-reader/domain').ReaderLocator)
-          : undefined;
-        const resumeOrder = getResumePositionOrder(noteLocator, savedProgress?.locator);
+        // Resume to saved position: note locator takes priority over saved progress
+        const noteLocator = parseLocator(initialLocator);
+        const savedLocator = savedProgress?.locator;
+        const resumeOrder = getResumePositionOrder(noteLocator ?? undefined, savedLocator);
         if (typeof resumeOrder === 'number') {
+          const resumeRatio = getResumeScrollRatio(noteLocator ?? savedLocator) ?? null;
           await wv?.executeJavaScript(
-            `window.__goToChapter && window.__goToChapter(${resumeOrder})`,
+            `window.__goToChapter && window.__goToChapter(${resumeOrder}, ${JSON.stringify(resumeRatio)})`,
           );
         }
 
