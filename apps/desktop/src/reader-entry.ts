@@ -1149,10 +1149,10 @@ async function main(): Promise<void> {
         if (authorEl) authorEl.textContent = data.metadata.author ?? '';
 
         setUIState({ type: 'content' });
-        await renderChapter(currentReaderDoc, currentPreferences);
-        await syncLocator();
         setupNavigation(currentReaderDoc, currentPreferences);
         setupProgressBar(currentReaderDoc, currentPreferences);
+        await renderChapter(currentReaderDoc, currentPreferences);
+        await syncLocator();
         setupDrawer();
         setupZen();
         setupSettings();
