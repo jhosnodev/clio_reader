@@ -2229,8 +2229,11 @@ const S: Record<string, React.CSSProperties> = {
     borderLeft: '2px solid var(--line)',
     paddingLeft: 8,
     marginBottom: 4,
+    display: '-webkit-box',
+    WebkitLineClamp: 3,
+    WebkitBoxOrient: 'vertical',
     overflow: 'hidden',
-    textOverflow: 'ellipsis',
+    overflowWrap: 'anywhere',
   },
   emptyTitle: {
     fontFamily: '"Fraunces", serif',

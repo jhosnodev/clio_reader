@@ -9,8 +9,9 @@ const source = readFileSync(resolve(here, 'reader-entry.ts'), 'utf8');
 
 describe('reader-entry initialisation order', () => {
   it('creates the progress bar before the first chapter render', () => {
-    const setupIndex = source.indexOf('setupProgressBar(currentReaderDoc, currentPreferences)');
-    const renderIndex = source.indexOf('await renderChapter(currentReaderDoc, currentPreferences)');
+    const init = source.slice(source.indexOf('__initFromHost = async'));
+    const setupIndex = init.indexOf('setupProgressBar(currentReaderDoc, currentPreferences)');
+    const renderIndex = init.indexOf('await renderChapter(currentReaderDoc, currentPreferences)');
 
     expect(setupIndex).toBeGreaterThan(-1);
     expect(renderIndex).toBeGreaterThan(-1);

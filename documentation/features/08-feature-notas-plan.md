@@ -95,6 +95,37 @@ de anotaciones por libro con filtro y orden, según
 - Highlights (existen en SQLite sin dominio ni UI).
 - Export/import de anotaciones en la UI (el paquete ya lo implementa).
 
+## Fase 5 — Notas ancladas al texto seleccionado
+
+Las notas dejaron de ser "de página": ahora se atan al fragmento de texto que el
+usuario seleccionó.
+
+### Modelo
+
+| Pieza                | Cambio                                                                                    |
+| -------------------- | ----------------------------------------------------------------------------------------- |
+| `TextAnchor`         | Nuevo tipo en `packages/domain` (`start`, `end`, `prefix`, `suffix`)                      |
+| `EpubLocator.anchor` | Offset del texto seleccionado en el texto plano del capítulo (+ `MarkdownLocator.anchor`) |
+| `Note.selectedText`  | Ya existía en dominio y en SQLite (`notes.selected_text`); ahora el reader lo rellena     |
+| Sin migración        | El ancla viaja dentro de `notes.locator_data` (JSON) y la cita en la columna existente    |
+
+### Re-anclaje (`packages/reader-core/src/text-anchor.ts`)
+
+1. **exact**: los offsets siguen apuntando a la cita.
+2. **recovered**: el texto se desplazó → se busca la cita tolerando espaciado; si se
+   repite, el contexto (`prefix`/`suffix`, 32 caracteres) desambigua.
+3. **missing**: la cita ya no existe → la UI avisa y se queda en el capítulo.
+
+### UI (reader)
+
+- `selectionchange` (con debounce de 150 ms) → abre el panel de notas con la cita
+  en un bloque con botón para quitar la selección.
+- `Ctrl/Cmd+Enter` guarda la nota; sin selección sigue siendo nota de página.
+- Resaltado del texto anotado con CSS Custom Highlight API (`::highlight(clio-note)`),
+  sin mutar el DOM del EPUB.
+- Clic en una nota → salta al ancla; desde la biblioteca se abre el libro en el texto.
+- Toast "Nota reubicada" cuando el texto se movió, "No se encontró el texto" si falló.
+
 ## Archivos tocados
 
 | Archivo                                           | Cambio                                                |
@@ -109,3 +140,17 @@ de anotaciones por libro con filtro y orden, según
 | `apps/desktop/src/components/LibraryView.tsx`     | vista Notas + fixes de tipo                           |
 | `apps/desktop/src/themes.ts`                      | fix de tipo preexistente                              |
 | `apps/desktop/tsconfig.json` / `vite.config.ts`   | alias annotations                                     |
+
+### Fase 5 (anclaje a texto)
+
+| Archivo                                             | Cambio                                                                  |
+| --------------------------------------------------- | ----------------------------------------------------------------------- |
+| `packages/domain/src/index.ts`                      | `TextAnchor` + `anchor` en `EpubLocator`/`MarkdownLocator`              |
+| `packages/reader-core/src/text-anchor.ts`           | helpers puros: `buildTextAnchor`, `resolveTextAnchor`, `normalizeQuote` |
+| `packages/reader-core/tests/text-anchor.test.ts`    | exact / recovered / missing / citas repetidas                           |
+| `packages/annotations/src/annotation-validator.ts`  | validación de `locator.anchor`                                          |
+| `apps/desktop/src/reader-text-anchor.ts`            | Range ↔ offsets, índice de texto del capítulo, CSS Highlights           |
+| `apps/desktop/src/reader-entry.ts`                  | captura de selección, cita previa, salto a la nota, resaltado           |
+| `apps/desktop/src/components/ReaderView.tsx`        | propaga `selectedText` webview ↔ host                                   |
+| `apps/desktop/reader.html` / `src/reader.css`       | bloque de cita + estilos de nota anclada                                |
+| `packages/storage/tests/drizzle-repository.test.ts` | round-trip de `anchor` + `selected_text`                                |

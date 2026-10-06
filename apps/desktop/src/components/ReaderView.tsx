@@ -173,6 +173,7 @@ export function ReaderView({
           body: n.body,
           createdAt: n.createdAt,
           locator: JSON.stringify(n.locator),
+          ...(n.selectedText !== undefined ? { selectedText: n.selectedText } : {}),
         }));
 
         const initData = {
@@ -206,7 +207,7 @@ export function ReaderView({
         if (typeof resumeOrder === 'number') {
           const resumeRatio = getResumeScrollRatio(noteLocator ?? savedLocator) ?? null;
           await wv?.executeJavaScript(
-            `window.__goToChapter && window.__goToChapter(${resumeOrder}, ${JSON.stringify(resumeRatio)})`,
+            `window.__goToChapter && window.__goToChapter(${resumeOrder}, ${JSON.stringify(resumeRatio)}, ${JSON.stringify(initialLocator ?? null)})`,
           );
         }
 
@@ -252,6 +253,7 @@ export function ReaderView({
         body: n.body,
         createdAt: n.createdAt,
         locator: JSON.stringify(n.locator),
+        ...(n.selectedText !== undefined ? { selectedText: n.selectedText } : {}),
       }));
       await wv.executeJavaScript(
         `window.__updateNotes && window.__updateNotes(${JSON.stringify(notesData)})`,
@@ -260,7 +262,12 @@ export function ReaderView({
     [repository, bookId],
   );
 
-  type NoteQueueItem = { readonly key: string; readonly body: string; readonly locator: string };
+  type NoteQueueItem = {
+    readonly key: string;
+    readonly body: string;
+    readonly locator: string;
+    readonly selectedText?: string;
+  };
   type NoteUpdateItem = { readonly key: string; readonly noteId: string; readonly body: string };
 
   /* ----- Drenar cola de notas + borrados pendientes del webview ----- */
@@ -292,7 +299,9 @@ export function ReaderView({
           for (const item of queue) {
             try {
               const locator = JSON.parse(item.locator);
-              await createNoteManaged(repository, bookId, locator, item.body);
+              await createNoteManaged(repository, bookId, locator, item.body, {
+                ...(item.selectedText !== undefined ? { selectedText: item.selectedText } : {}),
+              });
               await wv.executeJavaScript('window.__noteSaved && window.__noteSaved()');
             } catch (err) {
               const message = err instanceof Error ? err.message : 'No se pudo guardar la nota';

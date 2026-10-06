@@ -148,6 +148,13 @@ interface Note {
   updatedAt: number;
 }
 
+interface TextAnchor {
+  start: number;
+  end: number;
+  prefix?: string;
+  suffix?: string;
+}
+
 interface Highlight {
   id: string;
   bookId: string;
@@ -244,6 +251,28 @@ El locator es específico por formato y es la fuente de verdad para reanudar. `p
 ### Recuperación de locator
 
 Si un locator deja de existir (página eliminada, capítulo reorganizado), el adaptador intenta recuperar la posición más cercana y muestra un indicador de "posición no exacta".
+
+### Anclaje de anotaciones al texto (EPUB/MD)
+
+Las notas y highlights se atan al texto seleccionado con dos selectores
+redundantes (patrón Web Annotation):
+
+| Selector | Dónde vive                     | Contenido                                                   |
+| -------- | ------------------------------ | ----------------------------------------------------------- |
+| Posición | `locator.anchor`               | `start`/`end` sobre el texto plano del capítulo             |
+| Cita     | `Note.selectedText`            | Cita literal normalizada                                    |
+| Contexto | `locator.anchor.prefix/suffix` | 32 caracteres a cada lado, para desambiguar citas repetidas |
+
+Resolución (`resolveTextAnchor` en `packages/reader-core`):
+
+| Resultado   | Cuándo                                                 | UI                              |
+| ----------- | ------------------------------------------------------ | ------------------------------- |
+| `exact`     | Los offsets siguen apuntando a la cita                 | Resaltado normal                |
+| `recovered` | El texto se desplazó; la cita se localizó por búsqueda | Toast "Nota reubicada"          |
+| `missing`   | La cita ya no existe en el capítulo                    | Toast "No se encontró el texto" |
+
+El texto base se mide sobre los nodos de texto de `#page`, excluyendo `<style>`
+y `<script>` (hojas del tema y del EPUB).
 
 ## 8. State machine de sesión
 
@@ -586,6 +615,7 @@ test: add integration tests for progress persistence
 - [x] CRUD de notas en el reader (crear/listar/editar/eliminar)
 - [ ] CRUD de marcadores: crear desde el reader (resto del CRUD ya existe)
 - [x] Asociar a `bookId`, locator, posición normalizada, fecha
+- [x] Notas ancladas al texto seleccionado (`locator.anchor` + `selectedText`)
 - [x] Vista de anotaciones filtrada por libro (`LibraryView` → Notas)
 - [x] Ordenamiento por posición o fecha
 - [x] Integrar `@clio-reader/annotations` en desktop (filtro/orden/búsqueda/export)

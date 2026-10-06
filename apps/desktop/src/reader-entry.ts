@@ -13,7 +13,8 @@ window.addEventListener('unhandledrejection', (e) => {
 });
 
 import type { ReaderDocument, TocNavEntry, TocTree } from '@clio-reader/reader-core';
-import type { ReaderPreferences, ReaderLocator } from '@clio-reader/domain';
+import { hasTextAnchor, withTextAnchor } from '@clio-reader/reader-core';
+import type { ReaderPreferences, ReaderLocator, TextAnchor } from '@clio-reader/domain';
 import { EpubReaderDocument } from '@clio-reader/reader-epub';
 import {
   PREFERENCES_SENTINEL,
@@ -33,6 +34,14 @@ import {
   withScrollRatio,
 } from './components/reader-progress';
 import type { WebviewTheme } from './reader-prefs';
+import {
+  clearNoteHighlights,
+  captureSelection,
+  indexChapterText,
+  paintActiveNoteHighlight,
+  paintNoteHighlights,
+  resolveAnchorRange,
+} from './reader-text-anchor';
 
 /* ==========================================================================
    Constantes
@@ -307,6 +316,7 @@ async function renderChapter(
   const htmlContent = await readerDoc.getCurrentChapterContent();
   const resolvedHtml = await resolveImagesInHtml(readerDoc, htmlContent);
   contentEl.innerHTML = sanitizeHtml(resolvedHtml);
+  clearNoteHighlights();
 
   if (readerDoc.applyPreferences) {
     const existingStyle = contentEl.querySelector('style');
@@ -496,6 +506,7 @@ async function syncLocator(): Promise<void> {
   const locator = await currentReaderDoc.getLocator();
   currentLocator = JSON.stringify(composeCurrentLocator(locator));
   renderNotesList(currentNotes);
+  refreshNoteHighlights();
 }
 
 /** Añade la posición vertical al locator cuando el formato es reflowable. */
@@ -937,14 +948,24 @@ async function loadDocument(
 
 let currentReaderDoc: ReaderDocument | null = null;
 let currentPreferences: ReaderPreferences = DEFAULT_PREFERENCES;
-let currentNotes: Array<{ id: string; body: string; createdAt: number; locator: string }> = [];
+let currentNotes: readonly ReaderNoteView[] = [];
 let currentLocator: string = '';
 let editingNoteId: string | null = null;
+let activeNoteId: string | null = null;
+
+interface ReaderNoteView {
+  readonly id: string;
+  readonly body: string;
+  readonly createdAt: number;
+  readonly locator: string;
+  readonly selectedText?: string;
+}
 
 interface PendingNoteItem {
   readonly key: string;
   readonly body: string;
   readonly locator: string;
+  readonly selectedText?: string;
 }
 
 interface PendingNoteUpdateItem {
@@ -958,12 +979,10 @@ declare global {
     __pendingNotes?: PendingNoteItem[];
     __pendingNoteUpdates?: PendingNoteUpdateItem[];
     __pendingNoteDelete?: string | null;
-    __updateNotes?: (
-      notes: Array<{ id: string; body: string; createdAt: number; locator: string }>,
-    ) => void;
+    __updateNotes?: (notes: readonly ReaderNoteView[]) => void;
     __noteSaved?: () => void;
     __noteError?: (message: string) => void;
-    __goToChapter?: (idx: number, restoreRatio?: number) => Promise<void>;
+    __goToChapter?: (idx: number, restoreRatio?: number, locatorJson?: string) => Promise<void>;
     __getCurrentLocator?: () => string | undefined;
     __updateRank?: (rank: number) => void;
   }
@@ -1109,9 +1128,7 @@ function renderInfoPanel(metadata: {
   });
 }
 
-function renderNotesList(
-  notes: Array<{ id: string; body: string; createdAt: number; locator: string }>,
-): void {
+function renderNotesList(notes: readonly ReaderNoteView[]): void {
   const list = document.getElementById('notes-list');
   if (!list) return;
 
@@ -1132,10 +1149,11 @@ function renderNotesList(
   list.innerHTML = pageNotes
     .map(
       (n) => `
-    <div class="note" data-note-id="${n.id}">
-      <div class="ntx">${n.body}</div>
+    <div class="note${n.id === activeNoteId ? ' active' : ''}" data-note-id="${n.id}">
+      ${n.selectedText ? `<div class="nquote">“${escapeHtml(n.selectedText)}”</div>` : ''}
+      <div class="ntx">${escapeHtml(n.body)}</div>
       <div class="note-actions">
-        <button class="note-edit" data-note-id="${n.id}" data-note-body="${n.body.replace(/"/g, '&quot;')}" title="Editar nota">
+        <button class="note-edit" data-note-id="${n.id}" data-note-body="${escapeHtml(n.body)}" title="Editar nota">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
         <button class="note-delete" data-note-id="${n.id}" title="Eliminar nota">
@@ -1146,6 +1164,15 @@ function renderNotesList(
   `,
     )
     .join('');
+
+  list.querySelectorAll('.note').forEach((card) => {
+    card.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement;
+      if (target.closest('.note-actions')) return;
+      const noteId = (card as HTMLElement).dataset.noteId;
+      if (noteId) void jumpToNote(noteId);
+    });
+  });
 
   list.querySelectorAll('.note-delete').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -1162,22 +1189,183 @@ function renderNotesList(
       const noteBody = (btn as HTMLElement).dataset.noteBody ?? '';
       if (noteId) {
         editingNoteId = noteId;
+        resetPendingSelection();
         const input = document.getElementById('note-input') as HTMLTextAreaElement | null;
         const saveBtn = document.getElementById('note-save');
         if (input) input.value = noteBody;
         if (saveBtn) saveBtn.textContent = 'Actualizar';
+        void jumpToNote(noteId);
       }
     });
   });
 }
 
-function enqueueNote(payload: { body: string; locator: string }): void {
+/* --- Anclaje de notas al texto seleccionado --- */
+
+let pendingSelection: { quote: string; anchor: TextAnchor; locator: ReaderLocator } | null = null;
+let ignoreSelectionEvents = false;
+let selectionTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** Resuelve el rango del capítulo que cubre una nota y lo trae a la vista. */
+function scrollToAnchorRange(range: Range, recovered: boolean): void {
+  const rect = range.getBoundingClientRect();
+  const scroll = document.getElementById('r-scroll');
+  if (scroll) {
+    scroll.scrollTop += rect.top - scroll.clientHeight / 3;
+  }
+  paintActiveNoteHighlight(range);
+  showToast(recovered ? 'Nota reubicada: el texto se movió' : 'Nota localizada');
+}
+
+/** Lleva la vista al texto anclado en el locator, si el capítulo ya está cargado. */
+function revealLocator(locator: ReaderLocator, selectedText?: string): void {
+  const content = document.getElementById('page');
+  if (!content || !hasTextAnchor(locator)) return;
+
+  const found = resolveAnchorRange(indexChapterText(content), locator, selectedText);
+  if (!found) {
+    paintActiveNoteHighlight(null);
+    showToast('No se encontró el texto de la nota');
+    return;
+  }
+  scrollToAnchorRange(found.range, found.recovered);
+}
+
+async function jumpToNote(noteId: string): Promise<void> {
+  const note = currentNotes.find((n) => n.id === noteId);
+  const locator = note ? parseLocator(note.locator) : null;
+  if (!note || !locator || !currentReaderDoc) return;
+
+  activeNoteId = noteId;
+  const current = parseLocator(currentLocator);
+  if (current && isSameDocumentPosition(current, locator)) {
+    revealLocator(locator, note.selectedText);
+    renderNotesList(currentNotes);
+    return;
+  }
+
+  const order = 'positionOrder' in locator ? locator.positionOrder : undefined;
+  if (typeof order !== 'number' || !currentReaderDoc.goToChapter) {
+    showToast('La nota está en otro capítulo no disponible');
+    return;
+  }
+
+  try {
+    await currentReaderDoc.goToChapter(order);
+    await renderChapter(currentReaderDoc, currentPreferences);
+    await syncLocator();
+    revealLocator(locator, note.selectedText);
+    renderNotesList(currentNotes);
+  } catch (error) {
+    if (error instanceof Error && error.name === 'EpubNavigationError') return;
+    throw error;
+  }
+}
+
+/** Resalta en el capítulo todas las notas ancladas a texto de esta página. */
+function refreshNoteHighlights(): void {
+  const content = document.getElementById('page');
+  if (!content) return;
+
+  const active = parseLocator(currentLocator);
+  if (!active) {
+    paintNoteHighlights([]);
+    return;
+  }
+
+  const index = indexChapterText(content);
+  const ranges: Range[] = [];
+  for (const note of currentNotes) {
+    const locator = parseLocator(note.locator);
+    if (!locator || !isSameDocumentPosition(locator, active)) continue;
+    const found = resolveAnchorRange(index, locator, note.selectedText);
+    if (found) ranges.push(found.range);
+  }
+  paintNoteHighlights(ranges);
+}
+
+function setupNoteSelection(): void {
+  const content = document.getElementById('page');
+  if (!content) return;
+
+  // selectionchange salta en cada píxel del arrastre: se captura al estabilizarse.
+  document.addEventListener('selectionchange', () => {
+    if (ignoreSelectionEvents) return;
+    if (selectionTimer !== null) clearTimeout(selectionTimer);
+    selectionTimer = setTimeout(() => {
+      selectionTimer = null;
+      applyPendingSelection(content);
+    }, 150);
+  });
+}
+
+function applyPendingSelection(content: HTMLElement): void {
+  const selection = captureSelection(content);
+  if (!selection) return;
+
+  void currentReaderDoc?.getLocator().then((locator) => {
+    if (currentPanel === 'notes' && pendingSelection?.quote === selection.quote) return;
+    pendingSelection = {
+      quote: selection.quote,
+      anchor: selection.anchor,
+      locator: withTextAnchor(locator, selection.anchor),
+    };
+    editingNoteId = null;
+    const saveBtn = document.getElementById('note-save');
+    if (saveBtn) saveBtn.textContent = 'Guardar nota';
+    renderSelectionPreview();
+    openDrawer('notes', 'Notas');
+    (document.getElementById('note-input') as HTMLTextAreaElement | null)?.focus();
+  });
+}
+
+function renderSelectionPreview(): void {
+  const preview = document.getElementById('note-quote');
+  if (!preview) return;
+
+  if (!pendingSelection) {
+    preview.classList.remove('show');
+    preview.innerHTML = '';
+    return;
+  }
+
+  preview.innerHTML = `
+    <span class="nquote-text">“${escapeHtml(pendingSelection.quote)}”</span>
+    <button class="nquote-clear" id="note-quote-clear" title="Quitar texto seleccionado">×</button>
+  `;
+  preview.classList.add('show');
+
+  document.getElementById('note-quote-clear')?.addEventListener('click', () => {
+    clearSelection();
+  });
+}
+
+function resetPendingSelection(): void {
+  pendingSelection = null;
+  renderSelectionPreview();
+}
+
+function clearSelection(): void {
+  resetPendingSelection();
+  ignoreSelectionEvents = true;
+  window.getSelection()?.removeAllRanges();
+  setTimeout(() => {
+    ignoreSelectionEvents = false;
+  }, 0);
+  renderNotesList(currentNotes);
+  refreshNoteHighlights();
+  paintActiveNoteHighlight(null);
+  activeNoteId = null;
+}
+
+function enqueueNote(payload: { body: string; locator: string; selectedText?: string }): void {
   const queue = window.__pendingNotes ?? [];
   if (!window.__pendingNotes) window.__pendingNotes = queue;
   queue.push({
     key: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`,
     body: payload.body,
     locator: payload.locator,
+    ...(payload.selectedText !== undefined ? { selectedText: payload.selectedText } : {}),
   });
 }
 
@@ -1202,17 +1390,33 @@ function setupNotes(): void {
       if (editingNoteId) {
         enqueueNoteUpdate({ noteId: editingNoteId, body });
         editingNoteId = null;
-        saveBtn.textContent = 'Guardar';
+        saveBtn.textContent = 'Guardar nota';
         showToast('Actualización en cola');
+      } else if (pendingSelection) {
+        enqueueNote({
+          body,
+          locator: JSON.stringify(pendingSelection.locator),
+          selectedText: pendingSelection.quote,
+        });
+        showToast('Nota anclada al texto en cola');
       } else {
         enqueueNote({ body, locator: currentLocator });
         showToast('Nota en cola');
       }
       input.value = '';
+      clearSelection();
+    });
+
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+        saveBtn.click();
+      }
     });
   }
 
+  renderSelectionPreview();
   renderNotesList(currentNotes);
+  refreshNoteHighlights();
 }
 
 async function main(): Promise<void> {
@@ -1232,7 +1436,7 @@ async function main(): Promise<void> {
         format: string;
         rank: number;
       };
-      notes: Array<{ id: string; body: string; createdAt: number; locator: string }>;
+      notes: readonly ReaderNoteView[];
     }) => {
       try {
         const binary = atob(data.fileDataB64);
@@ -1265,6 +1469,7 @@ async function main(): Promise<void> {
         setupBack();
         await renderTOC(currentReaderDoc);
         renderInfoPanel(data.metadata);
+        setupNoteSelection();
         setupNotes();
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Error al abrir el libro';
@@ -1284,11 +1489,10 @@ async function main(): Promise<void> {
     };
 
     /* --- Notes update from host --- */
-    window.__updateNotes = (
-      notes: Array<{ id: string; body: string; createdAt: number; locator: string }>,
-    ) => {
+    window.__updateNotes = (notes: readonly ReaderNoteView[]) => {
       currentNotes = notes;
       renderNotesList(currentNotes);
+      refreshNoteHighlights();
     };
 
     /* --- Rank update from host --- */
@@ -1328,11 +1532,14 @@ async function main(): Promise<void> {
     };
 
     /* --- Go to chapter by index + position within it (for initial locator from host) --- */
-    window.__goToChapter = async (idx: number, restoreRatio?: number) => {
+    window.__goToChapter = async (idx: number, restoreRatio?: number, locatorJson?: string) => {
       if (!currentReaderDoc) return;
       await currentReaderDoc.goToChapter?.(idx);
       await renderChapter(currentReaderDoc, currentPreferences, restoreRatio);
       await syncLocator();
+
+      const target = parseLocator(locatorJson);
+      if (target) revealLocator(target);
     };
 
     /* --- Get current locator (for host progress sync) --- */
