@@ -39,6 +39,9 @@
   --verdigris-rgb: 133, 179, 150;
   --ink950-rgb: 11, 20, 18;
   --rose-rgb: 143, 92, 60;
+
+  /* Tinta del resaltado de texto anotado (sobrescrita por la paleta activa) */
+  --mark-rgb: 169, 171, 58;
 }
 
 *,
@@ -754,8 +757,10 @@ button {
 }
 .note .nquote {
   margin-bottom: 7px;
-  padding-left: 9px;
-  border-left: 2px solid rgba(var(--gold-rgb), 0.5);
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(var(--mark-rgb, var(--gold-rgb)), 0.14);
+  border-left: 2px solid rgba(var(--mark-rgb, var(--gold-rgb)), 0.7);
   color: var(--chrome-fg-lo);
   font-family: 'Fraunces', serif;
   font-size: 12.5px;
@@ -831,10 +836,11 @@ button {
 
 /* Texto anotado en el capítulo (CSS Custom Highlight API) */
 ::highlight(clio-note) {
-  background-color: rgba(var(--gold-rgb), 0.22);
+  background-color: rgba(var(--mark-rgb, var(--gold-rgb)), 0.42);
 }
 ::highlight(clio-note-active) {
-  background-color: rgba(var(--verdigris-rgb), 0.4);
+  background-color: rgba(var(--mark-rgb, var(--gold-rgb)), 0.75);
+  text-decoration: underline;
 }
 
 /* --- Info --- */

@@ -56,6 +56,13 @@ type FileStatus = 'checking' | 'found' | 'not-found';
    Helper: build palette CSS string for webview injection
    ========================================================================== */
 
+function hexToRgb(hex: string): string {
+  const digits = hex.replace('#', '');
+  const full = digits.length === 3 ? digits.replace(/./g, (c) => c + c) : digits;
+  const value = Number.parseInt(full, 16);
+  return `${(value >> 16) & 255}, ${(value >> 8) & 255}, ${value & 255}`;
+}
+
 function buildPaletteCss(paletteId: string, mode: 'dark' | 'light'): string {
   const palette = getPalette(paletteId);
   const src = mode === 'dark' ? palette.dark : LIGHT_DEFAULTS;
@@ -70,6 +77,10 @@ function buildPaletteCss(paletteId: string, mode: 'dark' | 'light'): string {
     vars.push(`--ink950-rgb:${palette.dark['ink950-rgb']}`);
     vars.push(`--rose-rgb:${palette.dark['rose-rgb']}`);
   }
+  // Tinta del resaltado de texto anotado: gold sobre oscuro, gold-bright sobre claro.
+  vars.push(
+    `--mark-rgb:${hexToRgb(mode === 'dark' ? palette.dark.gold : palette.dark['gold-bright'])}`,
+  );
   return vars.join(';');
 }
 

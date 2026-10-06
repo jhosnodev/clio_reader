@@ -20,9 +20,9 @@ interface HighlightLike {
 
 type HighlightConstructorLike = new (...ranges: Range[]) => HighlightLike;
 
-interface HighlightApiLike {
-  readonly Highlight?: HighlightConstructorLike;
-  readonly highlights?: HighlightRegistryLike;
+interface HighlightApi {
+  readonly Highlight: HighlightConstructorLike;
+  readonly highlights: HighlightRegistryLike;
 }
 
 export interface AnchoredSelection {
@@ -36,9 +36,14 @@ export interface AnchorLookup {
   readonly recovered: boolean;
 }
 
-function highlightApi(): HighlightApiLike | null {
-  const api = globalThis as unknown as HighlightApiLike;
-  return typeof api.Highlight === 'function' && api.highlights ? api : null;
+function highlightApi(): HighlightApi | null {
+  const scope = globalThis as unknown as {
+    Highlight?: HighlightConstructorLike;
+    CSS?: { highlights?: HighlightRegistryLike };
+  };
+  const registry = scope.CSS?.highlights;
+  if (typeof scope.Highlight !== 'function' || !registry) return null;
+  return { Highlight: scope.Highlight, highlights: registry };
 }
 
 /**
@@ -213,7 +218,7 @@ export function resolveAnchorRange(
 /** Pinta visualmente las notas ancladas del capítulo actual. */
 export function paintNoteHighlights(ranges: readonly Range[]): void {
   const api = highlightApi();
-  if (!api?.Highlight || !api.highlights) return;
+  if (!api) return;
 
   if (ranges.length === 0) {
     api.highlights.delete(NOTE_HIGHLIGHT_NAME);
@@ -226,7 +231,7 @@ export function paintNoteHighlights(ranges: readonly Range[]): void {
 /** Resalta la nota que el usuario está leyendo o editando. */
 export function paintActiveNoteHighlight(range: Range | null): void {
   const api = highlightApi();
-  if (!api?.Highlight || !api.highlights) return;
+  if (!api) return;
 
   if (!range) {
     api.highlights.delete(ACTIVE_NOTE_HIGHLIGHT_NAME);
@@ -239,7 +244,7 @@ export function paintActiveNoteHighlight(range: Range | null): void {
 /** Elimina los resaltados de notas del capítulo. */
 export function clearNoteHighlights(): void {
   const api = highlightApi();
-  if (!api?.highlights) return;
+  if (!api) return;
   api.highlights.delete(NOTE_HIGHLIGHT_NAME);
   api.highlights.delete(ACTIVE_NOTE_HIGHLIGHT_NAME);
 }
