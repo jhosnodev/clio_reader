@@ -9,6 +9,7 @@ files:
 asarUnpack:
   - '**/node_modules/better-sqlite3/**'
 npmRebuild: true
+
 win:
   target:
     - target: nsis
@@ -16,6 +17,29 @@ win:
         - x64
   icon: resources/icon.ico
   signAndEditExecutable: false
+
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+  category: Application;Education;Viewer
+  icon: resources/icon.png
+  maintainer: jhosno.dev
+  vendor: jhosno.dev
+  description: Local-first digital book library manager and reader
+  executableName: clio-reader
+  desktop:
+    StartupWMClass: clio-reader
+
+deb:
+  packageName: clio-reader
+  artifactName: 'clio-reader_${version}_${arch}.${ext}'
+  packageCategory: education
+
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
