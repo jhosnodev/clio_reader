@@ -328,6 +328,45 @@ describe('DrizzleRepository', () => {
       expect(notes[0]!.body).toBe('This is my note');
     });
 
+    it('should persist the text anchor and the quote of a note', async () => {
+      const book = {
+        id: 'book-1',
+        title: 'Test Book',
+        format: 'epub' as const,
+        uri: '/path/to/book.epub',
+        addedAt: Date.now(),
+        status: 'available' as const,
+      };
+
+      await repository.upsertBook(book);
+
+      const note = {
+        id: 'note-anchor',
+        bookId: 'book-1',
+        locator: {
+          format: 'epub' as const,
+          href: 'chapter1',
+          positionOrder: 1,
+          anchor: { start: 120, end: 134, prefix: 'digo que ', suffix: ' y luego' },
+        },
+        selectedText: 'texto anudado',
+        body: 'Anotación sobre el texto',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      await repository.saveNote(note);
+      const notes = await repository.listNotes('book-1');
+
+      expect(notes[0]!.selectedText).toBe('texto anudado');
+      expect(notes[0]!.locator).toEqual({
+        format: 'epub',
+        href: 'chapter1',
+        positionOrder: 1,
+        anchor: { start: 120, end: 134, prefix: 'digo que ', suffix: ' y luego' },
+      });
+    });
+
     it('should throw error for empty note body', async () => {
       const note = {
         id: 'note-1',

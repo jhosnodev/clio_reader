@@ -11,6 +11,12 @@ import {
   searchNotes,
   hasNoteAtLocator,
 } from '../src/note-manager.js';
+import { AnnotationValidationError } from '../src/errors.js';
+
+function anchorOf(locator: unknown): unknown {
+  const loc = locator as { format?: string; anchor?: unknown };
+  return loc.format === 'epub' ? loc.anchor : undefined;
+}
 
 function createRepo(): LocalRepository {
   return new LocalRepository(new InMemoryKeyValueStore());
@@ -63,6 +69,69 @@ describe('NoteManager', () => {
       );
 
       expect(note.selectedText).toBe('Selected text');
+    });
+
+    it('creates a note anchored to selected text', async () => {
+      const repo = createRepo();
+      await setupBook(repo);
+
+      const note = await createNoteManaged(
+        repo,
+        'book-1',
+        {
+          format: 'epub',
+          href: 'chapter1.xhtml',
+          anchor: { start: 120, end: 134, prefix: 'digo que ', suffix: ' y luego' },
+        },
+        'My note',
+        { selectedText: 'texto anudado' },
+      );
+
+      expect(note.selectedText).toBe('texto anudado');
+      expect(anchorOf(note.locator)).toEqual({
+        start: 120,
+        end: 134,
+        prefix: 'digo que ',
+        suffix: ' y luego',
+      });
+    });
+
+    it('rejects an anchor with end before start', async () => {
+      const repo = createRepo();
+      await setupBook(repo);
+
+      await expect(
+        createNoteManaged(
+          repo,
+          'book-1',
+          {
+            format: 'epub',
+            href: 'chapter1.xhtml',
+            anchor: { start: 40, end: 10 },
+          },
+          'My note',
+          { selectedText: 'texto' },
+        ),
+      ).rejects.toThrow(AnnotationValidationError);
+    });
+
+    it('rejects an anchor with negative offsets', async () => {
+      const repo = createRepo();
+      await setupBook(repo);
+
+      await expect(
+        createNoteManaged(
+          repo,
+          'book-1',
+          {
+            format: 'epub',
+            href: 'chapter1.xhtml',
+            anchor: { start: -5, end: 10 },
+          },
+          'My note',
+          { selectedText: 'texto' },
+        ),
+      ).rejects.toThrow(/locator\.anchor\.start/);
     });
 
     it('rejects empty body', async () => {

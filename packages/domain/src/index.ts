@@ -19,6 +19,22 @@ export interface Book {
   readonly coverImage?: string | undefined;
 }
 
+/**
+ * Ancla de texto:Offsets de caracteres dentro del texto plano del documento
+ * (capítulo para EPUB/MD), con contexto para recuperar la posición si el texto
+ * se ha desplazado. Complementa a `selectedText`, que guarda la cita literal.
+ */
+export interface TextAnchor {
+  /** Offset inicial inclusivo dentro del texto del documento */
+  readonly start: number;
+  /** Offset final exclusivo dentro del texto del documento */
+  readonly end: number;
+  /** Hasta 32 caracteres anteriores al ancla, para desambiguar repeticiones */
+  readonly prefix?: string | undefined;
+  /** Hasta 32 caracteres posteriores al ancla, para desambiguar repeticiones */
+  readonly suffix?: string | undefined;
+}
+
 export interface EpubLocator {
   readonly format: 'epub';
   readonly href: string;
@@ -27,6 +43,8 @@ export interface EpubLocator {
   readonly positionOrder?: number;
   /** Posición vertical dentro del capítulo actual, 0..1 (0 = inicio del capítulo) */
   readonly scrollRatio?: number;
+  /** Texto seleccionado al que está atada la anotación */
+  readonly anchor?: TextAnchor | undefined;
 }
 
 export interface PdfLocator {
@@ -53,6 +71,8 @@ export interface MarkdownLocator {
   readonly offset?: number;
   readonly progression?: number;
   readonly positionOrder?: number;
+  /** Texto seleccionado al que está atada la anotación */
+  readonly anchor?: TextAnchor | undefined;
 }
 
 export type ReaderLocator = EpubLocator | PdfLocator | CbzLocator | MarkdownLocator;
@@ -89,6 +109,7 @@ export interface Note {
   readonly id: string;
   readonly bookId: BookId;
   readonly locator: ReaderLocator;
+  /** Cita literal del texto seleccionado al que se ancla la nota */
   readonly selectedText?: string;
   readonly body: string;
   readonly createdAt: number;

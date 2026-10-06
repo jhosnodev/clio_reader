@@ -1,5 +1,17 @@
 import type { BookFormat, ReaderLocator, ReaderPreferences } from '@clio-reader/domain';
 
+export {
+  ANCHOR_CONTEXT_LENGTH,
+  MIN_QUOTE_LENGTH,
+  buildTextAnchor,
+  getLocatorAnchor,
+  hasTextAnchor,
+  normalizeQuote,
+  resolveTextAnchor,
+  withTextAnchor,
+} from './text-anchor.js';
+export type { AnchorResolution, ResolvedAnchor } from './text-anchor.js';
+
 export interface FileSource {
   readonly uri: string;
   readonly name: string;
