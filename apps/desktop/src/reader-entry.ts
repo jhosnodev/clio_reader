@@ -27,6 +27,8 @@ import {
 } from './reader-prefs';
 import { createProgressBar } from './reader-progress-controller';
 import type { ProgressBarController } from './reader-progress-controller';
+import { createSelectionGate } from './reader-selection-gate';
+import type { SelectionGate } from './reader-selection-gate';
 import { scrollRatio, scrollTopForRatio } from './reader-progress-bar';
 import {
   isSameDocumentPosition,
@@ -51,6 +53,7 @@ const SUPPORTED_FORMATS = ['epub', 'pdf', 'cbz', 'md'] as const;
 type SupportedFormat = (typeof SUPPORTED_FORMATS)[number];
 
 const SCROLL_SETTLE_MS = 300;
+const SELECTION_SETTLE_MS = 250;
 const LOCATOR_REFRESH_MS = 250;
 const SCROLL_KEYS = new Set([
   'ArrowUp',
@@ -555,7 +558,7 @@ async function navigateChapter(
 
 let currentPanel: string | null = null;
 
-function openDrawer(panelId: string, title: string): void {
+function openDrawer(panelId: string, title: string, options?: { scrim?: boolean }): void {
   const scrim = document.getElementById('scrim');
   const drawer = document.getElementById('drawer');
   const drawerTitle = document.getElementById('drawer-title');
@@ -572,7 +575,9 @@ function openDrawer(panelId: string, title: string): void {
     btn.classList.toggle('on', (btn as HTMLElement).dataset.panel === panelId);
   });
 
-  scrim.classList.add('show');
+  // El scrim bloquea el texto: los paneles auxiliares (notas) se abren sin él
+  // para poder seguir seleccionando en la página.
+  scrim.classList.toggle('show', options?.scrim !== false);
   drawer.classList.add('show');
 }
 
@@ -1204,7 +1209,8 @@ function renderNotesList(notes: readonly ReaderNoteView[]): void {
 
 let pendingSelection: { quote: string; anchor: TextAnchor; locator: ReaderLocator } | null = null;
 let ignoreSelectionEvents = false;
-let selectionTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingSelectionSeq = 0;
+let selectionGate: SelectionGate | null = null;
 
 /** Resuelve el rango del capítulo que cubre una nota y lo trae a la vista. */
 function scrollToAnchorRange(range: Range, recovered: boolean): void {
@@ -1288,22 +1294,29 @@ function setupNoteSelection(): void {
   const content = document.getElementById('page');
   if (!content) return;
 
-  // selectionchange salta en cada píxel del arrastre: se captura al estabilizarse.
+  // El panel de notas espera a que el gesto termine: reaccionar a media
+  // selección la corta y no permite seleccionar un párrafo.
+  const gate = createSelectionGate(SELECTION_SETTLE_MS, () => applyPendingSelection(content));
+
+  window.addEventListener('pointerdown', () => gate.pointerDown());
+  window.addEventListener('pointerup', () => gate.pointerUp());
+  window.addEventListener('pointercancel', () => gate.pointerCancel());
+
   document.addEventListener('selectionchange', () => {
     if (ignoreSelectionEvents) return;
-    if (selectionTimer !== null) clearTimeout(selectionTimer);
-    selectionTimer = setTimeout(() => {
-      selectionTimer = null;
-      applyPendingSelection(content);
-    }, 150);
+    gate.request();
   });
+
+  selectionGate = gate;
 }
 
 function applyPendingSelection(content: HTMLElement): void {
   const selection = captureSelection(content);
   if (!selection) return;
 
+  const seq = ++pendingSelectionSeq;
   void currentReaderDoc?.getLocator().then((locator) => {
+    if (seq !== pendingSelectionSeq) return;
     if (currentPanel === 'notes' && pendingSelection?.quote === selection.quote) return;
     pendingSelection = {
       quote: selection.quote,
@@ -1314,8 +1327,8 @@ function applyPendingSelection(content: HTMLElement): void {
     const saveBtn = document.getElementById('note-save');
     if (saveBtn) saveBtn.textContent = 'Guardar nota';
     renderSelectionPreview();
-    openDrawer('notes', 'Notas');
-    (document.getElementById('note-input') as HTMLTextAreaElement | null)?.focus();
+    // Sin scrim: el texto sigue siendo seleccionable con el panel abierto.
+    openDrawer('notes', 'Notas', { scrim: false });
   });
 }
 
@@ -1346,6 +1359,8 @@ function resetPendingSelection(): void {
 }
 
 function clearSelection(): void {
+  pendingSelectionSeq++;
+  selectionGate?.cancel();
   resetPendingSelection();
   ignoreSelectionEvents = true;
   window.getSelection()?.removeAllRanges();
