@@ -1055,6 +1055,13 @@ button {
   color: var(--on-gold);
 }
 
+.reader-error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
 /* ==========================================================================
    Responsive
    ========================================================================== */
