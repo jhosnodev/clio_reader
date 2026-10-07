@@ -1,15 +1,18 @@
-import { eq, and, isNull, desc } from 'drizzle-orm';
+import { eq, and, isNull } from 'drizzle-orm';
 import {
   Bookmark,
   Book,
   createDefaultPreferences,
+  createDefaultUserSettings,
   DomainValidationError,
+  Highlight,
   Note,
   ReaderPreferences,
   ReadingProgress,
+  UserSettings,
   validateReaderPreferences,
 } from '@clio-reader/domain';
-import { BetterSqlite3Connection, SqlJsConnection } from './db';
+import type { BetterSqlite3Connection } from './db-better-sqlite3.js';
 import {
   books,
   readingProgress,
@@ -18,25 +21,15 @@ import {
   bookmarks as bookmarksTable,
   notes as notesTable,
   highlights as highlightsTable,
-} from './schema';
-
-export type Highlight = {
-  id: string;
-  bookId: string;
-  locatorFormat: string;
-  locatorStart: string;
-  locatorEnd: string;
-  selectedText?: string;
-  color: string;
-  style: 'highlight' | 'underline';
-  note?: string;
-  createdAt: number;
-  updatedAt: number;
-  deletedAt?: number;
-};
+  userSettings as userSettingsTable,
+} from './schema.js';
 
 export class DrizzleRepository {
-  constructor(private readonly db: BetterSqlite3Connection | SqlJsConnection) {}
+  constructor(private readonly db: BetterSqlite3Connection) {}
+
+  get rawDb(): BetterSqlite3Connection {
+    return this.db;
+  }
 
   // ==================== BOOKS ====================
   async listBooks(): Promise<readonly Book[]> {
@@ -49,18 +42,14 @@ export class DrizzleRepository {
   }
 
   async getBook(bookId: string): Promise<Book | undefined> {
-    const result = this.db
-      .select()
-      .from(books)
-      .where(eq(books.id, bookId))
-      .get();
-    
+    const result = this.db.select().from(books).where(eq(books.id, bookId)).get();
+
     return result ? this.mapBookFromDb(result) : undefined;
   }
 
   async upsertBook(book: Book): Promise<void> {
     const existing = await this.getBook(book.id);
-    
+
     if (existing) {
       this.db
         .update(books)
@@ -77,15 +66,9 @@ export class DrizzleRepository {
 
   async removeBook(bookId: string): Promise<void> {
     const now = Math.floor(Date.now() / 1000);
-    
-    // Soft delete book
-    this.db
-      .update(books)
-      .set({ deletedAt: now, updatedAt: now })
-      .where(eq(books.id, bookId))
-      .run();
-    
-    // Hard delete related data (or soft delete for sync)
+
+    this.db.update(books).set({ deletedAt: now, updatedAt: now }).where(eq(books.id, bookId)).run();
+
     this.db.delete(readingProgress).where(eq(readingProgress.bookId, bookId)).run();
     this.db.delete(bookmarksTable).where(eq(bookmarksTable.bookId, bookId)).run();
     this.db.delete(notesTable).where(eq(notesTable.bookId, bookId)).run();
@@ -100,13 +83,13 @@ export class DrizzleRepository {
       .from(readingProgress)
       .where(eq(readingProgress.bookId, bookId))
       .get();
-    
+
     return result ? this.mapProgressFromDb(result) : undefined;
   }
 
   async saveProgress(progress: ReadingProgress): Promise<void> {
     const existing = await this.getProgress(progress.bookId);
-    
+
     if (existing) {
       this.db
         .update(readingProgress)
@@ -132,6 +115,10 @@ export class DrizzleRepository {
     }
   }
 
+  async listAllProgress(): Promise<readonly ReadingProgress[]> {
+    return this.db.select().from(readingProgress).all().map(this.mapProgressFromDb);
+  }
+
   // ==================== PREFERENCES ====================
   async getGlobalPreferences(): Promise<ReaderPreferences> {
     const result = this.db
@@ -139,25 +126,25 @@ export class DrizzleRepository {
       .from(readerPreferencesTable)
       .where(eq(readerPreferencesTable.id, 1))
       .get();
-    
+
     if (!result) {
       return createDefaultPreferences();
     }
-    
+
     return this.mapPreferencesFromDb(result);
   }
 
   async saveGlobalPreferences(preferences: ReaderPreferences): Promise<void> {
     validateReaderPreferences(preferences);
-    
-    const existing = await this.db
+
+    const existing = this.db
       .select()
       .from(readerPreferencesTable)
       .where(eq(readerPreferencesTable.id, 1))
       .get();
-    
+
     const now = Math.floor(Date.now() / 1000);
-    
+
     if (existing) {
       this.db
         .update(readerPreferencesTable)
@@ -185,11 +172,11 @@ export class DrizzleRepository {
       .from(bookPreferencesTable)
       .where(eq(bookPreferencesTable.bookId, bookId))
       .get();
-    
+
     if (!result) {
       return {};
     }
-    
+
     return this.mapBookPreferencesFromDb(result);
   }
 
@@ -200,15 +187,15 @@ export class DrizzleRepository {
     const global = await this.getGlobalPreferences();
     const merged = { ...global, ...preferences };
     validateReaderPreferences(merged);
-    
-    const existing = await this.db
+
+    const existing = this.db
       .select()
       .from(bookPreferencesTable)
       .where(eq(bookPreferencesTable.bookId, bookId))
       .get();
-    
+
     const now = Math.floor(Date.now() / 1000);
-    
+
     if (existing) {
       this.db
         .update(bookPreferencesTable)
@@ -231,16 +218,20 @@ export class DrizzleRepository {
   }
 
   // ==================== BOOKMARKS ====================
+  async listAllBookmarks(): Promise<readonly Bookmark[]> {
+    return this.db
+      .select()
+      .from(bookmarksTable)
+      .where(isNull(bookmarksTable.deletedAt))
+      .all()
+      .map(this.mapBookmarkFromDb);
+  }
+
   async listBookmarks(bookId: string): Promise<readonly Bookmark[]> {
     return this.db
       .select()
       .from(bookmarksTable)
-      .where(
-        and(
-          eq(bookmarksTable.bookId, bookId),
-          isNull(bookmarksTable.deletedAt)
-        )
-      )
+      .where(and(eq(bookmarksTable.bookId, bookId), isNull(bookmarksTable.deletedAt)))
       .all()
       .map(this.mapBookmarkFromDb);
   }
@@ -251,9 +242,9 @@ export class DrizzleRepository {
       .from(bookmarksTable)
       .where(eq(bookmarksTable.id, bookmark.id))
       .get();
-    
+
     const now = Math.floor(Date.now() / 1000);
-    
+
     if (existing) {
       this.db
         .update(bookmarksTable)
@@ -283,8 +274,7 @@ export class DrizzleRepository {
 
   async removeBookmark(bookmarkId: string): Promise<void> {
     const now = Math.floor(Date.now() / 1000);
-    
-    // Soft delete for sync
+
     this.db
       .update(bookmarksTable)
       .set({ deletedAt: now, updatedAt: now })
@@ -297,12 +287,7 @@ export class DrizzleRepository {
     return this.db
       .select()
       .from(notesTable)
-      .where(
-        and(
-          eq(notesTable.bookId, bookId),
-          isNull(notesTable.deletedAt)
-        )
-      )
+      .where(and(eq(notesTable.bookId, bookId), isNull(notesTable.deletedAt)))
       .all()
       .map(this.mapNoteFromDb);
   }
@@ -311,15 +296,11 @@ export class DrizzleRepository {
     if (note.body.trim().length === 0) {
       throw new DomainValidationError('Note body must not be empty');
     }
-    
-    const existing = this.db
-      .select()
-      .from(notesTable)
-      .where(eq(notesTable.id, note.id))
-      .get();
-    
+
+    const existing = this.db.select().from(notesTable).where(eq(notesTable.id, note.id)).get();
+
     const now = Math.floor(Date.now() / 1000);
-    
+
     if (existing) {
       this.db
         .update(notesTable)
@@ -351,8 +332,7 @@ export class DrizzleRepository {
 
   async removeNote(noteId: string): Promise<void> {
     const now = Math.floor(Date.now() / 1000);
-    
-    // Soft delete for sync
+
     this.db
       .update(notesTable)
       .set({ deletedAt: now, updatedAt: now })
@@ -365,12 +345,7 @@ export class DrizzleRepository {
     return this.db
       .select()
       .from(highlightsTable)
-      .where(
-        and(
-          eq(highlightsTable.bookId, bookId),
-          isNull(highlightsTable.deletedAt)
-        )
-      )
+      .where(and(eq(highlightsTable.bookId, bookId), isNull(highlightsTable.deletedAt)))
       .all()
       .map(this.mapHighlightFromDb);
   }
@@ -381,16 +356,16 @@ export class DrizzleRepository {
       .from(highlightsTable)
       .where(eq(highlightsTable.id, highlight.id))
       .get();
-    
+
     const now = Math.floor(Date.now() / 1000);
-    
+
     if (existing) {
       this.db
         .update(highlightsTable)
         .set({
-          locatorFormat: highlight.locatorFormat,
-          locatorStart: highlight.locatorStart,
-          locatorEnd: highlight.locatorEnd,
+          locatorFormat: highlight.locatorStart.format,
+          locatorStart: JSON.stringify(highlight.locatorStart),
+          locatorEnd: JSON.stringify(highlight.locatorEnd),
           selectedText: highlight.selectedText,
           color: highlight.color,
           style: highlight.style,
@@ -405,9 +380,9 @@ export class DrizzleRepository {
         .values({
           id: highlight.id,
           bookId: highlight.bookId,
-          locatorFormat: highlight.locatorFormat,
-          locatorStart: highlight.locatorStart,
-          locatorEnd: highlight.locatorEnd,
+          locatorFormat: highlight.locatorStart.format,
+          locatorStart: JSON.stringify(highlight.locatorStart),
+          locatorEnd: JSON.stringify(highlight.locatorEnd),
           selectedText: highlight.selectedText,
           color: highlight.color,
           style: highlight.style,
@@ -421,13 +396,62 @@ export class DrizzleRepository {
 
   async removeHighlight(highlightId: string): Promise<void> {
     const now = Math.floor(Date.now() / 1000);
-    
-    // Soft delete for sync
+
     this.db
       .update(highlightsTable)
       .set({ deletedAt: now, updatedAt: now })
       .where(eq(highlightsTable.id, highlightId))
       .run();
+  }
+
+  // ==================== USER SETTINGS ====================
+  async getUserSettings(): Promise<UserSettings> {
+    const result = this.db
+      .select()
+      .from(userSettingsTable)
+      .where(eq(userSettingsTable.id, 1))
+      .get();
+
+    if (!result) {
+      return createDefaultUserSettings();
+    }
+
+    return {
+      paletteId: result.paletteId,
+      mode: result.mode as UserSettings['mode'],
+    };
+  }
+
+  async saveUserSettings(settings: UserSettings): Promise<void> {
+    const existing = this.db
+      .select()
+      .from(userSettingsTable)
+      .where(eq(userSettingsTable.id, 1))
+      .get();
+
+    const now = Math.floor(Date.now() / 1000);
+
+    if (existing) {
+      this.db
+        .update(userSettingsTable)
+        .set({
+          paletteId: settings.paletteId,
+          mode: settings.mode,
+          updatedAt: now,
+        })
+        .where(eq(userSettingsTable.id, 1))
+        .run();
+    } else {
+      this.db
+        .insert(userSettingsTable)
+        .values({
+          id: 1,
+          paletteId: settings.paletteId,
+          mode: settings.mode,
+          updatedAt: now,
+        })
+        .run();
+    }
   }
 
   // ==================== MAPPING FUNCTIONS ====================
@@ -506,9 +530,21 @@ export class DrizzleRepository {
     };
   }
 
-  private mapBookPreferencesFromDb(row: typeof bookPreferencesTable.$inferSelect): Partial<ReaderPreferences> {
-    const result: Partial<ReaderPreferences> = {};
-    
+  private mapBookPreferencesFromDb(
+    row: typeof bookPreferencesTable.$inferSelect,
+  ): Partial<ReaderPreferences> {
+    const result: {
+      theme?: ReaderPreferences['theme'];
+      backgroundColor?: string;
+      foregroundColor?: string;
+      accentColor?: string;
+      fontFamily?: ReaderPreferences['fontFamily'];
+      fontScale?: number;
+      lineHeight?: number;
+      margin?: ReaderPreferences['margin'];
+      readingDirection?: ReaderPreferences['readingDirection'];
+    } = {};
+
     if (row.theme) result.theme = row.theme as ReaderPreferences['theme'];
     if (row.backgroundColor) result.backgroundColor = row.backgroundColor;
     if (row.foregroundColor) result.foregroundColor = row.foregroundColor;
@@ -517,8 +553,9 @@ export class DrizzleRepository {
     if (row.fontScale) result.fontScale = row.fontScale;
     if (row.lineHeight) result.lineHeight = row.lineHeight;
     if (row.margin) result.margin = row.margin as ReaderPreferences['margin'];
-    if (row.readingDirection) result.readingDirection = row.readingDirection as ReaderPreferences['readingDirection'];
-    
+    if (row.readingDirection)
+      result.readingDirection = row.readingDirection as ReaderPreferences['readingDirection'];
+
     return result;
   }
 
@@ -537,42 +574,45 @@ export class DrizzleRepository {
   }
 
   private mapBookmarkFromDb(row: typeof bookmarksTable.$inferSelect): Bookmark {
-    return {
+    const bookmark: Bookmark = {
       id: row.id,
       bookId: row.bookId,
       locator: JSON.parse(row.locatorData) as Bookmark['locator'],
-      label: row.label ?? undefined,
       createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
     };
+    if (row.label != null) (bookmark as { label?: string }).label = row.label;
+    if (row.updatedAt != null) (bookmark as { updatedAt?: number }).updatedAt = row.updatedAt;
+    return bookmark;
   }
 
   private mapNoteFromDb(row: typeof notesTable.$inferSelect): Note {
-    return {
+    const note: Note = {
       id: row.id,
       bookId: row.bookId,
       locator: JSON.parse(row.locatorData) as Note['locator'],
-      selectedText: row.selectedText ?? undefined,
       body: row.body,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };
+    if (row.selectedText != null)
+      (note as { selectedText?: string }).selectedText = row.selectedText;
+    return note;
   }
 
   private mapHighlightFromDb(row: typeof highlightsTable.$inferSelect): Highlight {
-    return {
+    const highlight: Highlight = {
       id: row.id,
       bookId: row.bookId,
-      locatorFormat: row.locatorFormat,
-      locatorStart: row.locatorStart,
-      locatorEnd: row.locatorEnd,
-      selectedText: row.selectedText ?? undefined,
+      locatorStart: JSON.parse(row.locatorStart) as Highlight['locatorStart'],
+      locatorEnd: JSON.parse(row.locatorEnd) as Highlight['locatorEnd'],
       color: row.color,
       style: row.style as Highlight['style'],
-      note: row.note ?? undefined,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
-      deletedAt: row.deletedAt ?? undefined,
     };
+    if (row.selectedText != null)
+      (highlight as { selectedText?: string }).selectedText = row.selectedText;
+    if (row.note != null) (highlight as { note?: string }).note = row.note;
+    return highlight;
   }
 }

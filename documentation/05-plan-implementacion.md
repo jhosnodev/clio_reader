@@ -17,13 +17,13 @@ El plan prioriza un código limpio, modular, testeable y documentado. Cada featu
 
 ## 2. Resultado objetivo del MVP
 
-Al terminar las fases obligatorias, el usuario podrá importar una cantidad de libros limitada únicamente por el almacenamiento y las capacidades del dispositivo, organizarlos en una biblioteca local, abrir EPUB/PDF/CBZ, navegar, cambiar las preferencias aplicables, reanudar desde la última posición y administrar marcadores y notas.
+Al terminar las fases obligatorias, el usuario podrá importar una cantidad de libros limitada únicamente por el almacenamiento y las capacidades del dispositivo, organizarlos en una biblioteca local, abrir EPUB/PDF/CBZ/Markdown, navegar, cambiar las preferencias aplicables, reanudar desde la última posición y administrar marcadores y notas.
 
 | Área         | Resultado esperado                                                    |
 | ------------ | --------------------------------------------------------------------- |
 | Plataforma   | Aplicación funcional en Windows y Android                             |
 | Datos        | Persistencia local sin cuentas ni servicios remotos                   |
-| Formatos     | EPUB, PDF y CBZ                                                       |
+| Formatos     | EPUB, PDF, CBZ y Markdown                                             |
 | Lectura      | Apertura, navegación, progreso y reanudación                          |
 | Preferencias | Tema, colores, tamaño de letra y opciones aplicables                  |
 | Anotaciones  | Marcadores y notas locales                                            |

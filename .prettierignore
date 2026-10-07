@@ -1,0 +1,6 @@
+node_modules
+dist
+dist-electron
+coverage
+pnpm-lock.yaml
+packages/reader-epub/repro-runtime.mjs

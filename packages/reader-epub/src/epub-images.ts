@@ -23,10 +23,7 @@ export function replaceImgSrc(html: string, oldSrc: string, newSrc: string): str
 
   let result = html;
 
-  const imgRe = new RegExp(
-    `(<img\\b[^>]*?)src\\s*=\\s*["']${safeSrc}["']([^>]*?>)`,
-    'gi',
-  );
+  const imgRe = new RegExp(`(<img\\b[^>]*?)src\\s*=\\s*["']${safeSrc}["']([^>]*?>)`, 'gi');
   result = result.replace(imgRe, `$1src="${newSrc}"$2`);
 
   const svgRe = new RegExp(
@@ -41,10 +38,7 @@ export function replaceImgSrc(html: string, oldSrc: string, newSrc: string): str
 export function addFailedImgClassToSrc(html: string, src: string): string {
   const safeSrc = src.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-  const imgRe = new RegExp(
-    `(<img\\b[^>]*?src\\s*=\\s*["']${safeSrc}["'][^>]*?>)`,
-    'gi',
-  );
+  const imgRe = new RegExp(`(<img\\b[^>]*?src\\s*=\\s*["']${safeSrc}["'][^>]*?>)`, 'gi');
   let result = html.replace(imgRe, (match) => {
     if (match.includes('class=')) {
       return match.replace(/class\s*=\s*["']([^"']*)["']/, '$1 epub-img-failed"');

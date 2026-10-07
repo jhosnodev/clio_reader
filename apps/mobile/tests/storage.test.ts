@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { KeyValueStore } from '@clio-reader/storage';
 
 vi.mock('expo-file-system', () => ({
   documentDirectory: 'file:///mock-documents/',
@@ -17,10 +16,16 @@ vi.mock('expo-document-picker', () => ({
 
 const mockFileSystem = await import('expo-file-system');
 
+interface FileInfoResult {
+  readonly exists: boolean;
+}
+
+const fileInfo = (exists: boolean): FileInfoResult => ({ exists });
+
 describe('Mobile Storage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(mockFileSystem.getInfoAsync).mockResolvedValue({ exists: false } as any);
+    vi.mocked(mockFileSystem.getInfoAsync).mockResolvedValue(fileInfo(false));
     vi.mocked(mockFileSystem.makeDirectoryAsync).mockResolvedValue(undefined);
   });
 
@@ -35,7 +40,7 @@ describe('Mobile Storage', () => {
     });
 
     it('should get value from storage', async () => {
-      vi.mocked(mockFileSystem.getInfoAsync).mockResolvedValue({ exists: true } as any);
+      vi.mocked(mockFileSystem.getInfoAsync).mockResolvedValue(fileInfo(true));
       vi.mocked(mockFileSystem.readAsStringAsync).mockResolvedValue('{"test":"value"}');
 
       const { createExpoKVStore } = await import('../src/bridges/storage');
@@ -46,7 +51,7 @@ describe('Mobile Storage', () => {
     });
 
     it('should return undefined for non-existent key', async () => {
-      vi.mocked(mockFileSystem.getInfoAsync).mockResolvedValue({ exists: false } as any);
+      vi.mocked(mockFileSystem.getInfoAsync).mockResolvedValue(fileInfo(false));
 
       const { createExpoKVStore } = await import('../src/bridges/storage');
       const store = createExpoKVStore();
@@ -69,7 +74,7 @@ describe('Mobile Storage', () => {
     });
 
     it('should remove value from storage', async () => {
-      vi.mocked(mockFileSystem.getInfoAsync).mockResolvedValue({ exists: true } as any);
+      vi.mocked(mockFileSystem.getInfoAsync).mockResolvedValue(fileInfo(true));
       vi.mocked(mockFileSystem.deleteAsync).mockResolvedValue(undefined);
 
       const { createExpoKVStore } = await import('../src/bridges/storage');

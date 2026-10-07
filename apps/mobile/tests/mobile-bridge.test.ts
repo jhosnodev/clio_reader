@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { FileSource } from '@clio-reader/reader-core';
 
 vi.mock('expo-document-picker', () => ({
   getDocumentAsync: vi.fn(),
 }));
 
 const mockDocumentPicker = await import('expo-document-picker');
+
+interface PickerAsset {
+  readonly uri: string;
+  readonly name: string;
+  readonly mimeType?: string;
+}
+
+type PickerResult =
+  | { readonly canceled: false; readonly assets: PickerAsset[] }
+  | { readonly canceled: true; readonly assets: never[] };
 
 describe('Mobile Bridge', () => {
   beforeEach(() => {
@@ -20,7 +29,7 @@ describe('Mobile Bridge', () => {
     });
 
     it('should pick file and return FileSource', async () => {
-      vi.mocked(mockDocumentPicker.getDocumentAsync).mockResolvedValue({
+      const result: PickerResult = {
         canceled: false,
         assets: [
           {
@@ -29,7 +38,8 @@ describe('Mobile Bridge', () => {
             mimeType: 'application/epub+zip',
           },
         ],
-      } as any);
+      };
+      vi.mocked(mockDocumentPicker.getDocumentAsync).mockResolvedValue(result);
 
       const { createMobileBridge } = await import('../src/bridges/mobile-bridge');
       const bridge = createMobileBridge();
@@ -43,10 +53,11 @@ describe('Mobile Bridge', () => {
     });
 
     it('should return null when file picker is canceled', async () => {
-      vi.mocked(mockDocumentPicker.getDocumentAsync).mockResolvedValue({
+      const result: PickerResult = {
         canceled: true,
         assets: [],
-      } as any);
+      };
+      vi.mocked(mockDocumentPicker.getDocumentAsync).mockResolvedValue(result);
 
       const { createMobileBridge } = await import('../src/bridges/mobile-bridge');
       const bridge = createMobileBridge();

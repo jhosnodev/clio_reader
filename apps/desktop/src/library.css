@@ -29,22 +29,22 @@
   --tx-faint: #6a657a;
 
   /* --- Constantes --- */
-  --ease: cubic-bezier(.22,.61,.36,1);
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
   --on-gold: #2b1107;
   --accent-strong: #dfe0ba;
 
   /* --- RGB decompositions (para rgba() dinámico) --- */
-  --gold-rgb: 169,171,58;
-  --verdigris-rgb: 133,179,150;
-  --ink950-rgb: 11,20,18;
-  --rose-rgb: 143,92,60;
+  --gold-rgb: 169, 171, 58;
+  --verdigris-rgb: 133, 179, 150;
+  --ink950-rgb: 11, 20, 18;
+  --rose-rgb: 143, 92, 60;
 }
 
 /* ==========================================================================
    TEMA CLARO (alabastro / piedra)
    Se activa con data-app-theme="light" en .app
    ========================================================================== */
-.app[data-app-theme="light"] {
+.app[data-app-theme='light'] {
   --ink-950: #eceee9;
   --ink-900: #f6f7f3;
   --ink-850: #ffffff;
@@ -60,25 +60,52 @@
 }
 
 /* --- Theme toggle: iconos según el tema activo --- */
-.theme-toggle .i-moon { display: none; }
-.theme-toggle .i-sun { display: block; }
-.app[data-app-theme="light"] .theme-toggle .i-sun { display: none; }
-.app[data-app-theme="light"] .theme-toggle .i-moon { display: block; }
+.theme-toggle .i-moon {
+  display: none;
+}
+.theme-toggle .i-sun {
+  display: block;
+}
+.app[data-app-theme='light'] .theme-toggle .i-sun {
+  display: none;
+}
+.app[data-app-theme='light'] .theme-toggle .i-moon {
+  display: block;
+}
 
 /* ==========================================================================
    Reset y base
    ========================================================================== */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body, #root { height: 100%; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+html,
+body,
+#root {
+  height: 100%;
+}
 body {
-  font-family: "Hanken Grotesk", system-ui, sans-serif;
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
   background: var(--ink-950);
   color: var(--tx);
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
 }
-::selection { background: rgba(var(--gold-rgb),.35); color: var(--tx-hi); }
-button { font-family: inherit; cursor: pointer; color: inherit; background: none; border: none; }
+::selection {
+  background: rgba(var(--gold-rgb), 0.35);
+  color: var(--tx-hi);
+}
+button {
+  font-family: inherit;
+  cursor: pointer;
+  color: inherit;
+  background: none;
+  border: none;
+}
 
 /* ==========================================================================
    App layout
@@ -87,24 +114,35 @@ button { font-family: inherit; cursor: pointer; color: inherit; background: none
   display: flex;
   height: 100vh;
   background:
-    radial-gradient(1200px 600px at 80% -10%, rgba(var(--verdigris-rgb),.06), transparent 60%),
-    radial-gradient(1000px 500px at -5% 110%, rgba(var(--gold-rgb),.06), transparent 55%),
+    radial-gradient(1200px 600px at 80% -10%, rgba(var(--verdigris-rgb), 0.06), transparent 60%),
+    radial-gradient(1000px 500px at -5% 110%, rgba(var(--gold-rgb), 0.06), transparent 55%),
     var(--ink-950);
-  font-family: "Hanken Grotesk", system-ui, sans-serif;
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
   color: var(--tx);
-  transition: background .3s var(--ease);
+  transition: background 0.3s var(--ease);
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 /* ==========================================================================
    Scrollbar personalizado (sensible al tema)
    ========================================================================== */
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
 ::-webkit-scrollbar-thumb {
   background: var(--ink-700);
   border-radius: 20px;
   border: 2px solid var(--ink-950);
 }
-::-webkit-scrollbar-thumb:hover { background: var(--ink-600); }
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-600);
+}

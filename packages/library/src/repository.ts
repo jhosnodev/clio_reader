@@ -1,7 +1,16 @@
-import type { Bookmark, Book, Note, ReaderPreferences, ReadingProgress } from '@clio-reader/domain';
+import type {
+  Bookmark,
+  Book,
+  Highlight,
+  Note,
+  ReaderPreferences,
+  ReadingProgress,
+  UserSettings,
+} from '@clio-reader/domain';
 
 export interface LibraryRepository {
   listBooks(): Promise<readonly Book[]>;
+  getBook(bookId: string): Promise<Book | undefined>;
   upsertBook(book: Book): Promise<void>;
   removeBook(bookId: string): Promise<void>;
   getProgress(bookId: string): Promise<ReadingProgress | undefined>;
@@ -18,4 +27,9 @@ export interface LibraryRepository {
   listNotes(bookId: string): Promise<readonly Note[]>;
   saveNote(note: Note): Promise<void>;
   removeNote(noteId: string): Promise<void>;
+  listHighlights(bookId: string): Promise<readonly Highlight[]>;
+  saveHighlight(highlight: Highlight): Promise<void>;
+  removeHighlight(highlightId: string): Promise<void>;
+  getUserSettings(): Promise<UserSettings>;
+  saveUserSettings(settings: UserSettings): Promise<void>;
 }

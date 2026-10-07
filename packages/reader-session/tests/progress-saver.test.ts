@@ -95,6 +95,29 @@ describe('ProgressSaver', () => {
     expect(saver.currentSaveCount).toBe(0);
   });
 
+  it('debounced save persists the percent passed to scheduleSave', async () => {
+    const repo = createRepo();
+    const saver = new ProgressSaver({ debounceMs: 500 });
+
+    saver.scheduleSave('book-1', { format: 'pdf', page: 5, progression: 0.1 }, repo, 0.9);
+
+    await vi.advanceTimersByTimeAsync(500);
+
+    const saved = await repo.getProgress('book-1');
+    expect(saved!.percent).toBe(0.9);
+  });
+
+  it('flush persists the percent passed to scheduleSave', async () => {
+    const repo = createRepo();
+    const saver = new ProgressSaver({ debounceMs: 5000 });
+
+    saver.scheduleSave('book-1', { format: 'pdf', page: 5, progression: 0.1 }, repo, 0.9);
+
+    const result = await saver.flush(repo);
+
+    expect(result!.percent).toBe(0.9);
+  });
+
   it('flushWithPercent saves with explicit percent', async () => {
     const repo = createRepo();
     const saver = new ProgressSaver();

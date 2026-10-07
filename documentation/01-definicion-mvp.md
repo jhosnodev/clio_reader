@@ -11,7 +11,7 @@
 
 ## 1. Propósito
 
-clio_reader será una aplicación multiplataforma para organizar y leer localmente libros y cómics en formatos EPUB, PDF y CBZ. El MVP se orienta primero a **Windows y Android**. iOS se mantiene como objetivo posterior, pero no condiciona el primer lanzamiento.
+clio_reader será una aplicación multiplataforma para organizar y leer localmente libros, cómics y documentos de texto en formatos EPUB, PDF, CBZ y Markdown. El MVP se orienta primero a **Windows y Android**. iOS se mantiene como objetivo posterior, pero no condiciona el primer lanzamiento.
 
 La aplicación no tendrá perfiles, autenticación, backend, sincronización ni dependencia de red. El usuario podrá agregar tantos documentos como permita el almacenamiento disponible del dispositivo, administrarlos en una biblioteca local y reanudar la lectura desde la última posición guardada.
 
@@ -20,7 +20,7 @@ La aplicación no tendrá perfiles, autenticación, backend, sincronización ni 
 | Capacidad    | Alcance del MVP                                                    |
 | ------------ | ------------------------------------------------------------------ |
 | Biblioteca   | Importar, listar, abrir y eliminar libros locales                  |
-| Formatos     | EPUB, PDF y CBZ                                                    |
+| Formatos     | EPUB, PDF, CBZ y Markdown                                          |
 | Lectura      | Navegación, progreso y reanudación                                 |
 | Preferencias | Tema, colores, tamaño de letra y controles aplicables al formato   |
 | Anotaciones  | Marcadores y notas locales asociados a una posición                |

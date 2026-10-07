@@ -1,11 +1,50 @@
-# Diseño de Base de Datos - Echo Reader
+# Diseño de Base de Datos - Clio Reader
 
 ## Resumen
 
-- **Motor:** SQLite con FTS5
+- **Motor:** SQLite con FTS5 (Desktop), JSON (Mobile)
 - **ORM:** Drizzle
 - **Sync:** Diseñado para futuro backend (columnas `updated_at` + `deleted_at` para soft delete)
 - **Búsqueda:** Full-text search en notas y highlights
+
+---
+
+## Ubicación del archivo SQLite
+
+### Desktop (SQLite)
+
+La BD vive en el directorio `userData` de Electron + la carpeta `clio-reader`. Se deriva de `app.getPath('userData')` en `apps/desktop/electron/main.ts` (funciones `getDataPath()` / `getDbPath()`):
+
+| Plataforma  | Ruta del archivo `clio.db`                                               |
+| ----------- | ------------------------------------------------------------------------ |
+| **Linux**   | `~/.config/@clio-reader/desktop/clio-reader/clio.db`                     |
+| **Windows** | `%APPDATA%\@clio-reader\desktop\clio-reader\clio.db`                     |
+| **macOS**   | `~/Library/Application Support/@clio-reader/desktop/clio-reader/clio.db` |
+
+```text
+<userData>/
+└── clio-reader/
+    ├── clio.db                    ← base SQLite
+    ├── clio.db-shm / clio.db-wal  ← WAL (journal, se regeneran)
+    └── clio-reader.state.backup.json  ← backup del JSON migrado
+```
+
+**Notas:**
+
+- WAL habilitado: los archivos `-shm`/`-wal` son temporales y no deben copiarse como respaldo (se regeneran al abrir). Para respaldar, copiar solo `clio.db`.
+- Durante la migración, el JSON original se renombra a `clio-reader.state.backup.json` en el mismo directorio.
+- Abrir con cualquier cliente SQLite (`sqlite3`, DBeaver, VS Code + extensión).
+
+### Mobile (JSON)
+
+En mobile no hay SQLite: se persiste un blob JSON por clave bajo el directorio de documentos de la app (`expo-file-system`, `apps/mobile/src/bridges/storage.ts`). La clave principal es `clio-reader.state` + `.json`, en `documentDirectory`:
+
+| Plataforma  | Ruta del directorio de datos                                        |
+| ----------- | ------------------------------------------------------------------- |
+| **Android** | `/data/user/0/<applicationId>/files/clio-reader/`                   |
+| **iOS**     | `<AppContainer>/Documents/clio-reader/` (solo accesible por la app) |
+
+Dentro de ese directorio se guardan `clio-reader.state.json` (blob principal), `clio-reader.progress.json`, etc. (un archivo por clave de estado).
 
 ---
 
@@ -77,19 +116,28 @@
                                  │    updated_at   INT  │
                                  │    deleted_at   INT  │
                                  └──────────────────────┘
+
+┌──────────────────────┐
+│    user_settings     │
+├──────────────────────┤
+│ PK id=1        INT   │ (singleton)
+│    palette_id  TEXT   │
+│    mode        TEXT   │
+│    updated_at  INT    │
+└──────────────────────┘
 ```
 
 ### Relaciones
 
-| Padre | Hijo | Tipo | Cascade |
-|-------|------|------|---------|
-| books | reading_progress | 1:1 | DELETE |
-| books | book_preferences | 1:1 | DELETE |
-| books | bookmarks | 1:N | DELETE |
-| books | notes | 1:N | DELETE |
-| books | highlights | 1:N | DELETE |
-| notes | notes_fts | FTS5 | Sync manual |
-| highlights | highlights_fts | FTS5 | Sync manual |
+| Padre      | Hijo             | Tipo | Cascade     |
+| ---------- | ---------------- | ---- | ----------- |
+| books      | reading_progress | 1:1  | DELETE      |
+| books      | book_preferences | 1:1  | DELETE      |
+| books      | bookmarks        | 1:N  | DELETE      |
+| books      | notes            | 1:N  | DELETE      |
+| books      | highlights       | 1:N  | DELETE      |
+| notes      | notes_fts        | FTS5 | Sync manual |
+| highlights | highlights_fts   | FTS5 | Sync manual |
 
 ---
 
@@ -228,6 +276,17 @@ CREATE INDEX idx_highlights_book ON highlights(book_id, deleted_at);
 CREATE INDEX idx_highlights_color ON highlights(color, deleted_at);
 ```
 
+### user_settings
+
+```sql
+CREATE TABLE user_settings (
+  id INTEGER PRIMARY KEY DEFAULT 1 CHECK(id = 1),
+  palette_id TEXT NOT NULL DEFAULT 'clio-3',
+  mode TEXT NOT NULL DEFAULT 'dark' CHECK(mode IN ('dark','light')),
+  updated_at INTEGER NOT NULL DEFAULT (unixepoch())
+);
+```
+
 ### notes_fts
 
 ```sql
@@ -257,6 +316,7 @@ CREATE VIRTUAL TABLE highlights_fts USING fts5(
 **Qué resuelve:**
 
 Sin FTS, para buscar "resiliencia" en 1000 notas:
+
 ```sql
 -- LENTO: escanea cada nota completa
 SELECT * FROM notes WHERE body LIKE '%resiliencia%';
@@ -264,6 +324,7 @@ SELECT * FROM notes WHERE body LIKE '%resiliencia%';
 ```
 
 Con FTS5:
+
 ```sql
 -- RÁPIDO: usa un índice invertido
 SELECT * FROM notes_fts WHERE notes_fts MATCH 'resiliencia';
@@ -305,6 +366,7 @@ SELECT *, rank FROM notes_fts WHERE fts MATCH 'resiliencia' ORDER BY rank
 **Sincronización manual:**
 
 FTS5 no actualiza automáticamente. Hay que sincronizar:
+
 ```sql
 -- Insertar en FTS cuando se inserta en la tabla real
 INSERT INTO notes_fts(rowid, body, selected_text)
@@ -325,13 +387,13 @@ Un **highlight** es una anotación visual que se renderiza sobre el texto del li
 
 **Diferencia técnica con bookmarks:**
 
-| Aspecto | Bookmark | Highlight |
-|---------|----------|-----------|
-| Locator | Punto único | Rango (inicio + fin) |
-| Renderizado | Icono en esquina | Overlay visual sobre texto |
-| Datos extra | Label opcional | Color, estilo, texto seleccionado |
-| EPUB | CFI puntual | CFI range (start-end) |
-| PDF/CBZ | Página | Coordenadas del rectángulo |
+| Aspecto     | Bookmark         | Highlight                         |
+| ----------- | ---------------- | --------------------------------- |
+| Locator     | Punto único      | Rango (inicio + fin)              |
+| Renderizado | Icono en esquina | Overlay visual sobre texto        |
+| Datos extra | Label opcional   | Color, estilo, texto seleccionado |
+| EPUB        | CFI puntual      | CFI range (start-end)             |
+| PDF/CBZ     | Página           | Coordenadas del rectángulo        |
 
 **Ejemplo en EPUB:**
 
@@ -343,28 +405,52 @@ Un **highlight** es una anotación visual que se renderiza sobre el texto del li
 { format: 'epub', cfiStart: 'epubcfi(/6/4/2/1:10)', cfiEnd: 'epubcfi(/6/4/2/3:45)' }
 ```
 
+### User Settings (Configuración de Usuario)
+
+La tabla `user_settings` almacena la configuración global de la aplicación (singleton, id=1):
+
+- `palette_id`: ID del tema de color (ej: 'clio-3', 'clio-5')
+- `mode`: Modo del tema ('dark' o 'light')
+
+**Migración desde localStorage:**
+
+Antes de la migración a SQLite, la paleta se almacenaba en `localStorage` bajo la clave `clio-palette`. La migración one-time (`migrateJsonToSqlite`) lee este valor y lo inserta en la tabla `user_settings`.
+
 ---
 
 ## Stack
 
-| Capa | Tecnología |
-|------|------------|
-| Runtime DB (Desktop) | `better-sqlite3` |
-| Runtime DB (Mobile) | `expo-sqlite` |
-| Query builder | `drizzle-orm` |
-| Migraciones | `drizzle-kit` |
-| Búsqueda | SQLite FTS5 (nativo) |
+| Capa                 | Tecnología             |
+| -------------------- | ---------------------- |
+| Runtime DB (Desktop) | `better-sqlite3`       |
+| Runtime DB (Mobile)  | JSON via KeyValueStore |
+| Query builder        | `drizzle-orm`          |
+| Migraciones          | `drizzle-kit`          |
+| Búsqueda             | SQLite FTS5 (nativo)   |
 
 ---
 
 ## Migración desde JSON
 
-El estado actual se almacena en un solo JSON (`clio-reader.state.json`). La migración implica:
+La función `migrateJsonToSqlite()` en `packages/storage/src/migrate-json.ts` ejecuta la migración one-time:
 
-1. Leer el JSON existente
-2. Insertar cada entidad en su tabla correspondiente
-3. Sincronizar tablas FTS
-4. Eliminar el archivo JSON antiguo (opcional, mantener como backup)
+1. Lee `clio-reader.state.json` (blob JSON existente)
+2. Inserta cada entidad en su tabla correspondiente dentro de una transacción
+3. Sincroniza tablas FTS (triggers automáticos)
+4. Renombra el JSON a `clio-reader.state.backup.json`
+
+```typescript
+import { migrateJsonToSqlite } from '@clio-reader/storage/drizzle';
+
+const result = migrateJsonToSqlite(db, {
+  jsonPath: '/path/to/clio-reader.state.json',
+  backupPath: '/path/to/clio-reader.state.backup.json',
+});
+
+// result: { migrated: true, booksCount: 42, notesCount: 15, ... }
+```
+
+**Coexistencia:** La migración es idempotente y se ejecuta solo si la BD está vacía y existe el JSON.
 
 ---
 

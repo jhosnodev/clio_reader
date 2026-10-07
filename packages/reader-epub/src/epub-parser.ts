@@ -149,7 +149,7 @@ function parseSpine(xml: string): OpfSpineItem[] {
 
 function resolveBasePath(opfPath: string): string {
   const lastSlash = opfPath.lastIndexOf('/');
-  return lastSlash >= 0 ? opfPath.substring(0, lastSlash + 1) : '';
+  return lastSlash >= 0 ? opfPath.substring(0, lastSlash) : '';
 }
 
 function resolveHref(basePath: string, href: string): string {
@@ -263,8 +263,7 @@ export async function extractCoverImage(
   // 3. Try by id containing "cover" (fallback)
   if (!coverItem) {
     coverItem = manifest.find(
-      (item) =>
-        item.id.toLowerCase().includes('cover') && item.mediaType.startsWith('image/'),
+      (item) => item.id.toLowerCase().includes('cover') && item.mediaType.startsWith('image/'),
     );
   }
 

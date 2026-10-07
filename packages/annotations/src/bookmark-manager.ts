@@ -83,7 +83,7 @@ export async function createBookmarkManaged(
   return createBookmark(repo, {
     bookId,
     locator,
-    label: options?.label,
+    ...(options?.label !== undefined ? { label: options.label } : {}),
   });
 }
 

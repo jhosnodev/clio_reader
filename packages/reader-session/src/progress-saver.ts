@@ -15,6 +15,7 @@ export class ProgressSaver {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private pendingBookId: string | null = null;
   private pendingLocator: ReaderLocator | null = null;
+  private pendingPercent = 0;
   private saveCount = 0;
 
   constructor(options: ProgressSaverOptions = {}) {
@@ -29,6 +30,7 @@ export class ProgressSaver {
   ): void {
     this.pendingBookId = bookId;
     this.pendingLocator = locator;
+    this.pendingPercent = percent;
 
     if (this.timer !== null) {
       clearTimeout(this.timer);
@@ -36,7 +38,7 @@ export class ProgressSaver {
 
     this.timer = setTimeout(() => {
       this.timer = null;
-      void this.executeSave(repository, percent);
+      void this.executeSave(repository);
     }, this.debounceMs);
   }
 
@@ -49,7 +51,11 @@ export class ProgressSaver {
     if (this.pendingBookId !== null && this.pendingLocator !== null) {
       const bookId = this.pendingBookId;
       const locator = this.pendingLocator;
-      const progress = createReadingProgress({ bookId, locator, percent: locator.progression ?? 0 });
+      const progress = createReadingProgress({
+        bookId,
+        locator,
+        percent: this.pendingPercent,
+      });
       await repository.saveProgress(progress);
       this.pendingBookId = null;
       this.pendingLocator = null;
@@ -102,7 +108,7 @@ export class ProgressSaver {
     return this.saveCount;
   }
 
-  private async executeSave(repository: SessionRepository, percent: number): Promise<void> {
+  private async executeSave(repository: SessionRepository): Promise<void> {
     const bookId = this.pendingBookId;
     const locator = this.pendingLocator;
 
@@ -110,6 +116,7 @@ export class ProgressSaver {
       return;
     }
 
+    const percent = this.pendingPercent;
     this.pendingBookId = null;
     this.pendingLocator = null;
 

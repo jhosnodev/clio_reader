@@ -19,12 +19,32 @@ export interface Book {
   readonly coverImage?: string | undefined;
 }
 
+/**
+ * Ancla de texto:Offsets de caracteres dentro del texto plano del documento
+ * (capítulo para EPUB/MD), con contexto para recuperar la posición si el texto
+ * se ha desplazado. Complementa a `selectedText`, que guarda la cita literal.
+ */
+export interface TextAnchor {
+  /** Offset inicial inclusivo dentro del texto del documento */
+  readonly start: number;
+  /** Offset final exclusivo dentro del texto del documento */
+  readonly end: number;
+  /** Hasta 32 caracteres anteriores al ancla, para desambiguar repeticiones */
+  readonly prefix?: string | undefined;
+  /** Hasta 32 caracteres posteriores al ancla, para desambiguar repeticiones */
+  readonly suffix?: string | undefined;
+}
+
 export interface EpubLocator {
   readonly format: 'epub';
   readonly href: string;
   readonly cfi?: string;
   readonly progression?: number;
   readonly positionOrder?: number;
+  /** Posición vertical dentro del capítulo actual, 0..1 (0 = inicio del capítulo) */
+  readonly scrollRatio?: number;
+  /** Texto seleccionado al que está atada la anotación */
+  readonly anchor?: TextAnchor | undefined;
 }
 
 export interface PdfLocator {
@@ -51,6 +71,8 @@ export interface MarkdownLocator {
   readonly offset?: number;
   readonly progression?: number;
   readonly positionOrder?: number;
+  /** Texto seleccionado al que está atada la anotación */
+  readonly anchor?: TextAnchor | undefined;
 }
 
 export type ReaderLocator = EpubLocator | PdfLocator | CbzLocator | MarkdownLocator;
@@ -87,11 +109,37 @@ export interface Note {
   readonly id: string;
   readonly bookId: BookId;
   readonly locator: ReaderLocator;
+  /** Cita literal del texto seleccionado al que se ancla la nota */
   readonly selectedText?: string;
   readonly body: string;
   readonly createdAt: number;
   readonly updatedAt: number;
 }
+
+export interface Highlight {
+  readonly id: string;
+  readonly bookId: BookId;
+  readonly locatorStart: ReaderLocator;
+  readonly locatorEnd: ReaderLocator;
+  readonly selectedText?: string;
+  readonly color: string;
+  readonly style: 'highlight' | 'underline';
+  readonly note?: string;
+  readonly createdAt: number;
+  readonly updatedAt: number;
+}
+
+export type PaletteMode = 'dark' | 'light';
+
+export interface UserSettings {
+  readonly paletteId: string;
+  readonly mode: PaletteMode;
+}
+
+export const DEFAULT_USER_SETTINGS: UserSettings = {
+  paletteId: 'clio-3',
+  mode: 'dark',
+};
 
 export const DEFAULT_READER_PREFERENCES: ReaderPreferences = {
   theme: 'light',
@@ -106,7 +154,10 @@ export const DEFAULT_READER_PREFERENCES: ReaderPreferences = {
 };
 
 export function createBook(
-  input: Omit<Book, 'addedAt' | 'status'> & { addedAt?: number | undefined; status?: Book['status'] | undefined },
+  input: Omit<Book, 'addedAt' | 'status'> & {
+    addedAt?: number | undefined;
+    status?: Book['status'] | undefined;
+  },
 ): Book {
   const book: Book = {
     ...input,
@@ -119,6 +170,10 @@ export function createBook(
   assertNonEmpty(book.title, 'Book title');
   assertNonEmpty(book.uri, 'Book uri');
   return book;
+}
+
+export function createDefaultUserSettings(): UserSettings {
+  return { ...DEFAULT_USER_SETTINGS };
 }
 
 export function createDefaultPreferences(): ReaderPreferences {
@@ -153,7 +208,7 @@ export function normalizeRank(rank: number): Rank {
   }
 
   const clamped = Math.min(5, Math.max(0, rank));
-  return Math.round(clamped * 2) / 2 as Rank;
+  return (Math.round(clamped * 2) / 2) as Rank;
 }
 
 export function createReadingProgress(
@@ -167,6 +222,33 @@ export function createReadingProgress(
     percent: normalizePercent(input.percent),
     updatedAt: input.updatedAt ?? Date.now(),
   };
+}
+
+export function createHighlight(
+  input: Omit<Highlight, 'createdAt' | 'updatedAt'> & {
+    createdAt?: number;
+    updatedAt?: number;
+  },
+): Highlight {
+  const highlight: Highlight = {
+    ...input,
+    createdAt: input.createdAt ?? Date.now(),
+    updatedAt: input.updatedAt ?? Date.now(),
+  };
+
+  assertNonEmpty(highlight.id, 'Highlight id');
+  assertNonEmpty(highlight.bookId, 'Highlight bookId');
+  assertNonEmpty(highlight.color, 'Highlight color');
+  assertColor(highlight.color, 'Highlight color');
+  return highlight;
+}
+
+export function validateHighlightStyle(style: string): void {
+  if (style !== 'highlight' && style !== 'underline') {
+    throw new DomainValidationError(
+      `Highlight style must be 'highlight' or 'underline', got '${style}'`,
+    );
+  }
 }
 
 export class DomainValidationError extends Error {

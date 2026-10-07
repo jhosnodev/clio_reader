@@ -504,13 +504,18 @@ describe('EpubReaderDocument', () => {
       const pngBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
       const zip = new JSZip();
       zip.file('mimetype', 'application/epub+zip');
-      zip.file('META-INF/container.xml', `<?xml version="1.0" encoding="UTF-8"?>
+      zip.file(
+        'META-INF/container.xml',
+        `<?xml version="1.0" encoding="UTF-8"?>
 <container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0">
   <rootfiles>
     <rootfile full-path="content.opf" media-type="application/oebps-package+xml"/>
   </rootfiles>
-</container>`);
-      zip.file('content.opf', `<?xml version="1.0" encoding="UTF-8"?>
+</container>`,
+      );
+      zip.file(
+        'content.opf',
+        `<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
     <dc:title>Test</dc:title><dc:language>en</dc:language><dc:identifier id="uid">test</dc:identifier>
@@ -520,8 +525,12 @@ describe('EpubReaderDocument', () => {
     <item id="img1" href="images/figure1.png" media-type="image/png"/>
   </manifest>
   <spine><itemref idref="ch1"/></spine>
-</package>`);
-      zip.file('toc.ncx', `<?xml version="1.0"?><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><navMap></navMap></ncx>`);
+</package>`,
+      );
+      zip.file(
+        'toc.ncx',
+        `<?xml version="1.0"?><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><navMap></navMap></ncx>`,
+      );
       zip.file('ch1.xhtml', '<html><body><img src="images/figure1.png"/></body></html>');
       zip.file('images/figure1.png', pngBytes);
 
@@ -558,13 +567,18 @@ describe('EpubReaderDocument', () => {
       const pngBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
       const zip = new JSZip();
       zip.file('mimetype', 'application/epub+zip');
-      zip.file('META-INF/container.xml', `<?xml version="1.0" encoding="UTF-8"?>
+      zip.file(
+        'META-INF/container.xml',
+        `<?xml version="1.0" encoding="UTF-8"?>
 <container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0">
   <rootfiles>
     <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
   </rootfiles>
-</container>`);
-      zip.file('OEBPS/content.opf', `<?xml version="1.0" encoding="UTF-8"?>
+</container>`,
+      );
+      zip.file(
+        'OEBPS/content.opf',
+        `<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
     <dc:title>Test</dc:title><dc:language>en</dc:language><dc:identifier id="uid">test</dc:identifier>
@@ -574,8 +588,12 @@ describe('EpubReaderDocument', () => {
     <item id="img1" href="images/fig1.png" media-type="image/png"/>
   </manifest>
   <spine><itemref idref="ch1"/></spine>
-</package>`);
-      zip.file('toc.ncx', `<?xml version="1.0"?><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><navMap></navMap></ncx>`);
+</package>`,
+      );
+      zip.file(
+        'toc.ncx',
+        `<?xml version="1.0"?><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><navMap></navMap></ncx>`,
+      );
       zip.file('OEBPS/chapter1.xhtml', '<html><body><img src="images/fig1.png"/></body></html>');
       zip.file('OEBPS/images/fig1.png', pngBytes);
 
@@ -598,13 +616,18 @@ describe('EpubReaderDocument', () => {
       const jpgBytes = new Uint8Array([0xff, 0xd8, 0xff, 0xe0]);
       const zip = new JSZip();
       zip.file('mimetype', 'application/epub+zip');
-      zip.file('META-INF/container.xml', `<?xml version="1.0" encoding="UTF-8"?>
+      zip.file(
+        'META-INF/container.xml',
+        `<?xml version="1.0" encoding="UTF-8"?>
 <container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0">
   <rootfiles>
     <rootfile full-path="content.opf" media-type="application/oebps-package+xml"/>
   </rootfiles>
-</container>`);
-      zip.file('content.opf', `<?xml version="1.0" encoding="UTF-8"?>
+</container>`,
+      );
+      zip.file(
+        'content.opf',
+        `<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
     <dc:title>Test</dc:title><dc:language>en</dc:language><dc:identifier id="uid">test</dc:identifier>
@@ -614,8 +637,12 @@ describe('EpubReaderDocument', () => {
     <item id="img1" href="photo.jpg" media-type="image/jpeg"/>
   </manifest>
   <spine><itemref idref="ch1"/></spine>
-</package>`);
-      zip.file('toc.ncx', `<?xml version="1.0"?><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><navMap></navMap></ncx>`);
+</package>`,
+      );
+      zip.file(
+        'toc.ncx',
+        `<?xml version="1.0"?><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><navMap></navMap></ncx>`,
+      );
       zip.file('ch1.xhtml', '<html><body><img src="photo.jpg"/></body></html>');
       zip.file('photo.jpg', jpgBytes);
 
@@ -637,13 +664,18 @@ describe('EpubReaderDocument', () => {
       const pngBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
       const zip = new JSZip();
       zip.file('mimetype', 'application/epub+zip');
-      zip.file('META-INF/container.xml', `<?xml version="1.0" encoding="UTF-8"?>
+      zip.file(
+        'META-INF/container.xml',
+        `<?xml version="1.0" encoding="UTF-8"?>
 <container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0">
   <rootfiles>
     <rootfile full-path="content.opf" media-type="application/oebps-package+xml"/>
   </rootfiles>
-</container>`);
-      zip.file('content.opf', `<?xml version="1.0" encoding="UTF-8"?>
+</container>`,
+      );
+      zip.file(
+        'content.opf',
+        `<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
     <dc:title>Test</dc:title><dc:language>en</dc:language><dc:identifier id="uid">test</dc:identifier>
@@ -654,8 +686,12 @@ describe('EpubReaderDocument', () => {
     <item id="img2" href="b.png" media-type="image/png"/>
   </manifest>
   <spine><itemref idref="ch1"/></spine>
-</package>`);
-      zip.file('toc.ncx', `<?xml version="1.0"?><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><navMap></navMap></ncx>`);
+</package>`,
+      );
+      zip.file(
+        'toc.ncx',
+        `<?xml version="1.0"?><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><navMap></navMap></ncx>`,
+      );
       zip.file('ch1.xhtml', '<html><body></body></html>');
       zip.file('a.png', pngBytes);
       zip.file('b.png', new Uint8Array([0x89, 0x50, 0x4e, 0x48]));
@@ -683,13 +719,18 @@ describe('EpubReaderDocument', () => {
       const pngBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
       const zip = new JSZip();
       zip.file('mimetype', 'application/epub+zip');
-      zip.file('META-INF/container.xml', `<?xml version="1.0" encoding="UTF-8"?>
+      zip.file(
+        'META-INF/container.xml',
+        `<?xml version="1.0" encoding="UTF-8"?>
 <container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0">
   <rootfiles>
     <rootfile full-path="content.opf" media-type="application/oebps-package+xml"/>
   </rootfiles>
-</container>`);
-      zip.file('content.opf', `<?xml version="1.0" encoding="UTF-8"?>
+</container>`,
+      );
+      zip.file(
+        'content.opf',
+        `<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
     <dc:title>Test</dc:title><dc:language>en</dc:language><dc:identifier id="uid">test</dc:identifier>
@@ -699,8 +740,12 @@ describe('EpubReaderDocument', () => {
     <item id="img1" href="deep/nested/path/figure.png" media-type="image/png"/>
   </manifest>
   <spine><itemref idref="ch1"/></spine>
-</package>`);
-      zip.file('toc.ncx', `<?xml version="1.0"?><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><navMap></navMap></ncx>`);
+</package>`,
+      );
+      zip.file(
+        'toc.ncx',
+        `<?xml version="1.0"?><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><navMap></navMap></ncx>`,
+      );
       zip.file('ch1.xhtml', '<html><body><img src="wrong/path/figure.png"/></body></html>');
       zip.file('deep/nested/path/figure.png', pngBytes);
 
@@ -717,5 +762,162 @@ describe('EpubReaderDocument', () => {
 
       await doc.close();
     });
+  });
+});
+
+describe('TOC navigation by href', () => {
+  let fetchSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    fetchSpy = vi.spyOn(globalThis, 'fetch' as Parameters<typeof vi.spyOn>[1]);
+  });
+
+  afterEach(() => {
+    fetchSpy.mockRestore();
+  });
+
+  async function openWithNavToc(
+    navHref: string,
+    spineOrder: string[],
+    navBody?: string,
+  ): Promise<EpubReaderDocument> {
+    const zip = new JSZip();
+    zip.file('mimetype', 'application/epub+zip');
+    zip.file(
+      'META-INF/container.xml',
+      `<?xml version="1.0"?>
+<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0">
+  <rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles>
+</container>`,
+    );
+
+    const manifest = spineOrder
+      .map((href) => `<item id="${href}" href="${href}" media-type="application/xhtml+xml"/>`)
+      .join('\n');
+    const spine = spineOrder.map((href) => `<itemref idref="${href}"/>`).join('\n');
+
+    zip.file(
+      'OEBPS/content.opf',
+      `<?xml version="1.0"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>T</dc:title><dc:identifier id="uid">x</dc:identifier></metadata>
+  <manifest>
+    <item id="nav" href="${navHref}" media-type="application/xhtml+xml" properties="nav"/>
+    ${manifest}
+  </manifest>
+  <spine>${spine}</spine>
+</package>`,
+    );
+
+    const defaultNavBody = `<nav epub:type="toc"><ol>
+    <li><a href="cover.xhtml">Cover</a></li>
+    <li><a href="text/part1.xhtml">Part One</a>
+      <ol>
+        <li><a href="text/ch1.xhtml#top">Chapter One</a></li>
+        <li><a href="../OEBPS/text/ch2.xhtml">Chapter Two</a></li>
+      </ol>
+    </li>
+    <li><a href="epilogue.xhtml">Epilogue</a></li>
+  </ol></nav>`;
+
+    zip.file(
+      `OEBPS/${navHref}`,
+      `<?xml version="1.0"?>
+<html xmlns:epub="http://www.idpf.org/2007/ops"><body>${navBody ?? defaultNavBody}</body></html>`,
+    );
+
+    for (const href of spineOrder) {
+      zip.file(`OEBPS/${href}`, `<html><body><p>${href}</p></body></html>`);
+    }
+
+    const epubData = await zip.generateAsync({ type: 'uint8array' });
+    fetchSpy.mockResolvedValue(new Response(new Blob([epubData.buffer as ArrayBuffer])));
+
+    const doc = new EpubReaderDocument({ uri: 'file:///nav.epub', name: 'nav.epub' });
+    await doc.open();
+    return doc;
+  }
+
+  it('mapea cada entrada del nav al índice real del spine', async () => {
+    const spineOrder = [
+      'text/ch1.xhtml',
+      'text/ch2.xhtml',
+      'cover.xhtml',
+      'text/part1.xhtml',
+      'epilogue.xhtml',
+    ];
+    const doc = await openWithNavToc('toc.xhtml', spineOrder);
+
+    const toc = await doc.getToc();
+
+    expect(toc.map((e) => [e.title, e.chapterIndex])).toEqual([
+      ['Cover', 2],
+      ['Part One', 3],
+      ['Epilogue', 4],
+    ]);
+    expect(toc[1]?.children?.map((c) => [c.title, c.chapterIndex])).toEqual([
+      ['Chapter One', 0],
+      ['Chapter Two', 1],
+    ]);
+
+    await doc.close();
+  });
+
+  it('navega a la entrada correcta usando goToTocHref', async () => {
+    const spineOrder = [
+      'text/ch1.xhtml',
+      'text/ch2.xhtml',
+      'cover.xhtml',
+      'text/part1.xhtml',
+      'epilogue.xhtml',
+    ];
+    const doc = await openWithNavToc('toc.xhtml', spineOrder);
+
+    const locator = toEpubLocator(await doc.goToTocHref('OEBPS/text/ch2.xhtml'));
+    expect(locator.href).toBe('text/ch2.xhtml');
+    expect(await doc.getCurrentChapterIndex()).toBe(1);
+
+    const content = await doc.getCurrentChapterContent();
+    expect(content).toContain('text/ch2.xhtml');
+
+    await doc.close();
+  });
+
+  it('acepta hrefs con fragmento y rutas relativas al OPF', async () => {
+    const spineOrder = ['text/ch1.xhtml', 'text/ch2.xhtml', 'epilogue.xhtml'];
+    const doc = await openWithNavToc('toc.xhtml', spineOrder);
+
+    const locator = toEpubLocator(await doc.goToTocHref('text/ch1.xhtml#top'));
+    expect(locator.href).toBe('text/ch1.xhtml');
+
+    await doc.close();
+  });
+
+  it('lanza EpubNavigationError si el href no existe', async () => {
+    const spineOrder = ['text/ch1.xhtml', 'epilogue.xhtml'];
+    const doc = await openWithNavToc('toc.xhtml', spineOrder);
+
+    await expect(doc.goToTocHref('missing.xhtml')).rejects.toThrow(EpubNavigationError);
+
+    await doc.close();
+  });
+
+  it('resuelve hrefs relativos cuando el nav vive fuera del directorio del OPF', async () => {
+    const spineOrder = ['text/ch1.xhtml', 'text/ch2.xhtml', 'epilogue.xhtml'];
+    const navBody = `<nav epub:type="toc"><ol>
+      <li><a href="../../text/ch2.xhtml">Chapter Two</a></li>
+      <li><a href="../deeper/../../text/ch1.xhtml">Chapter One</a></li>
+      <li><a href="../../epilogue.xhtml">Epilogue</a></li>
+    </ol></nav>`;
+    const doc = await openWithNavToc('nav/deep/toc.xhtml', spineOrder, navBody);
+
+    const toc = await doc.getToc();
+    expect(toc.map((e) => [e.title, e.chapterIndex])).toEqual([
+      ['Chapter Two', 1],
+      ['Chapter One', 0],
+      ['Epilogue', 2],
+    ]);
+
+    await doc.close();
   });
 });

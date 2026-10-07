@@ -15,69 +15,69 @@ Cada paleta redefine los tokens CSS. El light mode es idéntico para todas.
 
 ### Tokens de paleta (dark mode)
 
-| Token | Rol | Ejemplo (clio-3 Forest) |
-|-------|-----|-------------------------|
-| `--ink-950` | Fondo principal | `#0b1412` |
-| `--ink-900` | Rail / sidebar | `#121e19` |
-| `--ink-850` | Chips, inputs, badges | `#1a2b23` |
-| `--ink-800` | Tooltips, bordes internos | `#22362c` |
-| `--ink-700` | Superficie intermedia | `#2b4136` |
-| `--ink-600` | Superficie ligera | `#364f42` |
-| `--ink-500` | Bordes activos | `#476354` |
-| `--line` | Bordes | `#2b3a30` |
-| `--gold` | Acento primario | `#a9ab3a` |
-| `--gold-bright` | Gradiente superior | `#c8c95e` |
-| `--gold-dim` | Acento apagado | `#8a8c2f` |
-| `--verdigris` | Acento secundario | `#85b396` |
-| `--verdigris-dim` | Secundario apagado | `#6d947c` |
-| `--rose` | Acento terciario | `#8f5c3c` |
-| `--tx-hi` | Texto alto contraste | `#efe9dd` |
-| `--tx` | Texto normal | `#cbc4ba` |
-| `--tx-lo` | Texto bajo contraste | `#8b8598` |
-| `--tx-faint` | Texto deshabilitado | `#6a657a` |
-| `--on-gold` | Texto sobre acento | `#0b1412` |
-| `--on-gold-dim` | Texto sobre acento apagado | `#0b1412` |
-| `--accent-strong` | Acento fuerte (CTAs) | `#8a8c2f` |
+| Token             | Rol                        | Ejemplo (clio-3 Forest) |
+| ----------------- | -------------------------- | ----------------------- |
+| `--ink-950`       | Fondo principal            | `#0b1412`               |
+| `--ink-900`       | Rail / sidebar             | `#121e19`               |
+| `--ink-850`       | Chips, inputs, badges      | `#1a2b23`               |
+| `--ink-800`       | Tooltips, bordes internos  | `#22362c`               |
+| `--ink-700`       | Superficie intermedia      | `#2b4136`               |
+| `--ink-600`       | Superficie ligera          | `#364f42`               |
+| `--ink-500`       | Bordes activos             | `#476354`               |
+| `--line`          | Bordes                     | `#2b3a30`               |
+| `--gold`          | Acento primario            | `#a9ab3a`               |
+| `--gold-bright`   | Gradiente superior         | `#c8c95e`               |
+| `--gold-dim`      | Acento apagado             | `#8a8c2f`               |
+| `--verdigris`     | Acento secundario          | `#85b396`               |
+| `--verdigris-dim` | Secundario apagado         | `#6d947c`               |
+| `--rose`          | Acento terciario           | `#8f5c3c`               |
+| `--tx-hi`         | Texto alto contraste       | `#efe9dd`               |
+| `--tx`            | Texto normal               | `#cbc4ba`               |
+| `--tx-lo`         | Texto bajo contraste       | `#8b8598`               |
+| `--tx-faint`      | Texto deshabilitado        | `#6a657a`               |
+| `--on-gold`       | Texto sobre acento         | `#0b1412`               |
+| `--on-gold-dim`   | Texto sobre acento apagado | `#0b1412`               |
+| `--accent-strong` | Acento fuerte (CTAs)       | `#8a8c2f`               |
 
 ### Tokens RGB (para `rgba()` dinámico)
 
-| Token | Valor | Uso |
-|-------|-------|-----|
-| `--gold-rgb` | `169,171,58` | `rgba(var(--gold-rgb),.35)` |
+| Token             | Valor         | Uso                             |
+| ----------------- | ------------- | ------------------------------- |
+| `--gold-rgb`      | `169,171,58`  | `rgba(var(--gold-rgb),.35)`     |
 | `--verdigris-rgb` | `133,179,150` | `rgba(var(--verdigris-rgb),.2)` |
-| `--ink950-rgb` | `11,20,18` | `rgba(var(--ink950-rgb),.8)` |
-| `--rose-rgb` | `143,92,60` | `rgba(var(--rose-rgb),.15)` |
+| `--ink950-rgb`    | `11,20,18`    | `rgba(var(--ink950-rgb),.8)`    |
+| `--rose-rgb`      | `143,92,60`   | `rgba(var(--rose-rgb),.15)`     |
 
 ### Tokens de paleta (light mode — idéntico para todas)
 
-| Token | Valor | Uso |
-|-------|-------|-----|
-| `--ink-950` | `#eceee9` | Fondo principal |
-| `--ink-900` | `#f6f7f3` | Rail |
-| `--ink-850` | `#ffffff` | Chips, inputs |
-| `--ink-800` | `#e6e8e1` | Tooltips |
-| `--line` | `#e0e3d9` | Bordes |
-| `--tx-hi` | `#1e2019` | Texto alto |
-| `--tx` | `#474a40` | Texto normal |
-| `--tx-lo` | `#7b7e70` | Texto bajo |
-| `--tx-faint` | `#a6a897` | Texto deshabilitado |
-| `--on-gold` | `#1a1710` | Texto sobre acento |
-| `--accent-strong` | `#8a6d12` | Acento fuerte |
+| Token             | Valor     | Uso                 |
+| ----------------- | --------- | ------------------- |
+| `--ink-950`       | `#eceee9` | Fondo principal     |
+| `--ink-900`       | `#f6f7f3` | Rail                |
+| `--ink-850`       | `#ffffff` | Chips, inputs       |
+| `--ink-800`       | `#e6e8e1` | Tooltips            |
+| `--line`          | `#e0e3d9` | Bordes              |
+| `--tx-hi`         | `#1e2019` | Texto alto          |
+| `--tx`            | `#474a40` | Texto normal        |
+| `--tx-lo`         | `#7b7e70` | Texto bajo          |
+| `--tx-faint`      | `#a6a897` | Texto deshabilitado |
+| `--on-gold`       | `#1a1710` | Texto sobre acento  |
+| `--accent-strong` | `#8a6d12` | Acento fuerte       |
 
 ### Paletas disponibles
 
-| ID | Nombre | gold | verdigris | rose |
-|----|--------|------|-----------|------|
-| clio-0 | Teal | #6aae9d | #4f8290 | #9e8e91 |
-| clio-1 | Earth | #8ab0d8 | #7f7397 | #96687f |
-| clio-2 | Plum | #cca87b | #5b7d73 | #9c524e |
-| clio-3 | Forest | #a9ab3a | #85b396 | #8f5c3c |
-| clio-4 | Mauve | #fbb954 | #788a87 | #b0494e |
-| clio-5 | Purple | #c9a24b | #4fa393 | #c17b7b |
-| clio-6 | Slate | #96a2b3 | #7d8aa0 | #8a8f9e |
-| clio-7 | Violet | #8977c9 | #fc9bd3 | #8fd6e8 |
-| clio-8 | Black | #be9585 | #5c7a66 | #966f7a |
-| clio-9 | Neon | #0098db | #ff0546 | #c33a60 |
+| ID     | Nombre | gold    | verdigris | rose    |
+| ------ | ------ | ------- | --------- | ------- |
+| clio-0 | Teal   | #6aae9d | #4f8290   | #9e8e91 |
+| clio-1 | Earth  | #8ab0d8 | #7f7397   | #96687f |
+| clio-2 | Plum   | #cca87b | #5b7d73   | #9c524e |
+| clio-3 | Forest | #a9ab3a | #85b396   | #8f5c3c |
+| clio-4 | Mauve  | #fbb954 | #788a87   | #b0494e |
+| clio-5 | Purple | #c9a24b | #4fa393   | #c17b7b |
+| clio-6 | Slate  | #96a2b3 | #7d8aa0   | #8a8f9e |
+| clio-7 | Violet | #8977c9 | #fc9bd3   | #8fd6e8 |
+| clio-8 | Black  | #be9585 | #5c7a66   | #966f7a |
+| clio-9 | Neon   | #0098db | #ff0546   | #c33a60 |
 
 ### Persistencia
 
@@ -99,7 +99,7 @@ Cada paleta redefine los tokens CSS. El light mode es idéntico para todas.
 ```tsx
 import { BrandIcon } from './BrandIcon';
 
-<BrandIcon color={palette.dark.gold} size={26} />
+<BrandIcon color={palette.dark.gold} size={26} />;
 ```
 
 - Fetch `/brand.svg`, reemplaza `currentColor` con el color del palette
@@ -111,30 +111,30 @@ import { BrandIcon } from './BrandIcon';
 
 ## 3. Tipografía
 
-| Familia | Rol | Pesos |
-|---------|-----|-------|
-| **Fraunces** | Headings, títulos de card | 500, 600, 700 |
+| Familia            | Rol                        | Pesos              |
+| ------------------ | -------------------------- | ------------------ |
+| **Fraunces**       | Headings, títulos de card  | 500, 600, 700      |
 | **Hanken Grotesk** | Cuerpo, UI, chips, selects | 400, 500, 600, 700 |
 
 ### Tamaños de fuente
 
-| Valor | Uso |
-|-------|-----|
-| `9.5` | Badge de formato (EPUB, PDF…) |
-| `10` | Status tag |
-| `10.5` | Autor en cover de card |
-| `11` | Botón de eliminar, metadata icon |
-| `11.5` | Metadata (fechas) |
-| `12` | Chips pequeños, labels de filtro |
-| `12.5` | Tooltip, autor de card |
-| `13` | Chips, selects, subtitulo, section count |
-| `13.5` | Subtitulo de topbar |
-| `14` | Input de búsqueda, empty hint, empty btn |
-| `15` | Título de card |
-| `16` | Título en cover de card |
-| `18` | Empty state title |
-| `19` | Section title |
-| `30` | H1 principal |
+| Valor  | Uso                                      |
+| ------ | ---------------------------------------- |
+| `9.5`  | Badge de formato (EPUB, PDF…)            |
+| `10`   | Status tag                               |
+| `10.5` | Autor en cover de card                   |
+| `11`   | Botón de eliminar, metadata icon         |
+| `11.5` | Metadata (fechas)                        |
+| `12`   | Chips pequeños, labels de filtro         |
+| `12.5` | Tooltip, autor de card                   |
+| `13`   | Chips, selects, subtitulo, section count |
+| `13.5` | Subtitulo de topbar                      |
+| `14`   | Input de búsqueda, empty hint, empty btn |
+| `15`   | Título de card                           |
+| `16`   | Título en cover de card                  |
+| `18`   | Empty state title                        |
+| `19`   | Section title                            |
+| `30`   | H1 principal                             |
 
 ---
 
@@ -142,56 +142,56 @@ import { BrandIcon } from './BrandIcon';
 
 ### Gaps
 
-| Valor | Uso |
-|-------|-----|
-| `2` | Star rating entre estrellas |
-| `3` | cardBody gap |
-| `4` | Nav buttons en rail |
-| `5` | Status tag gap (dot + label) |
-| `6` | Rail padding, cardFooter marginTop |
-| `7` | cardMeta gap |
-| `8` | Chips gap, filterGroup gap, nav brand gap |
-| `9` | Search gap |
-| `11` | Card gap (cover → body) |
-| `12` | Empty state gap |
-| `14` | Section accent gap, cover padding horizontal |
-| `16` | Cover padding top, filterRow gap entre grupos |
-| `18` | Rail padding top, topbar gap |
-| `20` | Row gap (horizontal scroll), grid gap cuando `minmax(200px)` |
-| `24` | Grid gap (collection) |
-| `28` | Chips marginBottom, filterRow marginBottom |
-| `30` | Topbar marginBottom |
-| `34` | Wrap padding top, meander marginBottom |
+| Valor | Uso                                                          |
+| ----- | ------------------------------------------------------------ |
+| `2`   | Star rating entre estrellas                                  |
+| `3`   | cardBody gap                                                 |
+| `4`   | Nav buttons en rail                                          |
+| `5`   | Status tag gap (dot + label)                                 |
+| `6`   | Rail padding, cardFooter marginTop                           |
+| `7`   | cardMeta gap                                                 |
+| `8`   | Chips gap, filterGroup gap, nav brand gap                    |
+| `9`   | Search gap                                                   |
+| `11`  | Card gap (cover → body)                                      |
+| `12`  | Empty state gap                                              |
+| `14`  | Section accent gap, cover padding horizontal                 |
+| `16`  | Cover padding top, filterRow gap entre grupos                |
+| `18`  | Rail padding top, topbar gap                                 |
+| `20`  | Row gap (horizontal scroll), grid gap cuando `minmax(200px)` |
+| `24`  | Grid gap (collection)                                        |
+| `28`  | Chips marginBottom, filterRow marginBottom                   |
+| `30`  | Topbar marginBottom                                          |
+| `34`  | Wrap padding top, meander marginBottom                       |
 
 ### Paddings de componentes
 
-| Componente | Padding |
-|------------|---------|
-| Chip (normal) | `8px 14px` |
-| Chip (small) | `8px 14px` |
-| Select | `8px 14px` |
-| Tooltip | `6px 11px` |
-| Empty button | `10px 20px` |
-| Search | `0 12px` |
-| Remove button | `3px 8px` |
-| Status tag | `4px 8px 4px 6px` |
-| Doc type badge | `4px 7px` |
-| Cover art | `16px 14px 14px 18px` |
-| Wrap (page) | `34px 40px 60px` |
+| Componente     | Padding               |
+| -------------- | --------------------- |
+| Chip (normal)  | `8px 14px`            |
+| Chip (small)   | `8px 14px`            |
+| Select         | `8px 14px`            |
+| Tooltip        | `6px 11px`            |
+| Empty button   | `10px 20px`           |
+| Search         | `0 12px`              |
+| Remove button  | `3px 8px`             |
+| Status tag     | `4px 8px 4px 6px`     |
+| Doc type badge | `4px 7px`             |
+| Cover art      | `16px 14px 14px 18px` |
+| Wrap (page)    | `34px 40px 60px`      |
 
 ---
 
 ## 5. Border radius
 
-| Valor | Uso |
-|-------|-----|
-| `6` | Doc type badge, remove button |
-| `8` | (reservado) |
-| `9` | Tooltip |
-| `10` | Empty button |
-| `11` | Search input |
-| `13` | Rail brand, nav buttons |
-| `20` | Chips, selects, status tag |
+| Valor | Uso                           |
+| ----- | ----------------------------- |
+| `6`   | Doc type badge, remove button |
+| `8`   | (reservado)                   |
+| `9`   | Tooltip                       |
+| `10`  | Empty button                  |
+| `11`  | Search input                  |
+| `13`  | Rail brand, nav buttons       |
+| `20`  | Chips, selects, status tag    |
 
 **Regla**: todo botón/chip redondo usa `borderRadius: 20`. Todo badge pequeño usa `borderRadius: 6`.
 
@@ -424,25 +424,25 @@ import { BrandIcon } from './BrandIcon';
 
 ## 7. Transiciones
 
-| Duración | Easing | Uso |
-|----------|--------|-----|
-| `.15s` | default | Remove button |
-| `.18s` | default | Chips, filtros |
-| `.2s` | default | Search input |
-| `.22s` | `cubic-bezier(.22,.61,.36,1)` | Nav buttons, cards, cover |
+| Duración | Easing                        | Uso                       |
+| -------- | ----------------------------- | ------------------------- |
+| `.15s`   | default                       | Remove button             |
+| `.18s`   | default                       | Chips, filtros            |
+| `.2s`    | default                       | Search input              |
+| `.22s`   | `cubic-bezier(.22,.61,.36,1)` | Nav buttons, cards, cover |
 
 ---
 
 ## 8. Layout
 
-| Elemento | Valor |
-|----------|-------|
-| Rail width | `76px` fijo |
-| Wrap max | `1180px`, centrado con `margin: 0 auto` |
-| Grid cards | `repeat(auto-fill, minmax(190px, 1fr))` |
+| Elemento   | Valor                                            |
+| ---------- | ------------------------------------------------ |
+| Rail width | `76px` fijo                                      |
+| Wrap max   | `1180px`, centrado con `margin: 0 auto`          |
+| Grid cards | `repeat(auto-fill, minmax(190px, 1fr))`          |
 | Row scroll | `grid-auto-flow: column, grid-auto-columns: 200` |
-| Row gap | `20px` |
-| Grid gap | `24px` |
+| Row gap    | `20px`                                           |
+| Grid gap   | `24px`                                           |
 
 ---
 

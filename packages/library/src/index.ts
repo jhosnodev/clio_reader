@@ -5,6 +5,7 @@ export type { BookDetails } from './get-book.js';
 export type { UpdateProgressInput } from './update-progress.js';
 export type { CreateBookmarkInput } from './bookmarks.js';
 export type { CreateNoteInput, UpdateNoteInput } from './notes.js';
+export type { CreateHighlightInput } from './highlights.js';
 
 export { importBook } from './import-book.js';
 export { listBooks } from './list-books.js';
@@ -20,10 +21,16 @@ export {
 } from './preferences.js';
 export { createBookmark, listBookmarks, removeBookmark } from './bookmarks.js';
 export { createNote, listNotes, updateNote, removeNote } from './notes.js';
+export {
+  createHighlight_ as createHighlight,
+  listHighlights,
+  removeHighlight,
+} from './highlights.js';
 
 export {
   BookNotFoundError,
   DuplicateBookError,
   BookmarkNotFoundError,
   NoteNotFoundError,
+  HighlightNotFoundError,
 } from './errors.js';

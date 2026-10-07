@@ -4,25 +4,9 @@ import JSZip from 'jszip';
 import type { OpfPackage } from '../src/epub-parser.js';
 import { extractToc } from '../src/epub-toc.js';
 
-async function createEpubWithToc(
-  tocContent: string,
-  opf?: Partial<OpfPackage>,
-): Promise<Uint8Array> {
+async function createEpubWithToc(tocContent: string): Promise<Uint8Array> {
   const zip = new JSZip();
   zip.file('mimetype', 'application/epub+zip');
-
-  const defaultOpf: OpfPackage = {
-    metadata: { title: 'Test', language: 'en' },
-    manifest: [
-      { id: 'nav', href: 'nav.xhtml', mediaType: 'application/xhtml+xml', properties: 'nav' },
-      { id: 'ncx', href: 'toc.ncx', mediaType: 'application/x-dtbncx+xml' },
-    ],
-    spine: [],
-    basePath: '',
-  };
-
-  const mergedOpf = { ...defaultOpf, ...opf };
-  const manifestJson = JSON.stringify(mergedOpf.manifest);
 
   zip.file(
     'content.opf',

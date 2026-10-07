@@ -4,11 +4,7 @@ import type { Book, ReaderLocator } from '@clio-reader/domain';
 import type { ReaderAdapter, ReaderDocument } from '@clio-reader/reader-core';
 import { InMemoryKeyValueStore, LocalRepository } from '@clio-reader/storage';
 
-import {
-  SessionAlreadyOpenError,
-  SessionClosedError,
-  SessionNotOpenError,
-} from '../src/session-errors.js';
+import { SessionAlreadyOpenError, SessionNotOpenError } from '../src/session-errors.js';
 import { SessionManager } from '../src/session-manager.js';
 
 const testBook: Book = {

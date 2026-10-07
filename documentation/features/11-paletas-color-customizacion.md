@@ -12,30 +12,30 @@ El sistema solo ofrecía dark/light con una paleta fija (tinta + oro viejo + ver
 
 ### Arquitectura
 
-| Archivo | Rol |
-|---------|-----|
-| `src/themes.ts` | Definición de las 10 paletas, `applyTheme()`, `PALETTES`, `getPalette()`, helpers de localStorage |
-| `src/App.tsx` | State `{paletteId, mode}`, pasa `palette` y `paletteId` a LibraryView |
-| `src/library.css` | Variables CSS con `rgba(var(--xxx-rgb),.N)` para colores dinámicos |
-| `src/reader.css` | Mismo tratamiento que library.css |
-| `src/components/LibraryView.tsx` | Palette selector en Rail, brand SVG usa palette |
-| `src/components/BrandIcon.tsx` | Componente de brand unicolor con `currentColor` |
-| `src/components/ReaderView.tsx` | Colores inline → CSS vars |
+| Archivo                          | Rol                                                                                               |
+| -------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `src/themes.ts`                  | Definición de las 10 paletas, `applyTheme()`, `PALETTES`, `getPalette()`, helpers de localStorage |
+| `src/App.tsx`                    | State `{paletteId, mode}`, pasa `palette` y `paletteId` a LibraryView                             |
+| `src/library.css`                | Variables CSS con `rgba(var(--xxx-rgb),.N)` para colores dinámicos                                |
+| `src/reader.css`                 | Mismo tratamiento que library.css                                                                 |
+| `src/components/LibraryView.tsx` | Palette selector en Rail, brand SVG usa palette                                                   |
+| `src/components/BrandIcon.tsx`   | Componente de brand unicolor con `currentColor`                                                   |
+| `src/components/ReaderView.tsx`  | Colores inline → CSS vars                                                                         |
 
 ### Paletas implementadas
 
-| ID | Nombre | gold | verdigris | rose |
-|----|--------|------|-----------|------|
-| clio-0 | Teal | #6aae9d | #4f8290 | #9e8e91 |
-| clio-1 | Earth | #8ab0d8 | #7f7397 | #96687f |
-| clio-2 | Plum | #cca87b | #5b7d73 | #9c524e |
-| clio-3 | Forest | #a9ab3a | #85b396 | #8f5c3c |
-| clio-4 | Mauve | #fbb954 | #788a87 | #b0494e |
-| clio-5 | Purple | #c9a24b | #4fa393 | #c17b7b |
-| clio-6 | Slate | #96a2b3 | #7d8aa0 | #8a8f9e |
-| clio-7 | Violet | #8977c9 | #fc9bd3 | #8fd6e8 |
-| clio-8 | Black | #be9585 | #5c7a66 | #966f7a |
-| clio-9 | Neon | #0098db | #ff0546 | #c33a60 |
+| ID     | Nombre | gold    | verdigris | rose    |
+| ------ | ------ | ------- | --------- | ------- |
+| clio-0 | Teal   | #6aae9d | #4f8290   | #9e8e91 |
+| clio-1 | Earth  | #8ab0d8 | #7f7397   | #96687f |
+| clio-2 | Plum   | #cca87b | #5b7d73   | #9c524e |
+| clio-3 | Forest | #a9ab3a | #85b396   | #8f5c3c |
+| clio-4 | Mauve  | #fbb954 | #788a87   | #b0494e |
+| clio-5 | Purple | #c9a24b | #4fa393   | #c17b7b |
+| clio-6 | Slate  | #96a2b3 | #7d8aa0   | #8a8f9e |
+| clio-7 | Violet | #8977c9 | #fc9bd3   | #8fd6e8 |
+| clio-8 | Black  | #be9585 | #5c7a66   | #966f7a |
+| clio-9 | Neon   | #0098db | #ff0546   | #c33a60 |
 
 ### Estructura de una paleta
 
@@ -105,13 +105,16 @@ interface ThemePalette {
 ### Fases completadas
 
 **Fase 1 — Paletas predefinidas** ✅
+
 - `themes.ts` con las 10 paletas
 - CSS vars inyectadas dinámicamente
 - Selector de paleta en UI
 
 **Fase 2 — Brand unicolor** ✅
+
 - `clio-brand.svg` con `fill="currentColor"`
 - `BrandIcon` component con cache por color
 
 **Fase 3 — Sync con reader** ✅
+
 - ReaderView.tsx usa CSS vars en vez de colores inline

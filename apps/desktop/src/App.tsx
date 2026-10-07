@@ -12,25 +12,18 @@ import { LibraryView } from './components/LibraryView';
 import { ReaderView } from './components/ReaderView';
 import { useAppLifecycle } from './bridges/lifecycle';
 import { bridge } from './bridges/bridge-singleton';
-import { LocalRepository } from '@clio-reader/storage';
-import { createElectronKVStore } from './bridges/storage';
+import { createDatabaseBridge } from './bridges/database';
 import { importBook, listBooks, removeBook, generateId } from '@clio-reader/library';
 import type { Book } from '@clio-reader/domain';
 import { detectBookFormat } from '@clio-reader/reader-core';
 import { parseEpub, extractCoverImage } from '@clio-reader/reader-epub';
-import {
-  applyTheme,
-  savePalettePreference,
-  loadPalettePreference,
-  getPalette,
-} from './themes';
+import { applyTheme, savePalettePreference, loadPalettePreference, getPalette } from './themes';
 
 /* ==========================================================================
    Dependencias — DIP: se crean una vez y se inyectan
    ========================================================================== */
 
-const store = createElectronKVStore();
-const repository = new LocalRepository(store);
+const repository = createDatabaseBridge();
 
 /* ==========================================================================
    Componente raíz
@@ -40,7 +33,11 @@ interface OpenBook {
   readonly id: string;
   readonly uri: string;
   readonly title: string;
+  readonly author?: string | undefined;
+  readonly coverImage?: string | undefined;
   readonly format: string;
+  readonly rank?: number | undefined;
+  readonly initialLocator?: string | undefined;
 }
 
 export interface ImportProgress {
@@ -387,20 +384,27 @@ export function App(): JSX.Element {
   }, [loadBooks]);
 
   /* ----- Abrir libro ----- */
-  const handleOpenBook = useCallback(async (book: Book) => {
-    console.log('[openBook]', book.id, book.title);
-    await repository.upsertBook({
-      ...book,
-      lastOpenedAt: Date.now(),
-      readingStatus: 'reading',
-    });
-    setOpenBook({
-      id: book.id,
-      uri: book.uri,
-      title: book.title,
-      format: book.format,
-    });
-  }, [repository]);
+  const handleOpenBook = useCallback(
+    async (book: Book, initialLocator?: string) => {
+      console.log('[openBook]', book.id, book.title);
+      await repository.upsertBook({
+        ...book,
+        lastOpenedAt: Date.now(),
+        readingStatus: 'reading',
+      });
+      setOpenBook({
+        id: book.id,
+        uri: book.uri,
+        title: book.title,
+        author: book.author,
+        coverImage: book.coverImage,
+        format: book.format,
+        rank: book.rank,
+        initialLocator,
+      });
+    },
+    [repository],
+  );
 
   /* ----- Cerrar libro ----- */
   const handleCloseBook = useCallback(() => {
@@ -408,6 +412,19 @@ export function App(): JSX.Element {
     setOpenBook(null);
     loadBooks();
   }, [loadBooks]);
+
+  /* ----- Guardar ranking desde el reader ----- */
+  const handleSaveRankFromReader = useCallback(
+    async (rank: number) => {
+      if (!openBook) return;
+      const book = await repository.getBook(openBook.id);
+      if (!book) return;
+      await repository.upsertBook({ ...book, rank: rank as import('@clio-reader/domain').Rank });
+      setOpenBook((prev) => (prev ? { ...prev, rank } : prev));
+      loadBooks();
+    },
+    [openBook, repository, loadBooks],
+  );
 
   /* ----- Eliminar libro ----- */
   const handleRemoveBook = useCallback(
@@ -434,10 +451,16 @@ export function App(): JSX.Element {
         bookId={openBook.id}
         fileUri={openBook.uri}
         format={openBook.format}
+        title={openBook.title}
+        author={openBook.author}
+        coverImage={openBook.coverImage}
+        rank={openBook.rank}
+        initialLocator={openBook.initialLocator}
         repository={repository}
         paletteId={paletteId}
         theme={theme}
         onClose={handleCloseBook}
+        onSaveRank={handleSaveRankFromReader}
       />
     );
   }

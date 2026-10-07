@@ -1,5 +1,4 @@
 import type { Bookmark, Note } from '@clio-reader/domain';
-import { listBookmarks, listNotes } from '@clio-reader/library';
 
 import { AnnotationValidationError } from './errors.js';
 import { validateBookmarkForExport, validateNoteForExport } from './annotation-validator.js';
@@ -19,8 +18,8 @@ export async function exportAnnotations(
   },
   bookId: string,
 ): Promise<AnnotationExportData> {
-  const bookmarks = await listBookmarks(repo, bookId);
-  const notes = await listNotes(repo, bookId);
+  const bookmarks = await repo.listBookmarks(bookId);
+  const notes = await repo.listNotes(bookId);
 
   return {
     version: 1,

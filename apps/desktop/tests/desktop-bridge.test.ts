@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { FileSource } from '@clio-reader/reader-core';
 
 const mockElectronAPI = {
   pickFile: vi.fn(),

@@ -64,7 +64,10 @@ export function createDesktopBridge(): DesktopBridge {
     },
 
     async writeFileTemp(data: Uint8Array, ext: string): Promise<string> {
-      const buffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
+      const buffer = data.buffer.slice(
+        data.byteOffset,
+        data.byteOffset + data.byteLength,
+      ) as ArrayBuffer;
       return await api.writeFileTemp(buffer, ext);
     },
 

@@ -35,6 +35,9 @@ importers:
       '@clio-reader/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@clio-reader/library':
+        specifier: workspace:*
+        version: link:../../packages/library
       '@clio-reader/reader-cbz':
         specifier: workspace:*
         version: link:../../packages/reader-cbz
@@ -53,6 +56,15 @@ importers:
       '@clio-reader/storage':
         specifier: workspace:*
         version: link:../../packages/storage
+      better-sqlite3:
+        specifier: ^11.0.0
+        version: 11.10.0
+      bindings:
+        specifier: ^1.5.0
+        version: 1.5.0
+      file-uri-to-path:
+        specifier: ^1.0.0
+        version: 1.0.0
       react:
         specifier: ^18.2.0
         version: 18.3.1
@@ -148,6 +160,10 @@ importers:
       '@clio-reader/library':
         specifier: workspace:*
         version: link:../library
+    devDependencies:
+      '@clio-reader/storage':
+        specifier: workspace:*
+        version: link:../storage
 
   packages/domain: {}
 
@@ -219,16 +235,16 @@ importers:
       '@clio-reader/domain':
         specifier: workspace:*
         version: link:../domain
-      drizzle-orm:
-        specifier: ^0.38.0
-        version: 0.38.4(@types/better-sqlite3@7.6.13)(@types/react@18.3.31)(better-sqlite3@11.10.0)(react@18.3.1)(sql.js@1.14.2)
-    devDependencies:
       '@types/better-sqlite3':
         specifier: ^7.6.0
         version: 7.6.13
       better-sqlite3:
         specifier: ^11.0.0
         version: 11.10.0
+      drizzle-orm:
+        specifier: ^0.38.0
+        version: 0.38.4(@types/better-sqlite3@7.6.13)(@types/react@18.3.31)(better-sqlite3@11.10.0)(react@18.3.1)(sql.js@1.14.2)
+    devDependencies:
       drizzle-kit:
         specifier: ^0.30.0
         version: 0.30.6

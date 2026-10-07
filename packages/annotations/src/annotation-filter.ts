@@ -30,10 +30,6 @@ function getProgression(locator: ReaderLocator): number {
   return 0;
 }
 
-function getBookmarkLabel(bookmark: Bookmark): string {
-  return bookmark.label ?? '';
-}
-
 function getAnnotationDate(annotation: Annotation): number {
   return annotation.createdAt;
 }

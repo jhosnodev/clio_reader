@@ -1,5 +1,3 @@
-import type { Bookmark, Note, ReaderLocator } from '@clio-reader/domain';
-
 import { AnnotationValidationError } from './errors.js';
 
 interface ValidationError {
@@ -42,6 +40,48 @@ function assertObject(value: unknown, field: string): ValidationError | null {
 
 const VALID_LOCATOR_FORMATS = ['epub', 'pdf', 'cbz', 'md'] as const;
 
+function validateAnchor(anchor: unknown, field: string): ValidationError[] {
+  const errors: ValidationError[] = [];
+
+  const anchorError = assertObject(anchor, field);
+  if (anchorError) {
+    errors.push(anchorError);
+    return errors;
+  }
+
+  const obj = anchor as Record<string, unknown>;
+
+  const startError = assertNumber(obj['start'], `${field}.start`);
+  if (startError) {
+    errors.push(startError);
+  } else if ((obj['start'] as number) < 0 || !Number.isInteger(obj['start'])) {
+    errors.push({ field: `${field}.start`, message: `${field}.start must be a positive integer` });
+  }
+
+  const endError = assertNumber(obj['end'], `${field}.end`);
+  if (endError) {
+    errors.push(endError);
+  } else if (!Number.isInteger(obj['end'])) {
+    errors.push({ field: `${field}.end`, message: `${field}.end must be an integer` });
+  }
+
+  if (
+    typeof obj['start'] === 'number' &&
+    typeof obj['end'] === 'number' &&
+    obj['end'] <= obj['start']
+  ) {
+    errors.push({ field: `${field}.end`, message: `${field}.end must be greater than start` });
+  }
+
+  for (const key of ['prefix', 'suffix'] as const) {
+    if (obj[key] === undefined) continue;
+    const contextError = assertString(obj[key], `${field}.${key}`);
+    if (contextError) errors.push(contextError);
+  }
+
+  return errors;
+}
+
 function validateLocator(locator: unknown): ValidationError[] {
   const errors: ValidationError[] = [];
   const objError = assertObject(locator, 'locator');
@@ -78,6 +118,10 @@ function validateLocator(locator: unknown): ValidationError[] {
       const progError = assertNumber(loc['progression'], 'locator.progression');
       if (progError) errors.push(progError);
     }
+  }
+
+  if (loc['anchor'] !== undefined) {
+    errors.push(...validateAnchor(loc['anchor'], 'locator.anchor'));
   }
 
   return errors;

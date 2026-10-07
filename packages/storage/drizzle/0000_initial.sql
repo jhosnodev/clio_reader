@@ -105,6 +105,14 @@ CREATE TABLE IF NOT EXISTS `highlights` (
   FOREIGN KEY (`book_id`) REFERENCES `books`(`id`) ON UPDATE no action ON DELETE cascade
 );
 
+-- ==================== USER SETTINGS ====================
+CREATE TABLE IF NOT EXISTS `user_settings` (
+  `id` integer PRIMARY KEY DEFAULT 1,
+  `palette_id` text NOT NULL DEFAULT 'clio-3',
+  `mode` text NOT NULL DEFAULT 'dark',
+  `updated_at` integer NOT NULL DEFAULT (unixepoch())
+);
+
 -- ==================== INDEXES ====================
 CREATE INDEX IF NOT EXISTS `idx_books_status` ON `books` (`status`, `deleted_at`);
 CREATE INDEX IF NOT EXISTS `idx_books_reading_status` ON `books` (`reading_status`, `deleted_at`);

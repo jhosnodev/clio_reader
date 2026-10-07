@@ -4,7 +4,7 @@ import type { OpfPackage } from './epub-parser.js';
 
 export interface TocEntry {
   readonly title: string;
-  readonly href: string;
+  readonly href?: string | undefined;
   readonly children: readonly TocEntry[];
 }
 
@@ -14,6 +14,8 @@ export class TocParseError extends Error {
     this.name = 'TocParseError';
   }
 }
+
+const MAX_TOC_DEPTH = 64;
 
 function getTagContent(xml: string, tagName: string): string | undefined {
   const pattern = new RegExp(`<${tagName}[^>]*>([^<]*)</${tagName}>`, 'i');
@@ -103,7 +105,9 @@ function extractTopLevelLiItems(olXml: string): string[] {
   return items;
 }
 
-function parseNavOl(olXml: string): TocEntry[] {
+function parseNavOl(olXml: string, depth = 0): TocEntry[] {
+  if (depth > MAX_TOC_DEPTH) return [];
+
   const entries: TocEntry[] = [];
   const liItems = extractTopLevelLiItems(olXml);
 
@@ -115,7 +119,7 @@ function parseNavOl(olXml: string): TocEntry[] {
       const title = aMatch[2].replace(/<[^>]+>/g, '').trim();
 
       const nestedOlMatch = liXml.match(/<ol[^>]*>([\s\S]*?)<\/ol>/i);
-      const children = nestedOlMatch?.[1] ? parseNavOl(nestedOlMatch[1]) : [];
+      const children = nestedOlMatch?.[1] ? parseNavOl(nestedOlMatch[1], depth + 1) : [];
 
       entries.push({ title, href, children });
     }
@@ -131,7 +135,9 @@ function parseNcxToc(ncxXml: string): TocEntry[] {
   return parseNcxNavPoints(navMapMatch[1]);
 }
 
-function parseNcxNavPoints(xml: string): TocEntry[] {
+function parseNcxNavPoints(xml: string, depth = 0): TocEntry[] {
+  if (depth > MAX_TOC_DEPTH) return [];
+
   const entries: TocEntry[] = [];
   const navPointPattern = /<navPoint[^>]*>([\s\S]*?)<\/navPoint>/gi;
   let match = navPointPattern.exec(xml);
@@ -145,7 +151,7 @@ function parseNcxNavPoints(xml: string): TocEntry[] {
     const children: TocEntry[] = [];
     if (nestedNavPoints) {
       for (const nested of nestedNavPoints) {
-        const nestedEntries = parseNcxNavPoints(nested);
+        const nestedEntries = parseNcxNavPoints(nested, depth + 1);
         children.push(...nestedEntries);
       }
     }
@@ -166,20 +172,17 @@ function findTocManifestItem(opf: OpfPackage): { href: string; fullPath: string 
       (item.mediaType === 'application/xhtml+xml' && item.id.toLowerCase().includes('nav')),
   );
   if (navItem) {
-    const lastSlash = opf.basePath.length > 0 ? opf.basePath.length : 0;
-    const basePath = opf.basePath.substring(0, lastSlash);
     return {
       href: navItem.href,
-      fullPath: basePath ? `${basePath}/${navItem.href}` : navItem.href,
+      fullPath: opf.basePath ? `${opf.basePath}/${navItem.href}` : navItem.href,
     };
   }
 
   const ncxItem = opf.manifest.find((item) => item.mediaType === 'application/x-dtbncx+xml');
   if (ncxItem) {
-    const basePath = opf.basePath;
     return {
       href: ncxItem.href,
-      fullPath: basePath ? `${basePath}/${ncxItem.href}` : ncxItem.href,
+      fullPath: opf.basePath ? `${opf.basePath}/${ncxItem.href}` : ncxItem.href,
     };
   }
 
@@ -188,25 +191,95 @@ function findTocManifestItem(opf: OpfPackage): { href: string; fullPath: string 
 
 export async function extractToc(data: Uint8Array, opf: OpfPackage): Promise<TocEntry[]> {
   const tocItem = findTocManifestItem(opf);
-  if (!tocItem) return [];
+  if (tocItem) {
+    const zip = await JSZip.loadAsync(data);
+    const entry = zip.file(tocItem.fullPath);
+    if (entry) {
+      const content = await entry.async('string');
+      const extracted = parseTocContent(content);
+      if (extracted.length > 0) {
+        return normalizeTocHrefs(extracted, directoryOf(tocItem.fullPath));
+      }
+    }
+  }
 
-  const zip = await JSZip.loadAsync(data);
-  const entry = zip.file(tocItem.fullPath);
-  if (!entry) return [];
+  return buildSpineFallbackToc(opf);
+}
 
-  const content = await entry.async('string');
+function directoryOf(fullPath: string): string {
+  const slash = fullPath.lastIndexOf('/');
+  return slash >= 0 ? fullPath.substring(0, slash) : '';
+}
 
+function normalizeHref(baseDir: string, href: string): string {
+  const withoutFragment = href.split('#')[0] ?? '';
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(withoutFragment);
+  } catch {
+    decoded = withoutFragment;
+  }
+
+  const parts = (baseDir ? `${baseDir}/${decoded}` : decoded).split('/');
+  const resolved: string[] = [];
+  for (const part of parts) {
+    if (part === '' || part === '.') continue;
+    if (part === '..') {
+      resolved.pop();
+      continue;
+    }
+    resolved.push(part);
+  }
+  return resolved.join('/');
+}
+
+function normalizeTocHrefs(entries: readonly TocEntry[], baseDir: string): TocEntry[] {
+  return entries.map((entry) => {
+    const children = entry.children?.length ? normalizeTocHrefs(entry.children, baseDir) : [];
+    return {
+      title: entry.title,
+      href: entry.href != null ? normalizeHref(baseDir, entry.href) : undefined,
+      children,
+    };
+  });
+}
+
+function parseTocContent(content: string): TocEntry[] {
   if (content.includes('<nav') && content.includes('epub:type="toc"')) {
     return parseNavToc(content);
   }
-
   if (content.includes('<ncx') || content.includes('<navMap')) {
     return parseNcxToc(content);
   }
-
   if (content.includes('<ol')) {
     return parseNavToc(content);
   }
-
   return [];
+}
+
+function buildSpineFallbackToc(opf: OpfPackage): TocEntry[] {
+  const entries: TocEntry[] = [];
+  const manifestById = new Map(opf.manifest.map((item) => [item.id, item]));
+
+  opf.spine.forEach((spineItem) => {
+    if (spineItem.linear === false) return;
+    const manifestItem = manifestById.get(spineItem.idref);
+    if (!manifestItem) return;
+
+    entries.push({
+      title: titleFromHref(manifestItem.href),
+      href: normalizeHref(opf.basePath, manifestItem.href),
+      children: [],
+    });
+  });
+
+  return entries;
+}
+
+function titleFromHref(href: string): string {
+  const basename = href.split('/').pop() ?? href;
+  const withoutExt = basename.replace(/\.[^/.]+$/, '');
+  const cleaned = withoutExt.replace(/[_]/g, ' ').replace(/-+/g, ' ').trim();
+  if (cleaned.length === 0) return 'Capítulo';
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
 }

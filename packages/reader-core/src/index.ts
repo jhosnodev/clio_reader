@@ -1,16 +1,42 @@
 import type { BookFormat, ReaderLocator, ReaderPreferences } from '@clio-reader/domain';
 
+export {
+  ANCHOR_CONTEXT_LENGTH,
+  MIN_QUOTE_LENGTH,
+  buildTextAnchor,
+  getLocatorAnchor,
+  hasTextAnchor,
+  normalizeQuote,
+  resolveTextAnchor,
+  withTextAnchor,
+} from './text-anchor.js';
+export type { AnchorResolution, ResolvedAnchor } from './text-anchor.js';
+
 export interface FileSource {
   readonly uri: string;
   readonly name: string;
   readonly mimeType?: string;
 }
 
+export interface TocEntry {
+  readonly title: string;
+  readonly href?: string | undefined;
+  readonly children?: readonly TocEntry[] | undefined;
+}
+
+export interface TocNavEntry extends TocEntry {
+  readonly chapterIndex?: number | undefined;
+  readonly children?: readonly TocNavEntry[] | undefined;
+}
+
+export type TocTree = readonly TocNavEntry[];
+
 export interface ReaderCapabilities {
   readonly reflowable: boolean;
   readonly supportsFontScale: boolean;
   readonly supportsZoom: boolean;
   readonly supportsAnnotations: boolean;
+  readonly supportsTOC?: boolean;
 }
 
 export interface ReaderDocument {
@@ -21,12 +47,15 @@ export interface ReaderDocument {
   getLocator(): Promise<ReaderLocator>;
   goNext(): Promise<ReaderLocator>;
   goPrevious(): Promise<ReaderLocator>;
+  goToChapter?(idx: number): Promise<ReaderLocator>;
+  goToTocHref?(href: string): Promise<ReaderLocator>;
   getCurrentChapterContent?(): Promise<string>;
   getChapterCount?(): Promise<number>;
   getCurrentChapterIndex?(): Promise<number>;
   applyPreferences?(prefs: ReaderPreferences): Promise<string>;
   resolveResources?(html: string): Promise<string>;
   getImageData?(href: string): Promise<{ data: Uint8Array; mimeType: string } | null>;
+  getToc?(): Promise<TocTree>;
 }
 
 export interface ReaderAdapter {

@@ -2,6 +2,7 @@
   "name": "@clio-reader/desktop",
   "version": "0.1.0",
   "description": "Local-first digital book library manager and reader",
+  "homepage": "https://github.com/jhosnodev/echo_reader",
   "author": "jhosno.dev",
   "private": true,
   "type": "module",
@@ -11,12 +12,16 @@
     "build": "tsc && vite build",
     "build:win": "tsc && vite build && electron-builder --win",
     "build:win:portable": "tsc && vite build && electron-builder --win --portable",
+    "build:linux": "tsc && vite build && electron-builder --linux",
+    "build:linux:appimage": "tsc && vite build && electron-builder --linux --publish=never --config electron-builder.yml",
     "preview": "vite preview",
     "check": "tsc -p tsconfig.json",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "generate-icons": "node scripts/generate-icons.js"
+    "generate-icons": "node scripts/generate-icons.js",
+    "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
+    "@clio-reader/library": "workspace:*",
     "@clio-reader/reader-core": "workspace:*",
     "@clio-reader/reader-cbz": "workspace:*",
     "@clio-reader/reader-pdf": "workspace:*",
@@ -25,7 +30,10 @@
     "@clio-reader/storage": "workspace:*",
     "@clio-reader/domain": "workspace:*",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "better-sqlite3": "^11.0.0",
+    "bindings": "^1.5.0",
+    "file-uri-to-path": "^1.0.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",

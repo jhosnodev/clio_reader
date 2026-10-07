@@ -1,8 +1,4 @@
-import {
-  createDefaultPreferences,
-  validateReaderPreferences,
-  type ReaderPreferences,
-} from '@clio-reader/domain';
+import { validateReaderPreferences, type ReaderPreferences } from '@clio-reader/domain';
 
 import type { SessionRepository } from './session-repository.js';
 

@@ -7,7 +7,6 @@ import type { FileSource } from '@clio-reader/reader-core';
 import {
   CbzReaderDocument,
   CbzDocumentClosedError,
-  CbzDocumentNotOpenError,
   CbzPageOutOfBoundsError,
   CbzEmptyArchiveError,
 } from '../src/cbz-document.js';

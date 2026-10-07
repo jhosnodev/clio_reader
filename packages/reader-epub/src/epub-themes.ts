@@ -22,9 +22,20 @@ const MARGINS: Record<string, string> = {
 
 export function generateThemeCss(prefs: ReaderPreferences): string {
   const colors = THEME_COLORS[prefs.theme] ?? THEME_COLORS.light;
-  const bgColor = prefs.backgroundColor || (colors?.bg ?? '#ffffff');
-  const fgColor = prefs.foregroundColor || (colors?.fg ?? '#1f2937');
-  const accentColor = prefs.accentColor || (colors?.accent ?? '#2563eb');
+
+  let bgColor: string;
+  let fgColor: string;
+  let accentColor: string;
+
+  if (prefs.theme === 'custom') {
+    bgColor = prefs.backgroundColor || (colors?.bg ?? '#ffffff');
+    fgColor = prefs.foregroundColor || (colors?.fg ?? '#1f2937');
+    accentColor = prefs.accentColor || (colors?.accent ?? '#2563eb');
+  } else {
+    bgColor = `var(--read-bg, ${colors?.bg ?? '#ffffff'})`;
+    fgColor = `var(--read-tx, ${colors?.fg ?? '#1f2937'})`;
+    accentColor = `var(--gold, ${colors?.accent ?? '#2563eb'})`;
+  }
 
   return `
     :root {

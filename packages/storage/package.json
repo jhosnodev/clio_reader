@@ -8,6 +8,14 @@
     ".": {
       "types": "./dist/src/index.d.ts",
       "import": "./dist/src/index.js"
+    },
+    "./drizzle": {
+      "types": "./dist/src/drizzle.d.ts",
+      "import": "./dist/src/drizzle.js"
+    },
+    "./drizzle-test": {
+      "types": "./dist/src/drizzle-test.d.ts",
+      "import": "./dist/src/drizzle-test.js"
     }
   },
   "scripts": {
@@ -21,12 +29,12 @@
   },
   "dependencies": {
     "@clio-reader/domain": "workspace:*",
+    "better-sqlite3": "^11.0.0",
+    "@types/better-sqlite3": "^7.6.0",
     "drizzle-orm": "^0.38.0"
   },
   "devDependencies": {
-    "better-sqlite3": "^11.0.0",
     "drizzle-kit": "^0.30.0",
-    "@types/better-sqlite3": "^7.6.0",
     "sql.js": "^1.11.0"
   }
 }

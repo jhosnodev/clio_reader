@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
-import { createInMemoryDatabase, DrizzleRepository } from '../src/drizzle';
+import { DrizzleRepository } from '../src/drizzle.js';
+import { createInMemoryDatabase } from '../src/drizzle-test.js';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import type { BetterSqlite3Connection } from '../src/db-better-sqlite3.js';
 
 describe('DrizzleRepository', () => {
   let dbResult: Awaited<ReturnType<typeof createInMemoryDatabase>> | null = null;
@@ -11,14 +13,13 @@ describe('DrizzleRepository', () => {
     if (dbResult) {
       dbResult.close();
     }
-    
+
     dbResult = await createInMemoryDatabase();
-    repository = new DrizzleRepository(dbResult.db);
-    
-    // Run migration (without FTS5 for testing)
+    repository = new DrizzleRepository(dbResult.db as unknown as BetterSqlite3Connection);
+
     const migrationSQL = readFileSync(
       join(__dirname, '../drizzle/0000_initial_no_fts.sql'),
-      'utf-8'
+      'utf-8',
     );
     dbResult.rawDb.run(migrationSQL);
   });
@@ -45,8 +46,8 @@ describe('DrizzleRepository', () => {
       const books = await repository.listBooks();
 
       expect(books).toHaveLength(1);
-      expect(books[0].id).toBe('book-1');
-      expect(books[0].title).toBe('Test Book');
+      expect(books[0]!.id).toBe('book-1');
+      expect(books[0]!.title).toBe('Test Book');
     });
 
     it('should update an existing book', async () => {
@@ -60,17 +61,17 @@ describe('DrizzleRepository', () => {
       };
 
       await repository.upsertBook(book);
-      
+
       const updatedBook = {
         ...book,
         title: 'Updated Title',
       };
-      
+
       await repository.upsertBook(updatedBook);
       const books = await repository.listBooks();
 
       expect(books).toHaveLength(1);
-      expect(books[0].title).toBe('Updated Title');
+      expect(books[0]!.title).toBe('Updated Title');
     });
 
     it('should soft delete a book', async () => {
@@ -116,6 +117,46 @@ describe('DrizzleRepository', () => {
 
       expect(retrieved).toBeDefined();
       expect(retrieved?.percent).toBe(0.5);
+    });
+
+    it('should list all progress', async () => {
+      const book1 = {
+        id: 'book-1',
+        title: 'Book 1',
+        format: 'epub' as const,
+        uri: '/path/to/book1.epub',
+        addedAt: Date.now(),
+        status: 'available' as const,
+      };
+
+      const book2 = {
+        id: 'book-2',
+        title: 'Book 2',
+        format: 'pdf' as const,
+        uri: '/path/to/book2.pdf',
+        addedAt: Date.now(),
+        status: 'available' as const,
+      };
+
+      await repository.upsertBook(book1);
+      await repository.upsertBook(book2);
+
+      await repository.saveProgress({
+        bookId: 'book-1',
+        locator: { format: 'epub' as const, href: 'ch1', cfi: 'epubcfi(...)' },
+        percent: 0.3,
+        updatedAt: Date.now(),
+      });
+
+      await repository.saveProgress({
+        bookId: 'book-2',
+        locator: { format: 'pdf' as const, page: 5 },
+        percent: 0.7,
+        updatedAt: Date.now(),
+      });
+
+      const all = await repository.listAllProgress();
+      expect(all).toHaveLength(2);
     });
   });
 
@@ -186,7 +227,47 @@ describe('DrizzleRepository', () => {
       const bookmarks = await repository.listBookmarks('book-1');
 
       expect(bookmarks).toHaveLength(1);
-      expect(bookmarks[0].label).toBe('My Bookmark');
+      expect(bookmarks[0]!.label).toBe('My Bookmark');
+    });
+
+    it('should list all bookmarks', async () => {
+      const book1 = {
+        id: 'book-1',
+        title: 'Book 1',
+        format: 'epub' as const,
+        uri: '/path/to/book1.epub',
+        addedAt: Date.now(),
+        status: 'available' as const,
+      };
+
+      const book2 = {
+        id: 'book-2',
+        title: 'Book 2',
+        format: 'pdf' as const,
+        uri: '/path/to/book2.pdf',
+        addedAt: Date.now(),
+        status: 'available' as const,
+      };
+
+      await repository.upsertBook(book1);
+      await repository.upsertBook(book2);
+
+      await repository.saveBookmark({
+        id: 'bm-1',
+        bookId: 'book-1',
+        locator: { format: 'epub' as const, href: 'ch1', cfi: 'epubcfi(...)' },
+        createdAt: Date.now(),
+      });
+
+      await repository.saveBookmark({
+        id: 'bm-2',
+        bookId: 'book-2',
+        locator: { format: 'pdf' as const, page: 3 },
+        createdAt: Date.now(),
+      });
+
+      const all = await repository.listAllBookmarks();
+      expect(all).toHaveLength(2);
     });
 
     it('should soft delete a bookmark', async () => {
@@ -244,7 +325,46 @@ describe('DrizzleRepository', () => {
       const notes = await repository.listNotes('book-1');
 
       expect(notes).toHaveLength(1);
-      expect(notes[0].body).toBe('This is my note');
+      expect(notes[0]!.body).toBe('This is my note');
+    });
+
+    it('should persist the text anchor and the quote of a note', async () => {
+      const book = {
+        id: 'book-1',
+        title: 'Test Book',
+        format: 'epub' as const,
+        uri: '/path/to/book.epub',
+        addedAt: Date.now(),
+        status: 'available' as const,
+      };
+
+      await repository.upsertBook(book);
+
+      const note = {
+        id: 'note-anchor',
+        bookId: 'book-1',
+        locator: {
+          format: 'epub' as const,
+          href: 'chapter1',
+          positionOrder: 1,
+          anchor: { start: 120, end: 134, prefix: 'digo que ', suffix: ' y luego' },
+        },
+        selectedText: 'texto anudado',
+        body: 'Anotación sobre el texto',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      await repository.saveNote(note);
+      const notes = await repository.listNotes('book-1');
+
+      expect(notes[0]!.selectedText).toBe('texto anudado');
+      expect(notes[0]!.locator).toEqual({
+        format: 'epub',
+        href: 'chapter1',
+        positionOrder: 1,
+        anchor: { start: 120, end: 134, prefix: 'digo que ', suffix: ' y luego' },
+      });
     });
 
     it('should throw error for empty note body', async () => {
@@ -277,9 +397,8 @@ describe('DrizzleRepository', () => {
       const highlight = {
         id: 'highlight-1',
         bookId: 'book-1',
-        locatorFormat: 'epub',
-        locatorStart: 'epubcfi(start)',
-        locatorEnd: 'epubcfi(end)',
+        locatorStart: { format: 'epub' as const, href: 'chapter1', cfi: 'epubcfi(start)' },
+        locatorEnd: { format: 'epub' as const, href: 'chapter1', cfi: 'epubcfi(end)' },
         selectedText: 'Highlighted text',
         color: '#ffff00',
         style: 'highlight' as const,
@@ -292,8 +411,53 @@ describe('DrizzleRepository', () => {
       const highlights = await repository.listHighlights('book-1');
 
       expect(highlights).toHaveLength(1);
-      expect(highlights[0].color).toBe('#ffff00');
-      expect(highlights[0].style).toBe('highlight');
+      expect(highlights[0]!.color).toBe('#ffff00');
+      expect(highlights[0]!.style).toBe('highlight');
+    });
+
+    it('should soft delete a highlight', async () => {
+      const book = {
+        id: 'book-1',
+        title: 'Test Book',
+        format: 'epub' as const,
+        uri: '/path/to/book.epub',
+        addedAt: Date.now(),
+        status: 'available' as const,
+      };
+
+      await repository.upsertBook(book);
+
+      const highlight = {
+        id: 'highlight-1',
+        bookId: 'book-1',
+        locatorStart: { format: 'epub' as const, href: 'chapter1', cfi: 'epubcfi(start)' },
+        locatorEnd: { format: 'epub' as const, href: 'chapter1', cfi: 'epubcfi(end)' },
+        color: '#ffff00',
+        style: 'highlight' as const,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      await repository.saveHighlight(highlight);
+      await repository.removeHighlight('highlight-1');
+      const highlights = await repository.listHighlights('book-1');
+
+      expect(highlights).toHaveLength(0);
+    });
+  });
+
+  describe('User Settings', () => {
+    it('should return defaults when empty', async () => {
+      const settings = await repository.getUserSettings();
+      expect(settings.paletteId).toBe('clio-3');
+      expect(settings.mode).toBe('dark');
+    });
+
+    it('should save and retrieve user settings', async () => {
+      await repository.saveUserSettings({ paletteId: 'clio-5', mode: 'light' });
+      const settings = await repository.getUserSettings();
+      expect(settings.paletteId).toBe('clio-5');
+      expect(settings.mode).toBe('light');
     });
   });
 });
