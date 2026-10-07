@@ -26,11 +26,12 @@ linux:
     - target: deb
       arch:
         - x64
-  category: Application;Education;Viewer
-  icon: resources/icon.png
-  maintainer: jhosno.dev
+  category: Education
+  icon: resources/icons
+  maintainer: jhosno <jhosno.dev@gmail.com>
   vendor: jhosno.dev
   description: Local-first digital book library manager and reader
+  synopsis: Local-first digital book library and reader
   executableName: clio-reader
   desktop:
     StartupWMClass: clio-reader
@@ -39,6 +40,8 @@ deb:
   packageName: clio-reader
   artifactName: 'clio-reader_${version}_${arch}.${ext}'
   packageCategory: education
+  afterInstall: build/after-install.sh
+  afterRemove: build/after-remove.sh
 
 nsis:
   oneClick: false
