@@ -13,9 +13,11 @@ window.addEventListener('unhandledrejection', (e) => {
 });
 
 import type { ReaderDocument, TocNavEntry, TocTree } from '@clio-reader/reader-core';
-import { hasTextAnchor, withTextAnchor } from '@clio-reader/reader-core';
+import { ReaderFactory, hasTextAnchor, withTextAnchor } from '@clio-reader/reader-core';
 import type { ReaderPreferences, ReaderLocator, TextAnchor } from '@clio-reader/domain';
-import { EpubReaderDocument } from '@clio-reader/reader-epub';
+import { EpubReaderAdapter } from '@clio-reader/reader-epub';
+import { PdfReaderAdapter } from '@clio-reader/reader-pdf';
+import { CbzReaderAdapter } from '@clio-reader/reader-cbz';
 import {
   PREFERENCES_SENTINEL,
   lineHeightToButton,
@@ -313,13 +315,16 @@ async function renderChapter(
 ): Promise<void> {
   const contentEl = document.getElementById('page');
   if (!contentEl) return;
-  if (!readerDoc.getCurrentChapterContent)
-    throw new ReaderError('El formato no soporta renderizado de contenido');
+  clearNoteHighlights();
+
+  if (!readerDoc.getCurrentChapterContent) {
+    await renderFixedLayoutPage(readerDoc, contentEl);
+    return;
+  }
 
   const htmlContent = await readerDoc.getCurrentChapterContent();
   const resolvedHtml = await resolveImagesInHtml(readerDoc, htmlContent);
   contentEl.innerHTML = sanitizeHtml(resolvedHtml);
-  clearNoteHighlights();
 
   if (readerDoc.applyPreferences) {
     const existingStyle = contentEl.querySelector('style');
@@ -340,6 +345,65 @@ async function renderChapter(
     refreshProgressFromScroll();
     if (typeof restoreRatio === 'number') scheduleScrollSettle(scroll, restoreRatio);
   }
+}
+
+let fixedPageBlobUrls: string[] = [];
+
+function revokeFixedPageBlobUrls(): void {
+  for (const url of fixedPageBlobUrls) {
+    try {
+      URL.revokeObjectURL(url);
+    } catch {
+      /* ignore */
+    }
+  }
+  fixedPageBlobUrls = [];
+}
+
+/** Renderiza formatos de página fija (PDF en canvas, CBZ como imagen). */
+async function renderFixedLayoutPage(
+  readerDoc: ReaderDocument,
+  contentEl: HTMLElement,
+): Promise<void> {
+  const doc = readerDoc as unknown as Record<string, unknown>;
+  const renderPage = doc.renderPage as
+    ((canvas: HTMLCanvasElement) => Promise<unknown>) | undefined;
+  const getCurrentImage = doc.getCurrentImage as (() => Promise<Uint8Array>) | undefined;
+  const getImageMimeType = doc.getImageMimeType as (() => Promise<string>) | undefined;
+
+  const scroll = document.getElementById('r-scroll');
+  if (scroll) {
+    cancelScrollSettle();
+    scroll.scrollTop = 0;
+  }
+
+  if (typeof renderPage === 'function') {
+    revokeFixedPageBlobUrls();
+    contentEl.innerHTML = '';
+    const canvas = document.createElement('canvas');
+    canvas.className = 'reader-fixed-canvas';
+    contentEl.append(canvas);
+    await renderPage.call(doc, canvas);
+  } else if (typeof getCurrentImage === 'function' && typeof getImageMimeType === 'function') {
+    revokeFixedPageBlobUrls();
+    contentEl.innerHTML = '';
+    const [bytes, mimeType] = await Promise.all([
+      getCurrentImage.call(doc),
+      getImageMimeType.call(doc),
+    ]);
+    const blob = new Blob([bytes.slice()], { type: mimeType });
+    const blobUrl = URL.createObjectURL(blob);
+    fixedPageBlobUrls.push(blobUrl);
+    const img = document.createElement('img');
+    img.className = 'reader-fixed-image';
+    img.alt = 'Página';
+    img.src = blobUrl;
+    contentEl.append(img);
+  } else {
+    throw new ReaderError('El formato no soporta renderizado de contenido');
+  }
+
+  await updateChapterInfo(readerDoc);
 }
 
 function applyScrollRatio(scroll: HTMLElement, ratio?: number): void {
@@ -390,6 +454,15 @@ async function updateChapterInfo(readerDoc: ReaderDocument): Promise<void> {
   const btnPrev = document.getElementById('prev-page') as HTMLButtonElement | null;
   const btnNext = document.getElementById('next-page') as HTMLButtonElement | null;
 
+  if (readerDoc.getCurrentPageIndex && readerDoc.getTotalPages) {
+    const currentIndex = await readerDoc.getCurrentPageIndex!();
+    const totalPages = await readerDoc.getTotalPages!();
+    paintProgressBar(currentIndex, totalPages);
+    if (btnPrev) btnPrev.disabled = currentIndex <= 0;
+    if (btnNext) btnNext.disabled = currentIndex >= totalPages - 1;
+    return;
+  }
+
   const canNavigateByChapter = Boolean(
     readerDoc.getCurrentChapterIndex && readerDoc.getChapterCount,
   );
@@ -427,6 +500,7 @@ async function refreshReaderStyle(
 let progressBar: ProgressBarController | null = null;
 
 function readScrollRatio(): number {
+  if (!currentReaderDoc?.capabilities.reflowable) return 0;
   const scroll = document.getElementById('r-scroll');
   if (!scroll) return 0;
   return scrollRatio(scroll.scrollTop, scroll.scrollHeight, scroll.clientHeight);
@@ -447,12 +521,26 @@ function setupProgressBar(readerDoc: ReaderDocument, preferences: ReaderPreferen
   const label = document.getElementById('pct');
   if (!track || !fill || !label) return;
 
+  const fixedLayout = !readerDoc.capabilities.reflowable;
   progressBar = createProgressBar({
     elements: { track, fill, label },
     getScrollRatio: readScrollRatio,
+    ...(fixedLayout
+      ? {
+          formatLabel: (pageIndex: number, totalPages: number, percent: number): string =>
+            `Pág. ${pageIndex + 1}/${totalPages} · ${Math.round(percent)}%`,
+        }
+      : {}),
     onSeek: (idx) => {
-      if (!readerDoc.goToChapter) return;
-      void seekChapter(readerDoc, preferences, idx);
+      if (readerDoc.goToChapter) {
+        void seekChapter(readerDoc, preferences, idx);
+        return;
+      }
+      const goToPage = (readerDoc as unknown as Record<string, unknown>).goToPage as
+        ((i: number) => Promise<ReaderLocator>) | undefined;
+      if (goToPage) {
+        void seekPage(readerDoc, preferences, idx);
+      }
     },
   });
 
@@ -489,6 +577,19 @@ async function seekChapter(
     if (error instanceof Error && error.name === 'EpubNavigationError') return;
     throw error;
   }
+}
+
+async function seekPage(
+  readerDoc: ReaderDocument,
+  preferences: ReaderPreferences,
+  pageIndex: number,
+): Promise<void> {
+  const goToPage = (readerDoc as unknown as Record<string, unknown>).goToPage as
+    ((i: number) => Promise<ReaderLocator>) | undefined;
+  if (!goToPage) return;
+  await goToPage.call(readerDoc, pageIndex);
+  await renderChapter(readerDoc, preferences);
+  await syncLocator();
 }
 
 /* ==========================================================================
@@ -548,6 +649,8 @@ async function navigateChapter(
     await updateTocCurrent(readerDoc);
   } catch (error) {
     if (error instanceof Error && error.name === 'EpubNavigationError') return;
+    if (error instanceof Error && error.name === 'PdfPageOutOfBoundsError') return;
+    if (error instanceof Error && error.name === 'CbzPageOutOfBoundsError') return;
     throw error;
   }
 }
@@ -931,20 +1034,26 @@ function setupBack(): void {
    Carga de documento
    ========================================================================== */
 
+let readerAdapterFactory: ReaderFactory | null = null;
+
+function getReaderAdapterFactory(): ReaderFactory {
+  if (readerAdapterFactory) return readerAdapterFactory;
+  const factory = new ReaderFactory();
+  factory.register(new EpubReaderAdapter());
+  factory.register(new PdfReaderAdapter());
+  factory.register(new CbzReaderAdapter());
+  readerAdapterFactory = factory;
+  return factory;
+}
+
 async function loadDocument(
   uri: string,
   format: SupportedFormat,
   preloadedData?: Uint8Array,
 ): Promise<ReaderDocument> {
-  switch (format) {
-    case 'epub': {
-      const doc = new EpubReaderDocument({ uri, name: '' });
-      await doc.open(preloadedData);
-      return doc;
-    }
-    default:
-      throw new ReaderError(`Formato no implementado: ${format}`);
-  }
+  const doc = getReaderAdapterFactory().create({ uri, name: '' }, format);
+  await doc.open(preloadedData);
+  return doc;
 }
 
 /* ==========================================================================
@@ -1003,6 +1112,7 @@ declare global {
     __noteSaved?: () => void;
     __noteError?: (message: string) => void;
     __goToChapter?: (idx: number, restoreRatio?: number, locatorJson?: string) => Promise<void>;
+    __goToPage?: (page: number) => Promise<void>;
     __getCurrentLocator?: () => string | undefined;
     __updateRank?: (rank: number) => void;
   }
@@ -1266,21 +1376,33 @@ async function jumpToNote(noteId: string): Promise<void> {
   }
 
   const order = 'positionOrder' in locator ? locator.positionOrder : undefined;
-  if (typeof order !== 'number' || !currentReaderDoc.goToChapter) {
-    showToast('La nota está en otro capítulo no disponible');
-    return;
+  if (typeof order === 'number' && currentReaderDoc.goToChapter) {
+    try {
+      await currentReaderDoc.goToChapter(order);
+      await renderChapter(currentReaderDoc, currentPreferences);
+      await syncLocator();
+      revealLocator(locator, note.selectedText);
+      renderNotesList(currentNotes);
+      return;
+    } catch (error) {
+      if (error instanceof Error && error.name === 'EpubNavigationError') return;
+      throw error;
+    }
   }
 
-  try {
-    await currentReaderDoc.goToChapter(order);
-    await renderChapter(currentReaderDoc, currentPreferences);
-    await syncLocator();
-    revealLocator(locator, note.selectedText);
-    renderNotesList(currentNotes);
-  } catch (error) {
-    if (error instanceof Error && error.name === 'EpubNavigationError') return;
-    throw error;
+  if (locator.format === 'pdf' || locator.format === 'cbz') {
+    const goToPage = (currentReaderDoc as unknown as Record<string, unknown>).goToPage as
+      ((i: number) => Promise<ReaderLocator>) | undefined;
+    if (typeof goToPage === 'function') {
+      await goToPage.call(currentReaderDoc, locator.page - 1);
+      await renderChapter(currentReaderDoc, currentPreferences);
+      await syncLocator();
+      renderNotesList(currentNotes);
+      return;
+    }
   }
+
+  showToast('La nota está en otro capítulo no disponible');
 }
 
 /** Resalta en el capítulo todas las notas ancladas a texto de esta página. */
@@ -1468,6 +1590,11 @@ async function main(): Promise<void> {
         currentNotes = data.notes ?? [];
         currentReaderDoc = await loadDocument(uri, format, bytes);
 
+        const readerEl = document.getElementById('reader');
+        if (readerEl) {
+          readerEl.classList.toggle('fixed-layout', !currentReaderDoc.capabilities.reflowable);
+        }
+
         // Populate toolbar with real metadata
         const titleEl = document.getElementById('r-title');
         const authorEl = document.getElementById('r-author');
@@ -1559,6 +1686,17 @@ async function main(): Promise<void> {
 
       const target = parseLocator(locatorJson);
       if (target) revealLocator(target);
+    };
+
+    /* --- Go to page (PDF/CBZ resume from host) --- */
+    window.__goToPage = async (page: number) => {
+      if (!currentReaderDoc) return;
+      const goToPage = (currentReaderDoc as unknown as Record<string, unknown>).goToPage as
+        ((i: number) => Promise<ReaderLocator>) | undefined;
+      if (typeof goToPage !== 'function') return;
+      await goToPage.call(currentReaderDoc, page - 1);
+      await renderChapter(currentReaderDoc, currentPreferences);
+      await syncLocator();
     };
 
     /* --- Get current locator (for host progress sync) --- */

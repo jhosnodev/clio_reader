@@ -49,9 +49,12 @@ export interface ReaderDocument {
   goPrevious(): Promise<ReaderLocator>;
   goToChapter?(idx: number): Promise<ReaderLocator>;
   goToTocHref?(href: string): Promise<ReaderLocator>;
+  goToPage?(pageIndex: number): Promise<ReaderLocator>;
   getCurrentChapterContent?(): Promise<string>;
   getChapterCount?(): Promise<number>;
   getCurrentChapterIndex?(): Promise<number>;
+  getTotalPages?(): Promise<number>;
+  getCurrentPageIndex?(): Promise<number>;
   applyPreferences?(prefs: ReaderPreferences): Promise<string>;
   resolveResources?(html: string): Promise<string>;
   getImageData?(href: string): Promise<{ data: Uint8Array; mimeType: string } | null>;

@@ -4,6 +4,8 @@ import type { PDFDocumentProxy } from 'pdfjs-dist';
 
 import { renderPageToCanvas } from './pdf-renderer.js';
 
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+
 export class PdfDocumentClosedError extends Error {
   constructor() {
     super('Cannot operate on a closed PDF document');
@@ -50,16 +52,21 @@ export class PdfReaderDocument implements ReaderDocument {
     return this.pdfDocument !== null && !this.closed;
   }
 
-  async open(): Promise<void> {
+  async open(preloadedData?: Uint8Array): Promise<void> {
     if (this.closed) throw new PdfDocumentClosedError();
     if (this.pdfDocument !== null) return;
 
     const pdfjsLib = await import('pdfjs-dist');
 
-    pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
-    const arrayBuffer = await fetch(this.source.uri).then((res) => res.arrayBuffer());
-    const data = new Uint8Array(arrayBuffer);
+    let data: Uint8Array;
+    if (preloadedData) {
+      data = preloadedData;
+    } else {
+      const arrayBuffer = await fetch(this.source.uri).then((res) => res.arrayBuffer());
+      data = new Uint8Array(arrayBuffer);
+    }
 
     const loadingTask = pdfjsLib.getDocument({ data });
     this.pdfDocument = await loadingTask.promise;
@@ -114,6 +121,18 @@ export class PdfReaderDocument implements ReaderDocument {
     }
 
     this.currentPageIndex--;
+    return this.getLocator();
+  }
+
+  async goToPage(pageIndex: number): Promise<ReaderLocator> {
+    this.assertOpen();
+
+    const totalPages = this.pdfDocument!.numPages;
+    if (pageIndex < 0 || pageIndex >= totalPages) {
+      throw new PdfPageOutOfBoundsError(pageIndex, totalPages);
+    }
+
+    this.currentPageIndex = pageIndex;
     return this.getLocator();
   }
 

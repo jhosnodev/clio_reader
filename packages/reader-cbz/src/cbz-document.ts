@@ -57,12 +57,17 @@ export class CbzReaderDocument implements ReaderDocument {
     return this.images !== null && !this.closed;
   }
 
-  async open(): Promise<void> {
+  async open(preloadedData?: Uint8Array): Promise<void> {
     if (this.closed) throw new CbzDocumentClosedError();
     if (this.images !== null) return;
 
-    const arrayBuffer = await fetch(this.source.uri).then((res) => res.arrayBuffer());
-    const rawData = new Uint8Array(arrayBuffer);
+    let rawData: Uint8Array;
+    if (preloadedData) {
+      rawData = preloadedData;
+    } else {
+      const arrayBuffer = await fetch(this.source.uri).then((res) => res.arrayBuffer());
+      rawData = new Uint8Array(arrayBuffer);
+    }
 
     const extracted = await extractImagesFromZip(rawData);
 
@@ -128,6 +133,18 @@ export class CbzReaderDocument implements ReaderDocument {
     }
 
     this.currentPageIndex--;
+    return this.getLocator();
+  }
+
+  async goToPage(pageIndex: number): Promise<ReaderLocator> {
+    this.assertOpen();
+
+    const totalPages = this.images!.length;
+    if (pageIndex < 0 || pageIndex >= totalPages) {
+      throw new CbzPageOutOfBoundsError(pageIndex, totalPages);
+    }
+
+    this.currentPageIndex = pageIndex;
     return this.getLocator();
   }
 

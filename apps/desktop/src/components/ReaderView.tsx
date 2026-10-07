@@ -16,7 +16,7 @@ import {
   removeNoteManaged,
   updateNoteManaged,
 } from '@clio-reader/annotations';
-import type { ReaderPreferences } from '@clio-reader/domain';
+import type { ReaderLocator, ReaderPreferences } from '@clio-reader/domain';
 import { createDefaultPreferences } from '@clio-reader/domain';
 import { getPalette, LIGHT_DEFAULTS } from '../themes';
 import {
@@ -238,11 +238,20 @@ export function ReaderView({
         // Resume to saved position: note locator takes priority over saved progress
         const noteLocator = parseLocator(initialLocator);
         const savedLocator = savedProgress?.locator;
+        const resumeLocator = noteLocator ?? (savedLocator as ReaderLocator | undefined);
         const resumeOrder = getResumePositionOrder(noteLocator ?? undefined, savedLocator);
         if (typeof resumeOrder === 'number') {
           const resumeRatio = getResumeScrollRatio(noteLocator ?? savedLocator) ?? null;
           await wv?.executeJavaScript(
             `window.__goToChapter && window.__goToChapter(${resumeOrder}, ${JSON.stringify(resumeRatio)}, ${JSON.stringify(initialLocator ?? null)})`,
+          );
+        } else if (
+          resumeLocator &&
+          (resumeLocator.format === 'pdf' || resumeLocator.format === 'cbz') &&
+          typeof resumeLocator.page === 'number'
+        ) {
+          await wv?.executeJavaScript(
+            `window.__goToPage && window.__goToPage(${resumeLocator.page})`,
           );
         }
 
