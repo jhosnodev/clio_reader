@@ -281,7 +281,7 @@ function setUIState(state: UIState): void {
 
   // Show/hide the reader container (adds .open to slide it in)
   if (reader) {
-    if (state.type === 'content') {
+    if (state.type === 'content' || state.type === 'error') {
       reader.classList.add('open');
       reader.removeAttribute('aria-hidden');
     } else {
@@ -957,6 +957,21 @@ let currentNotes: readonly ReaderNoteView[] = [];
 let currentLocator: string = '';
 let editingNoteId: string | null = null;
 let activeNoteId: string | null = null;
+let lastInitData: HostInitData | null = null;
+
+interface HostInitData {
+  readonly preferences: ReaderPreferences;
+  readonly fileDataB64: string;
+  readonly metadata: {
+    readonly bookId: string;
+    readonly title: string;
+    readonly author?: string;
+    readonly coverImage?: string;
+    readonly format: string;
+    readonly rank: number;
+  };
+  readonly notes: readonly ReaderNoteView[];
+}
 
 interface ReaderNoteView {
   readonly id: string;
@@ -1440,19 +1455,8 @@ async function main(): Promise<void> {
   try {
     const { uri, format } = parseQueryParams();
 
-    (window as unknown as Record<string, unknown>).__initFromHost = async (data: {
-      preferences: ReaderPreferences;
-      fileDataB64: string;
-      metadata: {
-        bookId: string;
-        title: string;
-        author?: string;
-        coverImage?: string;
-        format: string;
-        rank: number;
-      };
-      notes: readonly ReaderNoteView[];
-    }) => {
+    (window as unknown as Record<string, unknown>).__initFromHost = async (data: HostInitData) => {
+      lastInitData = data;
       try {
         const binary = atob(data.fileDataB64);
         const bytes = new Uint8Array(binary.length);
@@ -1561,18 +1565,37 @@ async function main(): Promise<void> {
     window.__getCurrentLocator = (): string | undefined => {
       return currentLocator || undefined;
     };
-
-    const retryBtn = document.getElementById('reader-error-retry');
-    if (retryBtn) {
-      retryBtn.addEventListener('click', () => {
-        currentReaderDoc = null;
-        main();
-      });
-    }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Error desconocido al abrir el libro';
     setUIState({ type: 'error', message });
   }
 }
 
+/* --- Overlay de error: reintentar / volver (fuera de main() para que
+       funcionen también cuando main() falla) --- */
+function setupErrorActions(): void {
+  const retryBtn = document.getElementById('reader-error-retry');
+  if (retryBtn) {
+    retryBtn.onclick = () => {
+      const init = (window as unknown as Record<string, unknown>).__initFromHost as
+        ((data: HostInitData) => Promise<void>) | undefined;
+      if (lastInitData && typeof init === 'function') {
+        setUIState({ type: 'loading' });
+        void init(lastInitData);
+        return;
+      }
+      currentReaderDoc = null;
+      void main();
+    };
+  }
+
+  const backBtn = document.getElementById('reader-error-back');
+  if (backBtn) {
+    backBtn.onclick = () => {
+      console.log(CLOSE_SENTINEL);
+    };
+  }
+}
+
+setupErrorActions();
 main();

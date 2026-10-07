@@ -85,6 +85,18 @@ function buildPaletteCss(paletteId: string, mode: 'dark' | 'light'): string {
 }
 
 /* ==========================================================================
+   Helper: URL del reader.html resuelta contra la URL del documento host
+   (en dev es http://localhost:5173/, en prod file://…/dist/index.html;
+   una URL absoluta tipo /reader.html rompería en prod)
+   ========================================================================== */
+
+function buildReaderUrl(uri: string, format: string): string {
+  const url = new URL('reader.html', window.location.href);
+  url.search = `?uri=${encodeURIComponent(uri)}&format=${encodeURIComponent(format)}&_v=${Date.now()}`;
+  return url.toString();
+}
+
+/* ==========================================================================
    Componente
    ========================================================================== */
 
@@ -106,6 +118,9 @@ export function ReaderView({
   const [fileStatus, setFileStatus] = useState<FileStatus>('checking');
   const [isRelocating, setIsRelocating] = useState(false);
   const [webviewLoaded, setWebviewLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadKey, setLoadKey] = useState(0);
+  const [sourceUri, setSourceUri] = useState(fileUri);
   const webviewRef = useRef<HTMLElement | null>(null);
   const progressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastLocatorRef = useRef<import('@clio-reader/domain').ReaderLocator | null>(null);
@@ -113,23 +128,32 @@ export function ReaderView({
   const drainPromiseRef = useRef<Promise<void> | null>(null);
   const closingRef = useRef(false);
   const readerUrlRef = useRef<string | null>(null);
-  if (readerUrlRef.current === null) {
-    readerUrlRef.current = `/reader.html?uri=${encodeURIComponent(fileUri)}&format=${encodeURIComponent(format)}&_v=${Date.now()}`;
+  const readerUrlKeyRef = useRef<string | null>(null);
+  const readerUrlKey = `${sourceUri}|${format}|${loadKey}`;
+  if (readerUrlKeyRef.current !== readerUrlKey) {
+    readerUrlKeyRef.current = readerUrlKey;
+    readerUrlRef.current = buildReaderUrl(sourceUri, format);
   }
 
   /* ----- Handler estable para did-finish-load ----- */
   const handleFinishLoadRef = useRef<(() => Promise<void>) | null>(null);
 
+  /* ----- Sincronizar uri externa (relocalización persistida) ----- */
+  useEffect(() => {
+    setSourceUri(fileUri);
+    setLoadError(null);
+  }, [fileUri]);
+
   /* ----- Verificar existencia del archivo ----- */
   const checkFile = useCallback(async () => {
     setFileStatus('checking');
     try {
-      const exists = await bridge.checkFileExists(fileUri);
+      const exists = await bridge.checkFileExists(sourceUri);
       setFileStatus(exists ? 'found' : 'not-found');
     } catch {
       setFileStatus('not-found');
     }
-  }, [fileUri]);
+  }, [sourceUri]);
 
   useEffect(() => {
     checkFile();
@@ -163,7 +187,7 @@ export function ReaderView({
       try {
         const [preferences, fileData, existingNotes, savedProgress] = await Promise.all([
           loadPreferences(),
-          bridge.readFile(fileUri),
+          bridge.readFile(sourceUri),
           listNotesManaged(repository, bookId).catch(() => []),
           loadProgress(),
         ]);
@@ -222,16 +246,17 @@ export function ReaderView({
           );
         }
 
+        setLoadError(null);
         setWebviewLoaded(true);
       } catch (err) {
         console.error('[reader] error inyectando datos en webview:', err);
-        setWebviewLoaded(true);
+        setLoadError('No se pudo cargar el contenido del libro.');
       }
     };
   }, [
     loadPreferences,
     loadProgress,
-    fileUri,
+    sourceUri,
     paletteId,
     theme,
     bookId,
@@ -540,15 +565,36 @@ export function ReaderView({
       if (isBackNavigation(event?.href)) closeOnce();
     };
 
+    const handleFailLoad = (...args: unknown[]): void => {
+      const fail = args[0] as
+        { errorCode?: number; errorDescription?: string; isMainFrame?: boolean } | undefined;
+      if (!fail) return;
+      if (fail.errorCode === -3) return;
+      if (fail.isMainFrame === false) return;
+      console.error('[reader] did-fail-load:', fail.errorCode, fail.errorDescription);
+      setLoadError(fail.errorDescription || 'No se pudo cargar el lector.');
+    };
+
     webview.addEventListener('console-message', handleConsoleMessage);
     webview.addEventListener('will-navigate', handleWillNavigate);
     webview.addEventListener('did-navigate', handleNavigate);
+    webview.addEventListener('did-fail-load', handleFailLoad);
     return () => {
       webview.removeEventListener('console-message', handleConsoleMessage);
       webview.removeEventListener('will-navigate', handleWillNavigate);
       webview.removeEventListener('did-navigate', handleNavigate);
+      webview.removeEventListener('did-fail-load', handleFailLoad);
     };
-  }, [onClose, onSaveRank, drainNotes, flushProgress, webviewLoaded, fileStatus, repository]);
+  }, [
+    onClose,
+    onSaveRank,
+    drainNotes,
+    flushProgress,
+    webviewLoaded,
+    fileStatus,
+    repository,
+    loadKey,
+  ]);
 
   /* ----- Guardar progreso al cerrar la ventana ----- */
   useEffect(() => {
@@ -576,16 +622,29 @@ export function ReaderView({
     setIsRelocating(true);
     try {
       const fileSource = await bridge.pickFile();
-      if (fileSource) {
-        window.location.href = `/reader.html?uri=${encodeURIComponent(fileSource.uri)}&format=${encodeURIComponent(format)}`;
+      if (!fileSource) return;
+      const book = await repository.getBook(bookId);
+      if (book) {
+        await repository.upsertBook({ ...book, uri: fileSource.uri });
       }
+      setLoadError(null);
+      setSourceUri(fileSource.uri);
+    } catch (err) {
+      console.error('[reader] error reubicando archivo:', err);
     } finally {
       setIsRelocating(false);
     }
-  }, [format]);
+  }, [repository, bookId]);
+
+  /* ----- Reintentar carga del webview ----- */
+  const handleRetryLoad = useCallback(() => {
+    setLoadError(null);
+    setWebviewLoaded(false);
+    setLoadKey((key) => key + 1);
+  }, []);
 
   /* ----- Construir URL del reader ----- */
-  const readerUrl = readerUrlRef.current;
+  const readerUrl = readerUrlRef.current ?? buildReaderUrl(sourceUri, format);
 
   /* ----- Renderizado ----- */
   return (
@@ -593,7 +652,7 @@ export function ReaderView({
       {fileStatus === 'checking' && <LoadingState />}
       {fileStatus === 'not-found' && (
         <FileNotFoundState
-          fileUri={fileUri}
+          fileUri={sourceUri}
           onRelocate={handleRelocate}
           isRelocating={isRelocating}
         />
@@ -601,21 +660,26 @@ export function ReaderView({
       {fileStatus === 'found' && (
         <>
           <webview
+            key={loadKey}
             ref={webviewCallbackRef}
             src={readerUrl}
             style={styles.webview}
             partition="persist:reader"
           />
-          {!webviewLoaded && (
-            <div
-              style={styles.loadingOverlay}
-              role="status"
-              aria-busy="true"
-              aria-label="Abriendo libro"
-            >
-              <div style={styles.spinner} aria-hidden="true" />
-              <p style={styles.loadingText}>Abriendo libro…</p>
-            </div>
+          {loadError ? (
+            <LoadErrorState message={loadError} onRetry={handleRetryLoad} onClose={onClose} />
+          ) : (
+            !webviewLoaded && (
+              <div
+                style={styles.loadingOverlay}
+                role="status"
+                aria-busy="true"
+                aria-label="Abriendo libro"
+              >
+                <div style={styles.spinner} aria-hidden="true" />
+                <p style={styles.loadingText}>Abriendo libro…</p>
+              </div>
+            )
           )}
         </>
       )}
@@ -673,6 +737,41 @@ function FileNotFoundState({
       >
         {isRelocating ? 'Buscando…' : 'Localizar archivo'}
       </button>
+    </div>
+  );
+}
+
+interface LoadErrorStateProps {
+  readonly message: string;
+  readonly onRetry: () => void;
+  readonly onClose: () => void;
+}
+
+function LoadErrorState({ message, onRetry, onClose }: LoadErrorStateProps): JSX.Element {
+  return (
+    <div style={styles.stateContainer} role="alert">
+      <svg
+        width="40"
+        height="40"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#6a657a"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      >
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 8v4M12 16h.01" />
+      </svg>
+      <p style={styles.errorTitle}>No se pudo abrir el libro</p>
+      <p style={styles.errorDetail}>{message}</p>
+      <div style={styles.errorActions}>
+        <button style={styles.relocateButton} onClick={onRetry}>
+          Reintentar
+        </button>
+        <button style={styles.secondaryButton} onClick={onClose}>
+          Volver a la biblioteca
+        </button>
+      </div>
     </div>
   );
 }
@@ -763,6 +862,24 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'linear-gradient(180deg, var(--gold-bright), var(--gold))',
     color: 'var(--on-gold)',
     border: 'none',
+    borderRadius: 10,
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: 'pointer',
+    marginTop: 8,
+    fontFamily: 'inherit',
+  },
+  errorActions: {
+    display: 'flex',
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  secondaryButton: {
+    padding: '10px 20px',
+    background: 'transparent',
+    color: 'var(--tx-hi)',
+    border: '1px solid var(--line)',
     borderRadius: 10,
     fontSize: 14,
     fontWeight: 600,
