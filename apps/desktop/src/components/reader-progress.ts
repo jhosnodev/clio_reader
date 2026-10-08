@@ -40,11 +40,11 @@ export function locatorToPercent(locator: ReaderLocator): number {
 
 /**
  * Devuelve la posición vertical dentro del documento guardada en el locator.
- * Solo los formatos reflowable (EPUB) la registran.
+ * Solo los formatos reflowable (EPUB, Markdown) la registran.
  */
 export function getResumeScrollRatio(locator?: ReaderLocator): number | undefined {
   if (!locator) return undefined;
-  if (locator.format !== 'epub') return undefined;
+  if (locator.format !== 'epub' && locator.format !== 'md') return undefined;
   if (typeof locator.scrollRatio !== 'number' || !Number.isFinite(locator.scrollRatio)) {
     return undefined;
   }
@@ -56,7 +56,7 @@ export function getResumeScrollRatio(locator?: ReaderLocator): number | undefine
  * El resto de formatos se devuelve sin tocar.
  */
 export function withScrollRatio(locator: ReaderLocator, ratio: number): ReaderLocator {
-  if (locator.format !== 'epub') return locator;
+  if (locator.format !== 'epub' && locator.format !== 'md') return locator;
   if (!Number.isFinite(ratio)) return locator;
   return { ...locator, scrollRatio: clamp01(ratio) };
 }

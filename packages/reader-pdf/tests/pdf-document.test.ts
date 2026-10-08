@@ -22,6 +22,10 @@ const mockPdfDocument = {
   numPages: 3,
   getPage: vi.fn(),
   destroy: vi.fn(),
+  getOutline: vi.fn().mockResolvedValue(null),
+  getMetadata: vi.fn().mockResolvedValue({ info: {} }),
+  getDestination: vi.fn(),
+  getPageIndex: vi.fn(),
 };
 
 const mockPage = {
@@ -45,6 +49,10 @@ describe('PdfReaderDocument', () => {
     fetchSpy.mockResolvedValue(new Response(new ArrayBuffer(100)));
     mockPdfDocument.getPage.mockResolvedValue(mockPage);
     mockPdfDocument.destroy.mockClear();
+    mockPdfDocument.getOutline.mockReset();
+    mockPdfDocument.getOutline.mockResolvedValue(null);
+    mockPdfDocument.getMetadata.mockReset();
+    mockPdfDocument.getMetadata.mockResolvedValue({ info: {} });
     mockPage.getViewport.mockClear();
     mockPage.render.mockClear();
     mockPage.cleanup.mockClear();
@@ -268,6 +276,76 @@ describe('PdfReaderDocument', () => {
 
       expect(await doc.getTotalPages()).toBe(7);
 
+      await doc.close();
+    });
+  });
+
+  describe('getMetadata', () => {
+    it('maps PDF info to title/author', async () => {
+      mockPdfDocument.getMetadata.mockResolvedValue({
+        info: { Title: 'Mi PDF', Author: 'Autora', Creator: 'Word' },
+      });
+      const doc = await setupDocument();
+
+      const meta = await doc.getMetadata();
+      expect(meta.title).toBe('Mi PDF');
+      expect(meta.author).toBe('Autora');
+      expect(meta.creator).toBe('Word');
+
+      await doc.close();
+    });
+
+    it('returns empty object when info is missing', async () => {
+      const doc = await setupDocument();
+      expect(await doc.getMetadata()).toEqual({
+        title: undefined,
+        author: undefined,
+        creator: undefined,
+        producer: undefined,
+      });
+      await doc.close();
+    });
+  });
+
+  describe('getToc', () => {
+    it('maps outline destinations to page links', async () => {
+      mockPdfDocument.getOutline.mockResolvedValue([
+        { title: 'Capítulo 1', dest: [2, { name: 'XYZ' }], items: [] },
+        { title: 'Capítulo 2', dest: [4, { name: 'XYZ' }], items: [] },
+      ]);
+      mockPdfDocument.getPageIndex.mockImplementation((ref: unknown) =>
+        Promise.resolve(ref === 2 ? 1 : 3),
+      );
+
+      const doc = await setupDocument(10);
+      const toc = await doc.getToc();
+
+      expect(toc).toHaveLength(2);
+      expect(toc[0]).toMatchObject({ title: 'Capítulo 1', href: 'page:1', chapterIndex: 1 });
+      expect(toc[1]).toMatchObject({ title: 'Capítulo 2', href: 'page:3', chapterIndex: 3 });
+
+      await doc.close();
+    });
+
+    it('returns empty array when there is no outline', async () => {
+      const doc = await setupDocument();
+      expect(await doc.getToc()).toEqual([]);
+      await doc.close();
+    });
+
+    it('navigates using goToTocHref', async () => {
+      const doc = await setupDocument(10);
+      await doc.goToTocHref('page:4');
+      expect(toPdfLocator(await doc.getLocator()).page).toBe(5);
+      await doc.close();
+    });
+  });
+
+  describe('getCurrentChapterIndex', () => {
+    it('returns the current page index', async () => {
+      const doc = await setupDocument(10);
+      await doc.goToPage(3);
+      expect(await doc.getCurrentChapterIndex()).toBe(3);
       await doc.close();
     });
   });

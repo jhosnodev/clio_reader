@@ -7,4 +7,5 @@ export {
   CbzEmptyArchiveError,
 } from './cbz-document.js';
 export { isImageFile, getImageMimeType, sortImageFiles } from './image-sort.js';
-export { extractImagesFromZip } from './zip-extractor.js';
+export { extractImagesFromZip, extractComicInfoFromZip } from './zip-extractor.js';
+export { parseComicInfoXml, type ComicInfo } from './comic-info.js';

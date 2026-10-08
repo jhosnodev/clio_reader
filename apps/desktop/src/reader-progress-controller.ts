@@ -42,6 +42,7 @@ export interface ProgressBarOptions {
   readonly getScrollRatio: () => number;
   readonly onSeek: (chapterIndex: number) => void;
   readonly requestFrame?: (callback: () => void) => number;
+  readonly formatLabel?: (positionIndex: number, positionCount: number, percent: number) => string;
 }
 
 export interface ProgressBarController {
@@ -52,7 +53,7 @@ export interface ProgressBarController {
 }
 
 export function createProgressBar(options: ProgressBarOptions): ProgressBarController {
-  const { elements, getScrollRatio, onSeek } = options;
+  const { elements, getScrollRatio, onSeek, formatLabel } = options;
   const requestFrame =
     options.requestFrame ??
     ((callback: () => void) =>
@@ -64,10 +65,12 @@ export function createProgressBar(options: ProgressBarOptions): ProgressBarContr
   let chapterCount = 0;
   let pendingFrame = 0;
 
+  const labelFor = formatLabel ?? formatProgressLabel;
+
   const paint = (): void => {
     const ratio = clamp01(getScrollRatio());
     const percent = progressPercent(chapterIndex, chapterCount, ratio);
-    const label = formatProgressLabel(chapterIndex, chapterCount, percent);
+    const label = labelFor(chapterIndex, chapterCount, percent);
 
     elements.fill.style.width = `${percent.toFixed(2)}%`;
     elements.label.textContent = label;

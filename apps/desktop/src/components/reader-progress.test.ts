@@ -96,6 +96,16 @@ describe('withScrollRatio', () => {
     });
   });
 
+  it('adds the scroll ratio to a markdown locator', () => {
+    const loc: MarkdownLocator = { format: 'md', href: '#intro', positionOrder: 2 };
+    expect(withScrollRatio(loc, 0.75)).toEqual({
+      format: 'md',
+      href: '#intro',
+      positionOrder: 2,
+      scrollRatio: 0.75,
+    });
+  });
+
   it('clamps ratios outside 0..1', () => {
     const loc: EpubLocator = { format: 'epub', href: 'ch2.xhtml' };
     expect(withScrollRatio(loc, 4)).toEqual({ ...loc, scrollRatio: 1 });
@@ -119,6 +129,11 @@ describe('getResumeScrollRatio', () => {
   it('returns the stored ratio for an epub locator', () => {
     const loc: EpubLocator = { format: 'epub', href: 'ch2.xhtml', scrollRatio: 0.63 };
     expect(getResumeScrollRatio(loc)).toBe(0.63);
+  });
+
+  it('returns the stored ratio for a markdown locator', () => {
+    const loc: MarkdownLocator = { format: 'md', href: '#intro', scrollRatio: 0.25 };
+    expect(getResumeScrollRatio(loc)).toBe(0.25);
   });
 
   it('returns undefined when the locator predates intra-chapter positions', () => {

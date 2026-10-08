@@ -1,6 +1,7 @@
 import JSZip from 'jszip';
 
 import { isImageFile } from './image-sort.js';
+import { parseComicInfoXml, type ComicInfo } from './comic-info.js';
 
 export interface ExtractedImage {
   readonly fileName: string;
@@ -9,11 +10,9 @@ export interface ExtractedImage {
 
 const HIDDEN_FILE_PREFIXES = ['__', '.'];
 
-function isHiddenOrMetadataFile(fileName: string): boolean {
-  for (const prefix of HIDDEN_FILE_PREFIXES) {
-    if (fileName.startsWith(prefix)) return true;
-  }
-  return false;
+function isHiddenFile(fileName: string): boolean {
+  const base = fileName.split('/').pop() ?? fileName;
+  return HIDDEN_FILE_PREFIXES.some((prefix) => base.startsWith(prefix));
 }
 
 export async function extractImagesFromZip(data: Uint8Array): Promise<ExtractedImage[]> {
@@ -23,7 +22,7 @@ export async function extractImagesFromZip(data: Uint8Array): Promise<ExtractedI
 
   for (const [path, zipEntry] of Object.entries(zip.files)) {
     if (zipEntry.dir) continue;
-    if (isHiddenOrMetadataFile(path)) continue;
+    if (isHiddenFile(path)) continue;
     if (!isImageFile(path)) continue;
 
     const fileData = await zipEntry.async('uint8array');
@@ -31,4 +30,20 @@ export async function extractImagesFromZip(data: Uint8Array): Promise<ExtractedI
   }
 
   return imageEntries;
+}
+
+export async function extractComicInfoFromZip(data: Uint8Array): Promise<ComicInfo | null> {
+  const zip = await JSZip.loadAsync(data);
+  for (const [path, zipEntry] of Object.entries(zip.files)) {
+    if (zipEntry.dir) continue;
+    if (!path.toLowerCase().endsWith('comicinfo.xml')) continue;
+
+    try {
+      const text = await zipEntry.async('text');
+      return parseComicInfoXml(text);
+    } catch (error) {
+      return null;
+    }
+  }
+  return null;
 }
