@@ -38,6 +38,7 @@ describe('CbzReaderAdapter', () => {
       supportsFontScale: false,
       supportsZoom: true,
       supportsAnnotations: false,
+      supportsTOC: true,
     });
   });
 });

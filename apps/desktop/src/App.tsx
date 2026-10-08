@@ -17,6 +17,8 @@ import { importBook, listBooks, removeBook, generateId } from '@clio-reader/libr
 import type { Book } from '@clio-reader/domain';
 import { detectBookFormat } from '@clio-reader/reader-core';
 import { parseEpub, extractCoverImage } from '@clio-reader/reader-epub';
+import { PdfReaderDocument } from '@clio-reader/reader-pdf';
+import { CbzReaderDocument } from '@clio-reader/reader-cbz';
 import { applyTheme, savePalettePreference, loadPalettePreference, getPalette } from './themes';
 
 /* ==========================================================================
@@ -128,33 +130,13 @@ export function App(): JSX.Element {
       let coverImage: string | undefined;
       let language: string | undefined;
 
-      // Extract metadata from EPUB files
+      const rawData = await bridge.readFile(fileSource.uri);
       if (format === 'epub') {
         try {
-          console.log('[import] extrayendo metadata del EPUB...');
-          const rawData = await bridge.readFile(fileSource.uri);
-
           const parsed = await parseEpub(rawData);
-
-          // Use real title from OPF if available
-          if (parsed.opf.metadata.title) {
-            title = parsed.opf.metadata.title;
-            console.log('[import] título real del EPUB:', title);
-          }
-
-          // Use real author from OPF if available
-          if (parsed.opf.metadata.creator) {
-            author = parsed.opf.metadata.creator;
-            console.log('[import] autor real del EPUB:', author);
-          }
-
-          // Use language from OPF if available
-          if (parsed.opf.metadata.language) {
-            language = parsed.opf.metadata.language;
-            console.log('[import] idioma del EPUB:', language);
-          }
-
-          // Extract cover image
+          if (parsed.opf.metadata.title) title = parsed.opf.metadata.title;
+          if (parsed.opf.metadata.creator) author = parsed.opf.metadata.creator;
+          if (parsed.opf.metadata.language) language = parsed.opf.metadata.language;
           const coverResult = await extractCoverImage(rawData, parsed);
           if (coverResult) {
             const base64 = btoa(
@@ -163,12 +145,51 @@ export function App(): JSX.Element {
                 .join(''),
             );
             coverImage = `data:${coverResult.mimeType};base64,${base64}`;
-            console.log('[import] portada extraída, tamaño base64:', coverImage.length);
-          } else {
-            console.log('[import] no se encontró portada en el EPUB');
           }
-        } catch (epubError) {
-          console.warn('[import] error extrayendo metadata del EPUB, usando filename:', epubError);
+        } catch (err) {
+          console.warn('[import] error extrayendo metadata del EPUB:', err);
+        }
+      } else if (format === 'pdf') {
+        try {
+          const doc = new PdfReaderDocument({ uri: fileSource.uri, name: fileSource.name });
+          await doc.open(rawData);
+          try {
+            const meta = await doc.getMetadata();
+            if (meta?.title) title = meta.title;
+            if (meta?.author) author = meta.author;
+          } catch {
+            // sin datos disponibles
+          }
+          try {
+            const cover = await doc.getCoverImageDataUrl(0.3);
+            if (cover) coverImage = cover;
+          } catch {
+            // sin datos disponibles
+          }
+          await doc.close();
+        } catch (err) {
+          console.warn('[import] error extrayendo metadata del PDF:', err);
+        }
+      } else if (format === 'cbz') {
+        try {
+          const doc = new CbzReaderDocument({ uri: fileSource.uri, name: fileSource.name });
+          await doc.open(rawData);
+          try {
+            const meta = await doc.getMetadata();
+            if (meta?.title) title = meta.title;
+            if (meta?.author) author = meta.author;
+          } catch {
+            // sin datos disponibles
+          }
+          try {
+            const cover = await doc.getCoverImageDataUrl();
+            if (cover) coverImage = cover;
+          } catch {
+            // sin datos disponibles
+          }
+          await doc.close();
+        } catch (err) {
+          console.warn('[import] error extrayendo metadata del CBZ:', err);
         }
       }
 
@@ -226,18 +247,12 @@ export function App(): JSX.Element {
           let author: string | undefined;
           let coverImage: string | undefined;
 
+          const rawData = await bridge.readFile(fileSource.uri);
           if (format === 'epub') {
             try {
-              const rawData = await bridge.readFile(fileSource.uri);
               const parsed = await parseEpub(rawData);
-
-              if (parsed.opf.metadata.title) {
-                title = parsed.opf.metadata.title;
-              }
-              if (parsed.opf.metadata.creator) {
-                author = parsed.opf.metadata.creator;
-              }
-
+              if (parsed.opf.metadata.title) title = parsed.opf.metadata.title;
+              if (parsed.opf.metadata.creator) author = parsed.opf.metadata.creator;
               const coverResult = await extractCoverImage(rawData, parsed);
               if (coverResult) {
                 const base64 = btoa(
@@ -247,8 +262,50 @@ export function App(): JSX.Element {
                 );
                 coverImage = `data:${coverResult.mimeType};base64,${base64}`;
               }
-            } catch (epubError) {
-              console.warn('[importFiles] error extrayendo metadata del EPUB:', epubError);
+            } catch (err) {
+              console.warn('[importFiles] error extrayendo metadata del EPUB:', err);
+            }
+          } else if (format === 'pdf') {
+            try {
+              const doc = new PdfReaderDocument({ uri: fileSource.uri, name: fileSource.name });
+              await doc.open(rawData);
+              try {
+                const meta = await doc.getMetadata();
+                if (meta?.title) title = meta.title;
+                if (meta?.author) author = meta.author;
+              } catch {
+                // sin datos disponibles
+              }
+              try {
+                const cover = await doc.getCoverImageDataUrl(0.3);
+                if (cover) coverImage = cover;
+              } catch {
+                // sin datos disponibles
+              }
+              await doc.close();
+            } catch (err) {
+              console.warn('[importFiles] error extrayendo metadata del PDF:', err);
+            }
+          } else if (format === 'cbz') {
+            try {
+              const doc = new CbzReaderDocument({ uri: fileSource.uri, name: fileSource.name });
+              await doc.open(rawData);
+              try {
+                const meta = await doc.getMetadata();
+                if (meta?.title) title = meta.title;
+                if (meta?.author) author = meta.author;
+              } catch {
+                // sin datos disponibles
+              }
+              try {
+                const cover = await doc.getCoverImageDataUrl();
+                if (cover) coverImage = cover;
+              } catch {
+                // sin datos disponibles
+              }
+              await doc.close();
+            } catch (err) {
+              console.warn('[importFiles] error extrayendo metadata del CBZ:', err);
             }
           }
 
@@ -326,18 +383,12 @@ export function App(): JSX.Element {
           let author: string | undefined;
           let coverImage: string | undefined;
 
+          const rawData = await bridge.readFile(fileSource.uri);
           if (format === 'epub') {
             try {
-              const rawData = await bridge.readFile(fileSource.uri);
               const parsed = await parseEpub(rawData);
-
-              if (parsed.opf.metadata.title) {
-                title = parsed.opf.metadata.title;
-              }
-              if (parsed.opf.metadata.creator) {
-                author = parsed.opf.metadata.creator;
-              }
-
+              if (parsed.opf.metadata.title) title = parsed.opf.metadata.title;
+              if (parsed.opf.metadata.creator) author = parsed.opf.metadata.creator;
               const coverResult = await extractCoverImage(rawData, parsed);
               if (coverResult) {
                 const base64 = btoa(
@@ -347,8 +398,50 @@ export function App(): JSX.Element {
                 );
                 coverImage = `data:${coverResult.mimeType};base64,${base64}`;
               }
-            } catch (epubError) {
-              console.warn('[importFolder] error extrayendo metadata del EPUB:', epubError);
+            } catch (err) {
+              console.warn('[importFolder] error extrayendo metadata del EPUB:', err);
+            }
+          } else if (format === 'pdf') {
+            try {
+              const doc = new PdfReaderDocument({ uri: fileSource.uri, name: fileSource.name });
+              await doc.open(rawData);
+              try {
+                const meta = await doc.getMetadata();
+                if (meta?.title) title = meta.title;
+                if (meta?.author) author = meta.author;
+              } catch {
+                // sin datos disponibles
+              }
+              try {
+                const cover = await doc.getCoverImageDataUrl(0.3);
+                if (cover) coverImage = cover;
+              } catch {
+                // sin datos disponibles
+              }
+              await doc.close();
+            } catch (err) {
+              console.warn('[importFolder] error extrayendo metadata del PDF:', err);
+            }
+          } else if (format === 'cbz') {
+            try {
+              const doc = new CbzReaderDocument({ uri: fileSource.uri, name: fileSource.name });
+              await doc.open(rawData);
+              try {
+                const meta = await doc.getMetadata();
+                if (meta?.title) title = meta.title;
+                if (meta?.author) author = meta.author;
+              } catch {
+                // sin datos disponibles
+              }
+              try {
+                const cover = await doc.getCoverImageDataUrl();
+                if (cover) coverImage = cover;
+              } catch {
+                // sin datos disponibles
+              }
+              await doc.close();
+            } catch (err) {
+              console.warn('[importFolder] error extrayendo metadata del CBZ:', err);
             }
           }
 

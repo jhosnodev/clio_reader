@@ -286,6 +286,55 @@ describe('CbzReaderDocument', () => {
     });
   });
 
+  describe('metadata', () => {
+    it('extracts title and author from ComicInfo.xml', async () => {
+      const doc = await setupDocument({
+        'page1.jpg': 'data1',
+        'ComicInfo.xml': `<?xml version="1.0"?>
+<ComicInfo><Title>Sandman</Title><Series>Sandman</Series><Writer>Neil Gaiman</Writer><LanguageISO>en</LanguageISO></ComicInfo>`,
+      });
+
+      const meta = await doc.getMetadata();
+      expect(meta.title).toBe('Sandman');
+      expect(meta.author).toBe('Neil Gaiman');
+      expect(meta.series).toBe('Sandman');
+      expect(meta.language).toBe('en');
+
+      await doc.close();
+    });
+
+    it('falls back to an empty object without ComicInfo.xml', async () => {
+      const doc = await setupDocument({ 'page1.jpg': 'data1' });
+      expect(await doc.getMetadata()).toEqual({});
+      await doc.close();
+    });
+  });
+
+  describe('toc', () => {
+    it('exposes one entry per page with page hrefs', async () => {
+      const doc = await setupDocument({
+        'page1.jpg': 'data',
+        'page2.jpg': 'data',
+        'page3.jpg': 'data',
+      });
+
+      const toc = await doc.getToc();
+      expect(toc).toHaveLength(3);
+      expect(toc[0]?.href).toBe('page:0');
+      expect(toc[0]?.chapterIndex).toBe(0);
+      expect(toc[2]?.href).toBe('page:2');
+
+      await doc.close();
+    });
+
+    it('navigates via goToTocHref', async () => {
+      const doc = await setupDocument({ 'page1.jpg': 'a', 'page2.jpg': 'b', 'page3.jpg': 'c' });
+      await doc.goToTocHref('page:2');
+      expect(toCbzLocator(await doc.getLocator()).page).toBe(3);
+      await doc.close();
+    });
+  });
+
   describe('natural sort ordering', () => {
     it('navigates in natural sort order', async () => {
       const doc = await setupDocument({
