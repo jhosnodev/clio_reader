@@ -337,6 +337,8 @@ Se deriva de `app.getPath('userData')` + `/clio-reader/clio.db` en `apps/desktop
 - **Windows**: `%APPDATA%\@clio-reader\desktop\clio-reader\clio.db`
 - **macOS**: `~/Library/Application Support/@clio-reader/desktop/clio-reader/clio.db`
 
+En desarrollo (`app.isPackaged === false`) se usa un `userData` separado con sufijo `-dev` (p. ej. `~/.config/@clio-reader/desktop-dev/`), fijado con `app.setPath('userData', ...)` antes del single-instance lock, para no compartir DB ni lock con la build de producción.
+
 Los archivos `-shm`/`-wal` son temporales del journal WAL; solo se respalda `clio.db`.
 
 #### Mobile (JSON)

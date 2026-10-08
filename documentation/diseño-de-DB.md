@@ -21,6 +21,8 @@ La BD vive en el directorio `userData` de Electron + la carpeta `clio-reader`. S
 | **Windows** | `%APPDATA%\@clio-reader\desktop\clio-reader\clio.db`                     |
 | **macOS**   | `~/Library/Application Support/@clio-reader/desktop/clio-reader/clio.db` |
 
+En desarrollo (`app.isPackaged === false`) la app usa un `userData` propio con sufijo `-dev` (p. ej. `~/.config/@clio-reader/desktop-dev/clio-reader/clio.db`), fijado con `app.setPath('userData', ...)` antes del single-instance lock. Así la sesión de desarrollo no comparte DB ni lock con la build de producción.
+
 ```text
 <userData>/
 └── clio-reader/
