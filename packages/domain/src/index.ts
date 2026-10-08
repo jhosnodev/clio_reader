@@ -71,6 +71,8 @@ export interface MarkdownLocator {
   readonly offset?: number;
   readonly progression?: number;
   readonly positionOrder?: number;
+  /** Posición vertical dentro de la sección actual, 0..1 (0 = inicio de la sección) */
+  readonly scrollRatio?: number;
   /** Texto seleccionado al que está atada la anotación */
   readonly anchor?: TextAnchor | undefined;
 }

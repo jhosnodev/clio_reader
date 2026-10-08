@@ -96,6 +96,7 @@ export default defineConfig({
       '@clio-reader/reader-epub': resolve(__dirname, '../../packages/reader-epub/src'),
       '@clio-reader/reader-pdf': resolve(__dirname, '../../packages/reader-pdf/src'),
       '@clio-reader/reader-cbz': resolve(__dirname, '../../packages/reader-cbz/src'),
+      '@clio-reader/reader-md': resolve(__dirname, '../../packages/reader-md/src'),
       '@clio-reader/reader-session': resolve(__dirname, '../../packages/reader-session/src'),
       '@clio-reader/storage': resolve(__dirname, '../../packages/storage/src'),
       '@clio-reader/library': resolve(__dirname, '../../packages/library/src'),

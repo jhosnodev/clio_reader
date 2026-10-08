@@ -18,6 +18,7 @@ import type { ReaderPreferences, ReaderLocator, TextAnchor } from '@clio-reader/
 import { EpubReaderAdapter } from '@clio-reader/reader-epub';
 import { PdfReaderAdapter } from '@clio-reader/reader-pdf';
 import { CbzReaderAdapter } from '@clio-reader/reader-cbz';
+import { MarkdownReaderAdapter } from '@clio-reader/reader-md';
 import {
   PREFERENCES_SENTINEL,
   lineHeightToButton,
@@ -1042,6 +1043,7 @@ function getReaderAdapterFactory(): ReaderFactory {
   factory.register(new EpubReaderAdapter());
   factory.register(new PdfReaderAdapter());
   factory.register(new CbzReaderAdapter());
+  factory.register(new MarkdownReaderAdapter());
   readerAdapterFactory = factory;
   return factory;
 }

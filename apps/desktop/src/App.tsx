@@ -19,6 +19,7 @@ import { detectBookFormat } from '@clio-reader/reader-core';
 import { parseEpub, extractCoverImage } from '@clio-reader/reader-epub';
 import { PdfReaderDocument } from '@clio-reader/reader-pdf';
 import { CbzReaderDocument } from '@clio-reader/reader-cbz';
+import { MarkdownReaderDocument } from '@clio-reader/reader-md';
 import { applyTheme, savePalettePreference, loadPalettePreference, getPalette } from './themes';
 
 /* ==========================================================================
@@ -191,6 +192,16 @@ export function App(): JSX.Element {
         } catch (err) {
           console.warn('[import] error extrayendo metadata del CBZ:', err);
         }
+      } else if (format === 'md') {
+        try {
+          const doc = new MarkdownReaderDocument({ uri: fileSource.uri, name: fileSource.name });
+          await doc.open(rawData);
+          const mdTitle = await doc.getTitle();
+          if (mdTitle) title = mdTitle;
+          await doc.close();
+        } catch (err) {
+          console.warn('[import] error extrayendo metadata del Markdown:', err);
+        }
       }
 
       console.log('[import] guardando libro:', { id, title, author, uri: fileSource.uri });
@@ -306,6 +317,19 @@ export function App(): JSX.Element {
               await doc.close();
             } catch (err) {
               console.warn('[importFiles] error extrayendo metadata del CBZ:', err);
+            }
+          } else if (format === 'md') {
+            try {
+              const doc = new MarkdownReaderDocument({
+                uri: fileSource.uri,
+                name: fileSource.name,
+              });
+              await doc.open(rawData);
+              const mdTitle = await doc.getTitle();
+              if (mdTitle) title = mdTitle;
+              await doc.close();
+            } catch (err) {
+              console.warn('[importFiles] error extrayendo metadata del Markdown:', err);
             }
           }
 
@@ -442,6 +466,19 @@ export function App(): JSX.Element {
               await doc.close();
             } catch (err) {
               console.warn('[importFolder] error extrayendo metadata del CBZ:', err);
+            }
+          } else if (format === 'md') {
+            try {
+              const doc = new MarkdownReaderDocument({
+                uri: fileSource.uri,
+                name: fileSource.name,
+              });
+              await doc.open(rawData);
+              const mdTitle = await doc.getTitle();
+              if (mdTitle) title = mdTitle;
+              await doc.close();
+            } catch (err) {
+              console.warn('[importFolder] error extrayendo metadata del Markdown:', err);
             }
           }
 

@@ -47,6 +47,9 @@ importers:
       '@clio-reader/reader-epub':
         specifier: workspace:*
         version: link:../../packages/reader-epub
+      '@clio-reader/reader-md':
+        specifier: workspace:*
+        version: link:../../packages/reader-md
       '@clio-reader/reader-pdf':
         specifier: workspace:*
         version: link:../../packages/reader-pdf
@@ -205,6 +208,15 @@ importers:
       jszip:
         specifier: ^3.10.1
         version: 3.10.1
+
+  packages/reader-md:
+    dependencies:
+      '@clio-reader/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@clio-reader/reader-core':
+        specifier: workspace:*
+        version: link:../reader-core
 
   packages/reader-pdf:
     dependencies:

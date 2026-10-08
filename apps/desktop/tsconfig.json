@@ -17,6 +17,7 @@
       "@clio-reader/reader-epub": ["../../packages/reader-epub/src"],
       "@clio-reader/reader-pdf": ["../../packages/reader-pdf/src"],
       "@clio-reader/reader-cbz": ["../../packages/reader-cbz/src"],
+      "@clio-reader/reader-md": ["../../packages/reader-md/src"],
       "@clio-reader/reader-session": ["../../packages/reader-session/src"],
       "@clio-reader/storage": ["../../packages/storage/src"],
       "@clio-reader/library": ["../../packages/library/src"],
