@@ -369,24 +369,25 @@ function Rail({
         </svg>
       ),
     },
-    {
-      id: 'bookmarks',
-      label: 'Marcadores',
-      icon: (
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.7"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M6 4h12v16l-6-4-6 4z" />
-        </svg>
-      ),
-    },
+    /* TODO: marcadores no funcional — re-habilitar cuando el CRUD esté completo */
+    // {
+    //   id: 'bookmarks',
+    //   label: 'Marcadores',
+    //   icon: (
+    //     <svg
+    //       width="22"
+    //       height="22"
+    //       viewBox="0 0 24 24"
+    //       fill="none"
+    //       stroke="currentColor"
+    //       strokeWidth="1.7"
+    //       strokeLinecap="round"
+    //       strokeLinejoin="round"
+    //     >
+    //       <path d="M6 4h12v16l-6-4-6 4z" />
+    //     </svg>
+    //   ),
+    // },
     {
       id: 'notes',
       label: 'Notas',

@@ -615,7 +615,7 @@ test: add integration tests for progress persistence
 ### Fase 8 — Implementar
 
 - [x] CRUD de notas en el reader (crear/listar/editar/eliminar)
-- [ ] CRUD de marcadores: crear desde el reader (resto del CRUD ya existe)
+- [ ] CRUD de marcadores: crear desde el reader (resto del CRUD ya existe). **Pendiente: no funcional.** Icono de marcadores comentado en `LibraryView.tsx` (rail) y en `reader.html` (`r-mark`) hasta completar el CRUD.
 - [x] Asociar a `bookId`, locator, posición normalizada, fecha
 - [x] Notas ancladas al texto seleccionado (`locator.anchor` + `selectedText`)
 - [x] Resaltado de texto en EPUB/MD (widget flotante, 6 colores, optimista + persistencia)
