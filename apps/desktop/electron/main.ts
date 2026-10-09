@@ -14,6 +14,8 @@ import Database from 'better-sqlite3';
 const __dirname = globalThis.__dirname ?? dirname(process.argv[1] ?? '');
 const isDev = !app.isPackaged;
 
+app.setName('clio-reader');
+
 if (isDev) {
   app.setPath('userData', `${app.getPath('userData')}-dev`);
 }
