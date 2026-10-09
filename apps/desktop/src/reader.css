@@ -845,12 +845,104 @@ button {
   width: 14px;
   height: 14px;
 }
+.note.hl {
+  border-left-color: var(--hl-color, var(--gold));
+  background: rgba(var(--mark-rgb, var(--gold-rgb)), 0.08);
+}
+.note.hl:hover {
+  background: rgba(var(--mark-rgb, var(--gold-rgb)), 0.14);
+}
+.note .hl-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--chrome-fg-lo);
+  margin-bottom: 7px;
+}
+.note .hl-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  flex-shrink: 0;
+}
 .notes-empty {
   color: var(--chrome-fg-lo);
   font-size: 13px;
   text-align: center;
   padding: 20px 0;
   opacity: 0.7;
+}
+
+/* Widget de selección: resaltar color o añadir nota */
+/* `display` propio anula el atributo `hidden`; forzamos que oculte. */
+.sel-widget[hidden],
+.sel-widget [hidden] {
+  display: none !important;
+}
+.sel-widget {
+  position: fixed;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  background: var(--chrome-bg);
+  border: 1px solid var(--chrome-line);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px -14px rgba(0, 0, 0, 0.55);
+}
+.sel-colors {
+  display: flex;
+  gap: 5px;
+}
+.sel-color {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  padding: 0;
+  cursor: pointer;
+  transition:
+    transform 0.12s var(--ease),
+    box-shadow 0.12s var(--ease);
+}
+.sel-color:hover {
+  transform: scale(1.18);
+}
+.sel-color.sel {
+  border-color: var(--chrome-fg);
+  box-shadow: 0 0 0 2px var(--chrome-line);
+}
+.sel-sep {
+  width: 1px;
+  height: 18px;
+  background: var(--chrome-line);
+}
+.sel-act {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--chrome-fg-lo);
+  background: transparent;
+}
+.sel-act:hover {
+  color: var(--chrome-fg);
+  background: color-mix(in srgb, var(--tx) 10%, transparent);
+}
+.sel-act svg {
+  width: 17px;
+  height: 17px;
+}
+.sel-danger:hover {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.14);
 }
 
 /* Texto anotado en el capítulo (CSS Custom Highlight API) */
@@ -860,6 +952,26 @@ button {
 ::highlight(clio-note-active) {
   background-color: rgba(var(--mark-rgb, var(--gold-rgb)), 0.75);
   text-decoration: underline;
+}
+
+/* Resaltados de usuario por color (paleta fija) */
+::highlight(clio-hl-yellow) {
+  background-color: rgba(250, 204, 21, 0.5);
+}
+::highlight(clio-hl-green) {
+  background-color: rgba(74, 222, 128, 0.5);
+}
+::highlight(clio-hl-blue) {
+  background-color: rgba(56, 189, 248, 0.5);
+}
+::highlight(clio-hl-pink) {
+  background-color: rgba(244, 114, 182, 0.5);
+}
+::highlight(clio-hl-orange) {
+  background-color: rgba(251, 146, 60, 0.5);
+}
+::highlight(clio-hl-purple) {
+  background-color: rgba(192, 132, 252, 0.5);
 }
 
 /* --- Info --- */

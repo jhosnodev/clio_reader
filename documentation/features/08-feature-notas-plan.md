@@ -10,16 +10,18 @@ de anotaciones por libro con filtro y orden, según
 
 ## Estado
 
-| Pieza                                                           | Antes           | Ahora                         |
-| --------------------------------------------------------------- | --------------- | ----------------------------- |
-| Dominio `Note` / `Bookmark`                                     | ✅              | ✅                            |
-| CRUD de notas (`packages/library`)                              | ✅              | ✅                            |
-| Persistencia JSON + SQLite + FTS                                | ✅              | ✅                            |
-| Paquete `@clio-reader/annotations`                              | ❌ dead code    | ✅ integrado en desktop       |
-| Notas dentro del reader (crear/editar/borrar/listar por página) | ⚠️ WIP con bugs | ✅ sin bugs conocidos         |
-| Vista de anotaciones por libro (filtro + orden)                 | ❌              | ✅ `LibraryView` → "Notas"    |
-| Crear marcador desde el reader                                  | ❌ stub         | ❌ pendiente (fuera de notas) |
-| Mobile (Android)                                                | ❌              | ❌ fuera de alcance           |
+| Pieza                                                           | Antes             | Ahora                               |
+| --------------------------------------------------------------- | ----------------- | ----------------------------------- |
+| Dominio `Note` / `Bookmark`                                     | ✅                | ✅                                  |
+| CRUD de notas (`packages/library`)                              | ✅                | ✅                                  |
+| Persistencia JSON + SQLite + FTS                                | ✅                | ✅                                  |
+| Paquete `@clio-reader/annotations`                              | ❌ dead code      | ✅ integrado en desktop             |
+| Notas dentro del reader (crear/editar/borrar/listar por página) | ⚠️ WIP con bugs   | ✅ sin bugs conocidos               |
+| Vista de anotaciones por libro (filtro + orden)                 | ❌                | ✅ `LibraryView` → "Notas"          |
+| Highlights (dominio + SQLite)                                   | ⚠️ sin dominio/UI | ✅ desktop EPUB/MD (widget + vista) |
+| Resaltado en PDF                                                | ❌                | ❌ feature futura (F-007)           |
+| Crear marcador desde el reader                                  | ❌ stub           | ❌ pendiente (fuera de notas)       |
+| Mobile (Android)                                                | ❌                | ❌ fuera de alcance                 |
 
 ## Bugs corregidos
 
@@ -92,8 +94,47 @@ de anotaciones por libro con filtro y orden, según
 - Crear marcador desde el reader (`setupBookmark()` sigue siendo stub).
 - `listAllNotes` global + vista de anotaciones de toda la biblioteca.
 - Mobile (Android): integración completa.
-- Highlights (existen en SQLite sin dominio ni UI).
 - Export/import de anotaciones en la UI (el paquete ya lo implementa).
+
+## Fase 6 — Highlights en desktop (EPUB/MD)
+
+Resaltado de texto con el widget flotante de colores; los resaltados se listan
+junto a las notas en `LibraryView` → "Notas y resaltados".
+
+### Modelo
+
+| Pieza           | Cambio                                                                                                                           |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Paleta fija     | `packages/annotations/src/highlight-colors.ts` — 6 colores (yellow/green/blue/pink/orange/purple) y registro CSS `clio-hl-<key>` |
+| `Highlight`     | Ya existía en dominio y SQLite; ahora tiene UI y managers (`highlight-manager.ts`)                                               |
+| Anclaje a texto | Mismo patrón que notas: `locatorStart/locatorEnd` con `anchor {start,end}` + `selectedText`                                      |
+| Formato         | Solo EPUB y MD (texto refluible); el widget oculta colores para PDF y CBZ                                                        |
+
+### Widget flotante (reader)
+
+- Al seleccionar texto, un popover sobre la selección muestra 6 colores, nota y eliminar.
+- Pintar / eliminar / recolorar son operaciones optimistas en cola
+  (`__pendingHighlights` / `__pendingHighlightDeletes`) que se drenan con ack
+  (`__highlightSaved` / `__highlightError`) igual que las notas.
+- Recolorar = delete + create con el nuevo color.
+- El pintado usa CSS Custom Highlight API:
+  `paintHighlightRanges` / `clearHighlightRanges` en `reader-text-anchor.ts`
+  y reglas `::highlight(clio-hl-*)` en `reader.css`, sin mutar el DOM del EPUB.
+
+### Vista de anotaciones
+
+- `LibraryView` → "Notas y resaltados": merge notas + highlights con orden por
+  fecha o por posición (clave `progression/positionOrder/page * 1_000_000 + anchor.start`).
+- Cada resaltado muestra un swatch con su color, la cita (`selectedText`) y metadatos.
+- Eliminar con `removeHighlightManaged`; clic abre el libro en el locator.
+
+### Tests
+
+- `packages/annotations/tests/highlight-manager.test.ts` (CRUD gestionado).
+- `annotation-validator.test.ts` (+validación de highlight).
+- `reader-text-anchor.test.ts` (+pintado/limpieza de rangos).
+- `reader-entry-order.test.ts` (+fuentes de highlights en init).
+- Suite completa: 571 tests pasan.
 
 ## Fase 5 — Notas ancladas al texto seleccionado
 

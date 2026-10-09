@@ -618,13 +618,14 @@ test: add integration tests for progress persistence
 - [ ] CRUD de marcadores: crear desde el reader (resto del CRUD ya existe)
 - [x] Asociar a `bookId`, locator, posición normalizada, fecha
 - [x] Notas ancladas al texto seleccionado (`locator.anchor` + `selectedText`)
-- [x] Vista de anotaciones filtrada por libro (`LibraryView` → Notas)
+- [x] Resaltado de texto en EPUB/MD (widget flotante, 6 colores, optimista + persistencia)
+- [x] Vista de anotaciones filtrada por libro (`LibraryView` → Notas y resaltados)
 - [x] Ordenamiento por posición o fecha
 - [x] Integrar `@clio-reader/annotations` en desktop (filtro/orden/búsqueda/export)
 - [ ] Reemplazar el stub `setupBookmark()` del reader
 - [ ] Mobile (Android): notas (fuera de alcance desktop)
 
-### Features futuros (fuera del MVP)
+### Features futuras (fuera del MVP)
 
 | ID    | Feature                     | Documento                                |
 | ----- | --------------------------- | ---------------------------------------- |
@@ -633,3 +634,5 @@ test: add integration tests for progress persistence
 | F-003 | Arquitectura SaaS           | `features/03-arquitectura-saas.md`       |
 | F-004 | Otras plataformas           | `features/04-otras-plataformas.md`       |
 | F-005 | Lectura Markdown            | `features/05-lectura-markdown.md`        |
+| F-006 | Preferencias por libro      | `features/12-preferencias-por-libro.md`  |
+| F-007 | Resaltado en PDF            | `04-features-futuros.md`                 |

@@ -2,8 +2,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   ACTIVE_NOTE_HIGHLIGHT_NAME,
   NOTE_HIGHLIGHT_NAME,
+  clearHighlightRanges,
   clearNoteHighlights,
   paintActiveNoteHighlight,
+  paintHighlightRanges,
   paintNoteHighlights,
 } from './reader-text-anchor';
 
@@ -76,5 +78,48 @@ describe('clearNoteHighlights', () => {
     paintActiveNoteHighlight(fakeRange());
     clearNoteHighlights();
     expect(registry.size).toBe(0);
+  });
+});
+
+describe('paintHighlightRanges', () => {
+  it('agrupa los rangos bajo el nombre de cada color', () => {
+    const registry = stubHighlightApi();
+    paintHighlightRanges({
+      'clio-hl-yellow': [fakeRange(), fakeRange()],
+      'clio-hl-blue': [fakeRange()],
+    });
+    expect(registry.get('clio-hl-yellow')?.ranges).toHaveLength(2);
+    expect(registry.get('clio-hl-blue')?.ranges).toHaveLength(1);
+  });
+
+  it('borra los colores que desaparecen del mapa', () => {
+    const registry = stubHighlightApi();
+    paintHighlightRanges({
+      'clio-hl-yellow': [fakeRange()],
+      'clio-hl-green': [fakeRange()],
+    });
+    paintHighlightRanges({
+      'clio-hl-yellow': [fakeRange()],
+    });
+    expect(registry.has('clio-hl-yellow')).toBe(true);
+    expect(registry.has('clio-hl-green')).toBe(false);
+  });
+
+  it('borra un color cuando su lista de rangos queda vacía', () => {
+    const registry = stubHighlightApi();
+    paintHighlightRanges({ 'clio-hl-pink': [fakeRange()] });
+    paintHighlightRanges({ 'clio-hl-pink': [] });
+    expect(registry.has('clio-hl-pink')).toBe(false);
+  });
+});
+
+describe('clearHighlightRanges', () => {
+  it('limpia todos los resaltados de usuario', () => {
+    const registry = stubHighlightApi();
+    paintHighlightRanges({ 'clio-hl-yellow': [fakeRange()], 'clio-hl-purple': [fakeRange()] });
+    clearHighlightRanges();
+    expect(registry.size).toBe(0);
+    expect(registry.has('clio-hl-yellow')).toBe(false);
+    expect(registry.has('clio-hl-purple')).toBe(false);
   });
 });

@@ -248,3 +248,41 @@ export function clearNoteHighlights(): void {
   api.highlights.delete(NOTE_HIGHLIGHT_NAME);
   api.highlights.delete(ACTIVE_NOTE_HIGHLIGHT_NAME);
 }
+
+const paintedHighlightNames = new Set<string>();
+
+/**
+ * Pinta los resaltados de usuario agrupados por nombre de registry
+ * (`clio-hl-<color>`). Los colores que desaparecen del mapa se borran.
+ */
+export function paintHighlightRanges(byName: Readonly<Record<string, readonly Range[]>>): void {
+  const api = highlightApi();
+  if (!api) return;
+
+  for (const name of [...paintedHighlightNames]) {
+    if (!(name in byName)) {
+      api.highlights.delete(name);
+      paintedHighlightNames.delete(name);
+    }
+  }
+
+  for (const [name, ranges] of Object.entries(byName)) {
+    if (ranges.length === 0) {
+      api.highlights.delete(name);
+      paintedHighlightNames.delete(name);
+      continue;
+    }
+    api.highlights.set(name, new api.Highlight(...ranges));
+    paintedHighlightNames.add(name);
+  }
+}
+
+/** Elimina todos los resaltados de usuario del capítulo. */
+export function clearHighlightRanges(): void {
+  const api = highlightApi();
+  if (!api) return;
+  for (const name of paintedHighlightNames) {
+    api.highlights.delete(name);
+  }
+  paintedHighlightNames.clear();
+}

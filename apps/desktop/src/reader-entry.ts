@@ -15,6 +15,7 @@ window.addEventListener('unhandledrejection', (e) => {
 import type { ReaderDocument, TocNavEntry, TocTree } from '@clio-reader/reader-core';
 import { ReaderFactory, hasTextAnchor, withTextAnchor } from '@clio-reader/reader-core';
 import type { ReaderPreferences, ReaderLocator, TextAnchor } from '@clio-reader/domain';
+import { highlightRegistryName } from '@clio-reader/annotations';
 import { EpubReaderAdapter } from '@clio-reader/reader-epub';
 import { PdfReaderAdapter } from '@clio-reader/reader-pdf';
 import { CbzReaderAdapter } from '@clio-reader/reader-cbz';
@@ -40,10 +41,12 @@ import {
 } from './components/reader-progress';
 import type { WebviewTheme } from './reader-prefs';
 import {
+  clearHighlightRanges,
   clearNoteHighlights,
   captureSelection,
   indexChapterText,
   paintActiveNoteHighlight,
+  paintHighlightRanges,
   paintNoteHighlights,
   resolveAnchorRange,
 } from './reader-text-anchor';
@@ -317,6 +320,7 @@ async function renderChapter(
   const contentEl = document.getElementById('page');
   if (!contentEl) return;
   clearNoteHighlights();
+  clearHighlightRanges();
 
   if (!readerDoc.getCurrentChapterContent) {
     await renderFixedLayoutPage(readerDoc, contentEl);
@@ -552,6 +556,7 @@ function setupProgressBar(readerDoc: ReaderDocument, preferences: ReaderPreferen
     () => {
       progressBar?.notify();
       scheduleLocatorRefresh();
+      hideSelectionWidget();
     },
     { passive: true },
   );
@@ -612,6 +617,7 @@ async function syncLocator(): Promise<void> {
   currentLocator = JSON.stringify(composeCurrentLocator(locator));
   renderNotesList(currentNotes);
   refreshNoteHighlights();
+  refreshHighlightHighlights();
 }
 
 /** Añade la posición vertical al locator cuando el formato es reflowable. */
@@ -657,6 +663,91 @@ async function navigateChapter(
 }
 
 /* ==========================================================================
+   Navegación por teclado
+   ========================================================================== */
+
+const KEY_SCROLL_RATIO = 0.9;
+let keyboardNavBusy = false;
+
+function setupKeyboardNavigation(): void {
+  window.removeEventListener('keydown', handleKeyboardNavigation);
+  window.addEventListener('keydown', handleKeyboardNavigation);
+}
+
+type KeyboardDirection = 'up' | 'down' | 'left' | 'right';
+
+function keyboardDirectionForKey(key: string): KeyboardDirection | null {
+  switch (key) {
+    case 'ArrowUp':
+      return 'up';
+    case 'ArrowDown':
+      return 'down';
+    case 'ArrowLeft':
+      return 'left';
+    case 'ArrowRight':
+      return 'right';
+    default:
+      return null;
+  }
+}
+
+function handleKeyboardNavigation(event: KeyboardEvent): void {
+  if (event.defaultPrevented) return;
+  if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+  const readerDoc = currentReaderDoc;
+  if (!readerDoc || keyboardNavBusy) return;
+
+  const target = event.target;
+  if (
+    target instanceof HTMLElement &&
+    target.closest('input, textarea, select, [contenteditable="true"]')
+  ) {
+    return;
+  }
+
+  const direction = keyboardDirectionForKey(event.key);
+  if (!direction) return;
+
+  event.preventDefault();
+
+  if (direction === 'up' || direction === 'down') {
+    const forward = direction === 'down';
+    if (scrollWithinChapter(forward ? 1 : -1) || readerDoc.capabilities.reflowable) return;
+    void runKeyboardNavigation(readerDoc, forward ? 'next' : 'previous');
+    return;
+  }
+
+  const rtl = currentPreferences.readingDirection === 'rtl';
+  const forward = direction === 'right' ? !rtl : rtl;
+  void runKeyboardNavigation(readerDoc, forward ? 'next' : 'previous');
+}
+
+function scrollWithinChapter(delta: 1 | -1): boolean {
+  const scroll = document.getElementById('r-scroll');
+  if (!scroll) return false;
+  const maxScroll = scroll.scrollHeight - scroll.clientHeight;
+  if (maxScroll <= 0) return false;
+  const step = Math.max(Math.round(scroll.clientHeight * KEY_SCROLL_RATIO), 1);
+  const nextTop = Math.min(Math.max(scroll.scrollTop + delta * step, 0), maxScroll);
+  if (nextTop === scroll.scrollTop) return false;
+  scroll.scrollTop = nextTop;
+  return true;
+}
+
+async function runKeyboardNavigation(
+  readerDoc: ReaderDocument,
+  direction: 'next' | 'previous',
+): Promise<void> {
+  keyboardNavBusy = true;
+  try {
+    await navigateChapter(readerDoc, currentPreferences, direction);
+  } finally {
+    keyboardNavBusy = false;
+  }
+}
+
+/* ==========================================================================
    Drawer system
    ========================================================================== */
 
@@ -667,6 +758,7 @@ function openDrawer(panelId: string, title: string, options?: { scrim?: boolean 
   const drawer = document.getElementById('drawer');
   const drawerTitle = document.getElementById('drawer-title');
   if (!scrim || !drawer) return;
+  hideSelectionWidget();
 
   if (drawerTitle) drawerTitle.textContent = title;
   currentPanel = panelId;
@@ -1065,6 +1157,7 @@ async function loadDocument(
 let currentReaderDoc: ReaderDocument | null = null;
 let currentPreferences: ReaderPreferences = DEFAULT_PREFERENCES;
 let currentNotes: readonly ReaderNoteView[] = [];
+let currentHighlights: readonly ReaderHighlightView[] = [];
 let currentLocator: string = '';
 let editingNoteId: string | null = null;
 let activeNoteId: string | null = null;
@@ -1082,12 +1175,20 @@ interface HostInitData {
     readonly rank: number;
   };
   readonly notes: readonly ReaderNoteView[];
+  readonly highlights: readonly ReaderHighlightView[];
 }
 
 interface ReaderNoteView {
   readonly id: string;
   readonly body: string;
   readonly createdAt: number;
+  readonly locator: string;
+  readonly selectedText?: string;
+}
+
+interface ReaderHighlightView {
+  readonly id: string;
+  readonly color: string;
   readonly locator: string;
   readonly selectedText?: string;
 }
@@ -1105,14 +1206,26 @@ interface PendingNoteUpdateItem {
   readonly body: string;
 }
 
+interface PendingHighlightItem {
+  readonly key: string;
+  readonly color: string;
+  readonly locator: string;
+  readonly selectedText?: string;
+}
+
 declare global {
   interface Window {
     __pendingNotes?: PendingNoteItem[];
     __pendingNoteUpdates?: PendingNoteUpdateItem[];
     __pendingNoteDelete?: string | null;
+    __pendingHighlights?: PendingHighlightItem[];
+    __pendingHighlightDeletes?: string[];
     __updateNotes?: (notes: readonly ReaderNoteView[]) => void;
+    __updateHighlights?: (highlights: readonly ReaderHighlightView[]) => void;
     __noteSaved?: () => void;
     __noteError?: (message: string) => void;
+    __highlightSaved?: () => void;
+    __highlightError?: (message: string) => void;
     __goToChapter?: (idx: number, restoreRatio?: number, locatorJson?: string) => Promise<void>;
     __goToPage?: (page: number) => Promise<void>;
     __getCurrentLocator?: () => string | undefined;
@@ -1260,27 +1373,56 @@ function renderInfoPanel(metadata: {
   });
 }
 
+type NotesDrawerEntry =
+  | { kind: 'note'; note: ReaderNoteView; anchorStart: number }
+  | { kind: 'highlight'; highlight: ReaderHighlightView; anchorStart: number };
+
+function anchorStartOf(locator: ReaderLocator): number {
+  return 'anchor' in locator && locator.anchor !== undefined
+    ? locator.anchor.start
+    : Number.MAX_SAFE_INTEGER;
+}
+
 function renderNotesList(notes: readonly ReaderNoteView[]): void {
   const list = document.getElementById('notes-list');
   if (!list) return;
 
   // El locator lleva la posición vertical, así que comparamos por documento (capítulo).
   const activeLocator = parseLocator(currentLocator);
-  const pageNotes = activeLocator
-    ? notes.filter((n) => {
-        const noteLocator = parseLocator(n.locator);
-        return noteLocator !== null && isSameDocumentPosition(noteLocator, activeLocator);
-      })
-    : [];
-
-  if (pageNotes.length === 0) {
-    list.innerHTML = '<p class="notes-empty">No hay notas en esta página.</p>';
+  if (!activeLocator) {
+    list.innerHTML = '<p class="notes-empty">No hay notas ni resaltados en esta página.</p>';
     return;
   }
 
-  list.innerHTML = pageNotes
-    .map(
-      (n) => `
+  const entries: NotesDrawerEntry[] = [];
+  for (const note of notes) {
+    const noteLocator = parseLocator(note.locator);
+    if (noteLocator && isSameDocumentPosition(noteLocator, activeLocator)) {
+      entries.push({ kind: 'note', note, anchorStart: anchorStartOf(noteLocator) });
+    }
+  }
+  for (const highlight of currentHighlights) {
+    const hiLocator = parseLocator(highlight.locator);
+    if (hiLocator && isSameDocumentPosition(hiLocator, activeLocator)) {
+      entries.push({
+        kind: 'highlight',
+        highlight,
+        anchorStart: anchorStartOf(hiLocator),
+      });
+    }
+  }
+  entries.sort((a, b) => a.anchorStart - b.anchorStart);
+
+  if (entries.length === 0) {
+    list.innerHTML = '<p class="notes-empty">No hay notas ni resaltados en esta página.</p>';
+    return;
+  }
+
+  list.innerHTML = entries
+    .map((entry) => {
+      if (entry.kind === 'note') {
+        const n = entry.note;
+        return `
     <div class="note${n.id === activeNoteId ? ' active' : ''}" data-note-id="${n.id}">
       ${n.selectedText ? `<div class="nquote">“${escapeHtml(n.selectedText)}”</div>` : ''}
       <div class="ntx">${escapeHtml(n.body)}</div>
@@ -1293,8 +1435,23 @@ function renderNotesList(notes: readonly ReaderNoteView[]): void {
         </button>
       </div>
     </div>
-  `,
-    )
+  `;
+      }
+      const h = entry.highlight;
+      return `
+    <div class="note hl" data-hl-id="${h.id}" style="--hl-color:${h.color}">
+      <div class="hl-label">
+        <span class="hl-swatch" style="background:${h.color}"></span>Resaltado
+      </div>
+      ${h.selectedText ? `<div class="nquote">“${escapeHtml(h.selectedText)}”</div>` : ''}
+      <div class="note-actions">
+        <button class="hl-delete" data-hl-id="${h.id}" title="Eliminar resaltado">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+  `;
+    })
     .join('');
 
   list.querySelectorAll('.note').forEach((card) => {
@@ -1302,7 +1459,9 @@ function renderNotesList(notes: readonly ReaderNoteView[]): void {
       const target = event.target as HTMLElement;
       if (target.closest('.note-actions')) return;
       const noteId = (card as HTMLElement).dataset.noteId;
+      const highlightId = (card as HTMLElement).dataset.hlId;
       if (noteId) void jumpToNote(noteId);
+      else if (highlightId) void jumpToHighlight(highlightId);
     });
   });
 
@@ -1330,38 +1489,68 @@ function renderNotesList(notes: readonly ReaderNoteView[]): void {
       }
     });
   });
+
+  list.querySelectorAll('.hl-delete').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const highlightId = (btn as HTMLElement).dataset.hlId;
+      if (highlightId) deleteHighlightFromDrawer(highlightId);
+    });
+  });
 }
 
-/* --- Anclaje de notas al texto seleccionado --- */
+/* ==========================================================================
+   Anclaje de notas al texto seleccionado
+   ========================================================================== */
 
-let pendingSelection: { quote: string; anchor: TextAnchor; locator: ReaderLocator } | null = null;
+let pendingSelection: {
+  quote: string;
+  anchor: TextAnchor;
+  locator: ReaderLocator;
+  rect: DOMRect | null;
+} | null = null;
 let ignoreSelectionEvents = false;
 let pendingSelectionSeq = 0;
 let selectionGate: SelectionGate | null = null;
 
 /** Resuelve el rango del capítulo que cubre una nota y lo trae a la vista. */
-function scrollToAnchorRange(range: Range, recovered: boolean): void {
+function scrollToAnchorRange(range: Range, recovered: boolean, kind: 'nota' | 'resaltado'): void {
   const rect = range.getBoundingClientRect();
   const scroll = document.getElementById('r-scroll');
   if (scroll) {
     scroll.scrollTop += rect.top - scroll.clientHeight / 3;
   }
   paintActiveNoteHighlight(range);
-  showToast(recovered ? 'Nota reubicada: el texto se movió' : 'Nota localizada');
+  if (recovered) {
+    showToast(
+      kind === 'nota'
+        ? 'Nota reubicada: el texto se movió'
+        : 'Resaltado reubicado: el texto se movió',
+    );
+  } else {
+    showToast(kind === 'nota' ? 'Nota localizada' : 'Resaltado localizado');
+  }
 }
 
 /** Lleva la vista al texto anclado en el locator, si el capítulo ya está cargado. */
-function revealLocator(locator: ReaderLocator, selectedText?: string): void {
+function revealLocator(
+  locator: ReaderLocator,
+  selectedText?: string,
+  kind: 'nota' | 'resaltado' = 'nota',
+): void {
   const content = document.getElementById('page');
   if (!content || !hasTextAnchor(locator)) return;
 
   const found = resolveAnchorRange(indexChapterText(content), locator, selectedText);
   if (!found) {
     paintActiveNoteHighlight(null);
-    showToast('No se encontró el texto de la nota');
+    showToast(
+      kind === 'nota'
+        ? 'No se encontró el texto de la nota'
+        : 'No se encontró el texto del resaltado',
+    );
     return;
   }
-  scrollToAnchorRange(found.range, found.recovered);
+  scrollToAnchorRange(found.range, found.recovered, kind);
 }
 
 async function jumpToNote(noteId: string): Promise<void> {
@@ -1407,6 +1596,44 @@ async function jumpToNote(noteId: string): Promise<void> {
   showToast('La nota está en otro capítulo no disponible');
 }
 
+async function jumpToHighlight(highlightId: string): Promise<void> {
+  const highlight = currentHighlights.find((h) => h.id === highlightId);
+  const locator = highlight ? parseLocator(highlight.locator) : null;
+  if (!highlight || !locator || !currentReaderDoc) return;
+
+  const current = parseLocator(currentLocator);
+  if (current && isSameDocumentPosition(current, locator)) {
+    revealLocator(locator, highlight.selectedText, 'resaltado');
+    renderNotesList(currentNotes);
+    return;
+  }
+
+  const order = 'positionOrder' in locator ? locator.positionOrder : undefined;
+  if (typeof order === 'number' && currentReaderDoc.goToChapter) {
+    try {
+      await currentReaderDoc.goToChapter(order);
+      await renderChapter(currentReaderDoc, currentPreferences);
+      await syncLocator();
+      revealLocator(locator, highlight.selectedText, 'resaltado');
+      renderNotesList(currentNotes);
+      return;
+    } catch (error) {
+      if (error instanceof Error && error.name === 'EpubNavigationError') return;
+      throw error;
+    }
+  }
+
+  showToast('El resaltado está en otro capítulo no disponible');
+}
+
+function deleteHighlightFromDrawer(highlightId: string): void {
+  enqueueHighlightDelete(highlightId);
+  currentHighlights = currentHighlights.filter((h) => h.id !== highlightId);
+  refreshHighlightHighlights();
+  renderNotesList(currentNotes);
+  showToast('Resaltado en cola para eliminar');
+}
+
 /** Resalta en el capítulo todas las notas ancladas a texto de esta página. */
 function refreshNoteHighlights(): void {
   const content = document.getElementById('page');
@@ -1427,6 +1654,32 @@ function refreshNoteHighlights(): void {
     if (found) ranges.push(found.range);
   }
   paintNoteHighlights(ranges);
+}
+
+/** Pinta en el capítulo los resaltados de usuario del color de cada uno. */
+function refreshHighlightHighlights(): void {
+  const content = document.getElementById('page');
+  if (!content) return;
+
+  const active = parseLocator(currentLocator);
+  if (!active) {
+    clearHighlightRanges();
+    return;
+  }
+
+  const index = indexChapterText(content);
+  const byName: Record<string, Range[]> = {};
+  for (const highlight of currentHighlights) {
+    const locator = parseLocator(highlight.locator);
+    if (!locator || !isSameDocumentPosition(locator, active)) continue;
+    const name = highlightRegistryName(highlight.color);
+    if (!name) continue;
+    const found = resolveAnchorRange(index, locator, highlight.selectedText);
+    if (!found) continue;
+    if (!byName[name]) byName[name] = [];
+    byName[name]!.push(found.range);
+  }
+  paintHighlightRanges(byName);
 }
 
 function setupNoteSelection(): void {
@@ -1451,9 +1704,19 @@ function setupNoteSelection(): void {
 
 function applyPendingSelection(content: HTMLElement): void {
   const selection = captureSelection(content);
-  if (!selection) return;
+  if (!selection) {
+    // La selección volvió a colapsar (clic en blanco): quitar el widget.
+    hideSelectionWidget();
+    return;
+  }
 
   const seq = ++pendingSelectionSeq;
+  const visibleSelection = window.getSelection();
+  const rect =
+    visibleSelection && !visibleSelection.isCollapsed && visibleSelection.rangeCount > 0
+      ? visibleSelection.getRangeAt(0).getBoundingClientRect()
+      : null;
+
   void currentReaderDoc?.getLocator().then((locator) => {
     if (seq !== pendingSelectionSeq) return;
     if (currentPanel === 'notes' && pendingSelection?.quote === selection.quote) return;
@@ -1461,14 +1724,176 @@ function applyPendingSelection(content: HTMLElement): void {
       quote: selection.quote,
       anchor: selection.anchor,
       locator: withTextAnchor(locator, selection.anchor),
+      rect,
     };
     editingNoteId = null;
     const saveBtn = document.getElementById('note-save');
     if (saveBtn) saveBtn.textContent = 'Guardar nota';
     renderSelectionPreview();
-    // Sin scrim: el texto sigue siendo seleccionable con el panel abierto.
-    openDrawer('notes', 'Notas', { scrim: false });
+    if (currentPanel === 'notes') return;
+    showSelectionWidget();
   });
+}
+
+/* --- Widget flotante de selección (resaltar / nota) --- */
+
+function hideSelectionWidget(): void {
+  const widget = document.getElementById('sel-widget');
+  if (widget) widget.hidden = true;
+}
+
+function clampWidget(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
+function selectionRect(): DOMRect | null {
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed || selection.rangeCount === 0) return null;
+  return selection.getRangeAt(0).getBoundingClientRect();
+}
+
+/** Highlight persistido cuyo ancla cubre el ancla seleccionada (mismo capítulo). */
+function findHighlightForAnchor(anchor: TextAnchor): ReaderHighlightView | null {
+  const active = parseLocator(currentLocator);
+  for (const highlight of currentHighlights) {
+    const locator = parseLocator(highlight.locator);
+    if (!locator || (locator.format !== 'epub' && locator.format !== 'md')) continue;
+    const hlAnchor = locator.anchor;
+    if (!hlAnchor) continue;
+    if (active && !isSameDocumentPosition(locator, active)) continue;
+    if (hlAnchor.start <= anchor.start && hlAnchor.end >= anchor.end) return highlight;
+  }
+  return null;
+}
+
+function showSelectionWidget(): void {
+  const widget = document.getElementById('sel-widget');
+  if (!widget) return;
+  if (!pendingSelection) {
+    widget.hidden = true;
+    return;
+  }
+
+  const existing = findHighlightForAnchor(pendingSelection.anchor);
+  const locator = parseLocator(JSON.stringify(pendingSelection.locator));
+  const supportsHighlight = locator?.format === 'epub' || locator?.format === 'md';
+
+  const colorsRow = document.getElementById('sel-colors');
+  const deleteBtn = document.getElementById('sel-delete');
+  if (colorsRow) colorsRow.hidden = !supportsHighlight;
+  if (deleteBtn) deleteBtn.hidden = !existing;
+
+  widget.querySelectorAll('.sel-color').forEach((btn) => {
+    btn.classList.toggle('sel', (btn as HTMLElement).dataset.color === existing?.color);
+  });
+
+  const rect = pendingSelection.rect ?? selectionRect();
+  if (!rect) {
+    widget.hidden = true;
+    return;
+  }
+
+  const bounds = widget.getBoundingClientRect();
+  const gap = 10;
+  const left = clampWidget(
+    rect.left + rect.width / 2 - bounds.width / 2,
+    gap,
+    Math.max(gap, window.innerWidth - bounds.width - gap),
+  );
+  let top = rect.top - bounds.height - gap;
+  if (top < gap) top = rect.bottom + gap;
+  widget.style.left = `${left}px`;
+  widget.style.top = `${top}px`;
+  widget.hidden = false;
+}
+
+function enqueueHighlight(payload: {
+  color: string;
+  locator: string;
+  selectedText?: string;
+}): void {
+  const key = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+  const queue = window.__pendingHighlights ?? [];
+  if (!window.__pendingHighlights) window.__pendingHighlights = queue;
+  const item: PendingHighlightItem = {
+    key,
+    color: payload.color,
+    locator: payload.locator,
+    ...(payload.selectedText !== undefined ? { selectedText: payload.selectedText } : {}),
+  };
+  queue.push(item);
+
+  // Pintado optimista: el host reconcilia con el ID real al drenar la cola.
+  const optimistic: ReaderHighlightView = {
+    id: `local-${key}`,
+    color: payload.color,
+    locator: payload.locator,
+    ...(payload.selectedText !== undefined ? { selectedText: payload.selectedText } : {}),
+  };
+  currentHighlights = [...currentHighlights, optimistic];
+  refreshHighlightHighlights();
+}
+
+function enqueueHighlightDelete(id: string): void {
+  const deletes = window.__pendingHighlightDeletes ?? [];
+  if (!window.__pendingHighlightDeletes) window.__pendingHighlightDeletes = deletes;
+  deletes.push(id);
+}
+
+function createHighlightFromSelection(color: string): void {
+  if (!pendingSelection || !highlightRegistryName(color)) return;
+  const existing = findHighlightForAnchor(pendingSelection.anchor);
+  if (existing) {
+    enqueueHighlightDelete(existing.id);
+    currentHighlights = currentHighlights.filter((h) => h.id !== existing.id);
+  }
+  enqueueHighlight({
+    color,
+    locator: JSON.stringify(pendingSelection.locator),
+    selectedText: pendingSelection.quote,
+  });
+  showToast(existing ? 'Resaltado actualizado en cola' : 'Resaltado en cola');
+  clearSelection();
+}
+
+function deleteHighlightFromSelection(): void {
+  if (!pendingSelection) return;
+  const existing = findHighlightForAnchor(pendingSelection.anchor);
+  if (!existing) {
+    hideSelectionWidget();
+    return;
+  }
+  enqueueHighlightDelete(existing.id);
+  currentHighlights = currentHighlights.filter((h) => h.id !== existing.id);
+  refreshHighlightHighlights();
+  showToast('Resaltado eliminado en cola');
+  clearSelection();
+}
+
+function setupSelectionWidget(): void {
+  const widget = document.getElementById('sel-widget');
+  if (!widget) return;
+
+  widget.querySelectorAll('.sel-color').forEach((btn) => {
+    const color = (btn as HTMLElement).dataset.color;
+    if (!color) return;
+    (btn as HTMLButtonElement).style.backgroundColor = color;
+    (btn as HTMLButtonElement).onclick = () => createHighlightFromSelection(color);
+  });
+
+  const noteBtn = document.getElementById('sel-note');
+  if (noteBtn) {
+    noteBtn.onclick = () => {
+      if (!pendingSelection) return;
+      renderSelectionPreview();
+      hideSelectionWidget();
+      // Sin scrim: el texto sigue siendo seleccionable con el panel abierto.
+      openDrawer('notes', 'Notas', { scrim: false });
+    };
+  }
+
+  const deleteBtn = document.getElementById('sel-delete');
+  if (deleteBtn) deleteBtn.onclick = () => deleteHighlightFromSelection();
 }
 
 function renderSelectionPreview(): void {
@@ -1501,6 +1926,7 @@ function clearSelection(): void {
   pendingSelectionSeq++;
   selectionGate?.cancel();
   resetPendingSelection();
+  hideSelectionWidget();
   ignoreSelectionEvents = true;
   window.getSelection()?.removeAllRanges();
   setTimeout(() => {
@@ -1508,6 +1934,7 @@ function clearSelection(): void {
   }, 0);
   renderNotesList(currentNotes);
   refreshNoteHighlights();
+  refreshHighlightHighlights();
   paintActiveNoteHighlight(null);
   activeNoteId = null;
 }
@@ -1571,6 +1998,7 @@ function setupNotes(): void {
   renderSelectionPreview();
   renderNotesList(currentNotes);
   refreshNoteHighlights();
+  refreshHighlightHighlights();
 }
 
 async function main(): Promise<void> {
@@ -1590,6 +2018,7 @@ async function main(): Promise<void> {
 
         currentPreferences = data.preferences;
         currentNotes = data.notes ?? [];
+        currentHighlights = data.highlights ?? [];
         currentReaderDoc = await loadDocument(uri, format, bytes);
 
         const readerEl = document.getElementById('reader');
@@ -1607,6 +2036,7 @@ async function main(): Promise<void> {
 
         setUIState({ type: 'content' });
         setupNavigation(currentReaderDoc, currentPreferences);
+        setupKeyboardNavigation();
         setupProgressBar(currentReaderDoc, currentPreferences);
         await renderChapter(currentReaderDoc, currentPreferences);
         await syncLocator();
@@ -1618,6 +2048,7 @@ async function main(): Promise<void> {
         await renderTOC(currentReaderDoc);
         renderInfoPanel(data.metadata);
         setupNoteSelection();
+        setupSelectionWidget();
         setupNotes();
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Error al abrir el libro';
@@ -1641,6 +2072,14 @@ async function main(): Promise<void> {
       currentNotes = notes;
       renderNotesList(currentNotes);
       refreshNoteHighlights();
+      refreshHighlightHighlights();
+    };
+
+    /* --- Highlights update from host --- */
+    window.__updateHighlights = (highlights: readonly ReaderHighlightView[]) => {
+      currentHighlights = highlights;
+      refreshHighlightHighlights();
+      renderNotesList(currentNotes);
     };
 
     /* --- Rank update from host --- */
@@ -1676,6 +2115,14 @@ async function main(): Promise<void> {
       showToast('Nota guardada');
     };
     window.__noteError = (message: string) => {
+      showToast(message);
+    };
+
+    /* --- Highlights save/error feedback from host --- */
+    window.__highlightSaved = () => {
+      showToast('Resaltado guardado');
+    };
+    window.__highlightError = (message: string) => {
       showToast(message);
     };
 
