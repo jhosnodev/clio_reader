@@ -15,6 +15,9 @@ import {
   listNotesManaged,
   removeNoteManaged,
   updateNoteManaged,
+  createHighlightManaged,
+  listHighlightsManaged,
+  removeHighlightManaged,
 } from '@clio-reader/annotations';
 import type { ReaderLocator, ReaderPreferences } from '@clio-reader/domain';
 import { createDefaultPreferences } from '@clio-reader/domain';
@@ -185,12 +188,14 @@ export function ReaderView({
   useEffect(() => {
     handleFinishLoadRef.current = async (): Promise<void> => {
       try {
-        const [preferences, fileData, existingNotes, savedProgress] = await Promise.all([
-          loadPreferences(),
-          bridge.readFile(sourceUri),
-          listNotesManaged(repository, bookId).catch(() => []),
-          loadProgress(),
-        ]);
+        const [preferences, fileData, existingNotes, existingHighlights, savedProgress] =
+          await Promise.all([
+            loadPreferences(),
+            bridge.readFile(sourceUri),
+            listNotesManaged(repository, bookId).catch(() => []),
+            listHighlightsManaged(repository, bookId).catch(() => []),
+            loadProgress(),
+          ]);
 
         if (!fileData || fileData.byteLength === 0) {
           console.error('[reader] archivo leído está vacío o es inválido');
@@ -211,6 +216,13 @@ export function ReaderView({
           ...(n.selectedText !== undefined ? { selectedText: n.selectedText } : {}),
         }));
 
+        const highlightsData = existingHighlights.map((h) => ({
+          id: h.id,
+          color: h.color,
+          locator: JSON.stringify(h.locatorStart),
+          ...(h.selectedText !== undefined ? { selectedText: h.selectedText } : {}),
+        }));
+
         const initData = {
           preferences,
           fileDataB64: b64,
@@ -223,6 +235,7 @@ export function ReaderView({
             rank: rank ?? 0,
           },
           notes: notesData,
+          highlights: highlightsData,
         };
         const initCode = `window.__initFromHost(${JSON.stringify(initData)})`;
 
@@ -257,6 +270,7 @@ export function ReaderView({
 
         setLoadError(null);
         setWebviewLoaded(true);
+        (webviewRef.current as HTMLElement | null)?.focus();
       } catch (err) {
         console.error('[reader] error inyectando datos en webview:', err);
         setLoadError('No se pudo cargar el contenido del libro.');
@@ -307,6 +321,23 @@ export function ReaderView({
     [repository, bookId],
   );
 
+  /* ----- Helper: empujar resaltados actualizados al webview ----- */
+  const pushHighlightsToWebview = useCallback(
+    async (wv: { executeJavaScript: (code: string) => Promise<unknown> }): Promise<void> => {
+      const highlights = await listHighlightsManaged(repository, bookId).catch(() => []);
+      const highlightsData = highlights.map((h) => ({
+        id: h.id,
+        color: h.color,
+        locator: JSON.stringify(h.locatorStart),
+        ...(h.selectedText !== undefined ? { selectedText: h.selectedText } : {}),
+      }));
+      await wv.executeJavaScript(
+        `window.__updateHighlights && window.__updateHighlights(${JSON.stringify(highlightsData)})`,
+      );
+    },
+    [repository, bookId],
+  );
+
   type NoteQueueItem = {
     readonly key: string;
     readonly body: string;
@@ -314,6 +345,12 @@ export function ReaderView({
     readonly selectedText?: string;
   };
   type NoteUpdateItem = { readonly key: string; readonly noteId: string; readonly body: string };
+  type HighlightQueueItem = {
+    readonly key: string;
+    readonly color: string;
+    readonly locator: string;
+    readonly selectedText?: string;
+  };
 
   /* ----- Drenar cola de notas + borrados pendientes del webview ----- */
   const drainNotes = useCallback((): Promise<void> => {
@@ -383,6 +420,48 @@ export function ReaderView({
           }
           await pushNotesToWebview(wv);
         }
+
+        // Borrados de resaltados
+        const pendingHighlightDeletes = (await wv.executeJavaScript(
+          'window.__pendingHighlightDeletes',
+        )) as string[] | null | undefined;
+        if (pendingHighlightDeletes && pendingHighlightDeletes.length > 0) {
+          for (const highlightId of pendingHighlightDeletes) {
+            try {
+              await removeHighlightManaged(repository, highlightId, bookId);
+            } catch (err) {
+              console.error('[reader] error eliminando resaltado:', err);
+            }
+          }
+          await wv.executeJavaScript('window.__pendingHighlightDeletes = []');
+          await pushHighlightsToWebview(wv);
+        }
+
+        // Resaltados en cola
+        const highlightQueue = (await wv.executeJavaScript('window.__pendingHighlights')) as
+          HighlightQueueItem[] | null | undefined;
+        if (highlightQueue && highlightQueue.length > 0) {
+          for (const item of highlightQueue) {
+            try {
+              const locator = JSON.parse(item.locator);
+              await createHighlightManaged(repository, bookId, locator, item.color, {
+                ...(item.selectedText !== undefined ? { selectedText: item.selectedText } : {}),
+              });
+              await wv.executeJavaScript('window.__highlightSaved && window.__highlightSaved()');
+            } catch (err) {
+              const message =
+                err instanceof Error ? err.message : 'No se pudo guardar el resaltado';
+              console.error('[reader] error guardando resaltado:', err);
+              await wv.executeJavaScript(
+                `window.__highlightError && window.__highlightError(${JSON.stringify(message)})`,
+              );
+            }
+            await wv.executeJavaScript(
+              `window.__pendingHighlights = (window.__pendingHighlights ?? []).filter((h) => h.key !== ${JSON.stringify(item.key)})`,
+            );
+          }
+          await pushHighlightsToWebview(wv);
+        }
       } catch {
         // Ignorar errores transitorios del poll
       }
@@ -393,7 +472,7 @@ export function ReaderView({
       drainPromiseRef.current = null;
     });
     return run;
-  }, [repository, bookId, pushNotesToWebview]);
+  }, [repository, bookId, pushNotesToWebview, pushHighlightsToWebview]);
 
   /* ----- Polling: drenar cola de notas pendientes del webview ----- */
   useEffect(() => {

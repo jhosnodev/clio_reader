@@ -183,6 +183,65 @@
         </button>
       </footer>
 
+      <!-- widget de selección: resaltar color o añadir nota -->
+      <div
+        class="sel-widget"
+        id="sel-widget"
+        hidden
+        role="toolbar"
+        aria-label="Acciones sobre el texto seleccionado"
+      >
+        <div class="sel-colors" id="sel-colors">
+          <button
+            class="sel-color"
+            data-color="#facc15"
+            title="Amarillo"
+            aria-label="Amarillo"
+          ></button>
+          <button class="sel-color" data-color="#4ade80" title="Verde" aria-label="Verde"></button>
+          <button class="sel-color" data-color="#38bdf8" title="Azul" aria-label="Azul"></button>
+          <button class="sel-color" data-color="#f472b6" title="Rosa" aria-label="Rosa"></button>
+          <button
+            class="sel-color"
+            data-color="#fb923c"
+            title="Naranja"
+            aria-label="Naranja"
+          ></button>
+          <button
+            class="sel-color"
+            data-color="#c084fc"
+            title="Morado"
+            aria-label="Morado"
+          ></button>
+        </div>
+        <span class="sel-sep" aria-hidden="true"></span>
+        <button class="sel-act" id="sel-note" title="Añadir una nota">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17z" />
+            <path d="M13.5 6.5l3 3" />
+          </svg>
+        </button>
+        <button class="sel-act sel-danger" id="sel-delete" title="Eliminar resaltado" hidden>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M3 6h18M8 6V4h8v2M19 6l-1 15H6L5 6M10 10v7M14 10v7" />
+          </svg>
+        </button>
+      </div>
+
       <!-- toast -->
       <div class="toast" id="toast">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12v18l-6-4-6 4z" /></svg>

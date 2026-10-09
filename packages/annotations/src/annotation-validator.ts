@@ -1,3 +1,4 @@
+import { isHighlightColor } from './highlight-colors.js';
 import { AnnotationValidationError } from './errors.js';
 
 interface ValidationError {
@@ -235,6 +236,36 @@ export function validateNote(note: unknown): ValidationResult {
 
   if (n['selectedText'] !== undefined) {
     const textError = assertString(n['selectedText'], 'selectedText');
+    if (textError) errors.push(textError);
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
+export function validateHighlightInput(input: {
+  bookId: unknown;
+  locator: unknown;
+  color: unknown;
+  style?: unknown;
+  selectedText?: unknown;
+}): ValidationResult {
+  const errors: ValidationError[] = [];
+
+  const bookIdError = assertNonEmptyString(input.bookId, 'bookId');
+  if (bookIdError) errors.push(bookIdError);
+
+  errors.push(...validateLocator(input.locator));
+
+  if (!isHighlightColor(input.color)) {
+    errors.push({ field: 'color', message: 'color must be one of the highlight palette colors' });
+  }
+
+  if (input.style !== undefined && input.style !== 'highlight' && input.style !== 'underline') {
+    errors.push({ field: 'style', message: "style must be 'highlight' or 'underline'" });
+  }
+
+  if (input.selectedText !== undefined) {
+    const textError = assertString(input.selectedText, 'selectedText');
     if (textError) errors.push(textError);
   }
 

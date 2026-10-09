@@ -2,6 +2,8 @@ export type { FilterOptions, SortField, SortOrder, SortOptions } from './annotat
 export type { AnnotationExportData } from './annotation-export.js';
 export type { CreateBookmarkOptions, ListBookmarksOptions } from './bookmark-manager.js';
 export type { CreateNoteOptions, ListNotesOptions } from './note-manager.js';
+export type { CreateHighlightOptions } from './highlight-manager.js';
+export type { HighlightColorKey } from './highlight-colors.js';
 
 export {
   AnnotationValidationError,
@@ -14,10 +16,19 @@ export {
   validateBookmark,
   validateNoteInput,
   validateNote,
+  validateHighlightInput,
   validateBookmarkForExport,
   validateNoteForExport,
   throwIfInvalid,
 } from './annotation-validator.js';
+
+export {
+  HIGHLIGHT_COLOR_KEYS,
+  HIGHLIGHT_COLORS,
+  isHighlightColor,
+  highlightColorKey,
+  highlightRegistryName,
+} from './highlight-colors.js';
 
 export {
   filterByDateRange,
@@ -45,5 +56,11 @@ export {
   searchNotes,
   hasNoteAtLocator,
 } from './note-manager.js';
+
+export {
+  createHighlightManaged,
+  listHighlightsManaged,
+  removeHighlightManaged,
+} from './highlight-manager.js';
 
 export { exportAnnotations, importAnnotations } from './annotation-export.js';
