@@ -276,8 +276,61 @@ export function validateBookmarkForExport(bookmark: unknown): ValidationResult {
   return validateBookmark(bookmark);
 }
 
+export function validateHighlight(note: unknown): ValidationResult {
+  const errors: ValidationError[] = [];
+
+  if (typeof note !== 'object' || note === null || Array.isArray(note)) {
+    return { valid: false, errors: [{ field: 'highlight', message: 'highlight must be an object' }] };
+  }
+
+  const h = note as Record<string, unknown>;
+
+  const idError = assertNonEmptyString(h['id'], 'id');
+  if (idError) errors.push(idError);
+
+  const bookIdError = assertNonEmptyString(h['bookId'], 'bookId');
+  if (bookIdError) errors.push(bookIdError);
+
+  errors.push(...validateLocator(h['locatorStart']));
+
+  const locatorEnd = h['locatorEnd'];
+  if (locatorEnd !== undefined) {
+    errors.push(...validateLocator(locatorEnd));
+  }
+
+  if (!isHighlightColor(h['color'])) {
+    errors.push({ field: 'color', message: 'color must be one of the highlight palette colors' });
+  }
+
+  if (h['style'] !== undefined && h['style'] !== 'highlight' && h['style'] !== 'underline') {
+    errors.push({ field: 'style', message: "style must be 'highlight' or 'underline'" });
+  }
+
+  const createdAtError = assertNumber(h['createdAt'], 'createdAt');
+  if (createdAtError) errors.push(createdAtError);
+
+  const updatedAtError = assertNumber(h['updatedAt'], 'updatedAt');
+  if (updatedAtError) errors.push(updatedAtError);
+
+  if (h['selectedText'] !== undefined) {
+    const textError = assertString(h['selectedText'], 'selectedText');
+    if (textError) errors.push(textError);
+  }
+
+  if (h['note'] !== undefined) {
+    const noteError = assertString(h['note'], 'note');
+    if (noteError) errors.push(noteError);
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
 export function validateNoteForExport(note: unknown): ValidationResult {
   return validateNote(note);
+}
+
+export function validateHighlightForExport(highlight: unknown): ValidationResult {
+  return validateHighlight(highlight);
 }
 
 export function throwIfInvalid(result: ValidationResult): void {

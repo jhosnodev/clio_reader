@@ -279,6 +279,32 @@ if (!gotTheLock) {
         return { exists: false };
       }
     });
+    ipcMain.handle('save-file', async (_event, data: { defaultPath: string; content: string }) => {
+      if (!mainWindow) return null;
+      const result = await dialog.showSaveDialog(mainWindow, {
+        defaultPath: data.defaultPath,
+        filters: [
+          { name: 'Markdown', extensions: ['md'] },
+          { name: 'All Files', extensions: ['*'] },
+        ],
+      });
+      if (result.canceled || !result.filePath) return null;
+      await writeFile(result.filePath, data.content, 'utf-8');
+      return result.filePath;
+    });
+
+    ipcMain.handle('open-file', async (_event, data?: { filters?: Array<{ name: string; extensions: string[] }> }) => {
+      if (!mainWindow) return null;
+      const result = await dialog.showOpenDialog(mainWindow, {
+        filters: data?.filters ?? [{ name: 'Markdown', extensions: ['md'] }],
+        properties: ['openFile'],
+      });
+      if (result.canceled || result.filePaths.length === 0) return null;
+      const filePath = result.filePaths[0]!;
+      const content = await readFile(filePath, 'utf-8');
+      return { filePath, content };
+    });
+
 
     ipcMain.handle('repo:list-books', async () => {
       if (!repository) throw new Error('Database not initialized');

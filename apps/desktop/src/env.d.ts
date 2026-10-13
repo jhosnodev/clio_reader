@@ -15,6 +15,8 @@ interface ElectronAPI {
   checkFileExists(uri: string): Promise<{ exists: boolean }>;
   onSuspend(callback: () => void): void;
   onResume(callback: () => void): void;
+  saveFile(data: { defaultPath: string; content: string }): Promise<string | null>;
+  openFile(data?: { filters?: Array<{ name: string; extensions: string[] }> }): Promise<{ filePath: string; content: string } | null>;
   removeAllListeners(channel: string): void;
   repo: {
     listBooks(): Promise<readonly unknown[]>;

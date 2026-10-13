@@ -32,6 +32,7 @@ describe('AnnotationExport', () => {
       expect(data.bookId).toBe('book-1');
       expect(data.bookmarks).toHaveLength(0);
       expect(data.notes).toHaveLength(0);
+      expect(data.highlights).toHaveLength(0);
       expect(data.exportedAt).toBeTypeOf('number');
     });
 
@@ -74,6 +75,7 @@ describe('AnnotationExport', () => {
             updatedAt: Date.now(),
           },
         ],
+        highlights: [],
         exportedAt: Date.now(),
       };
 
@@ -93,6 +95,7 @@ describe('AnnotationExport', () => {
         bookId: 'book-1',
         bookmarks: [bm],
         notes: [],
+        highlights: [],
         exportedAt: Date.now(),
       };
 
@@ -109,6 +112,7 @@ describe('AnnotationExport', () => {
         bookId: 'book-1',
         bookmarks: [],
         notes: [],
+        highlights: [],
         exportedAt: Date.now(),
       };
 
@@ -126,6 +130,7 @@ describe('AnnotationExport', () => {
         bookId: 'wrong-book',
         bookmarks: [],
         notes: [],
+        highlights: [],
         exportedAt: Date.now(),
       };
 
@@ -150,6 +155,7 @@ describe('AnnotationExport', () => {
           },
         ],
         notes: [],
+        highlights: [],
         exportedAt: Date.now(),
       };
 
@@ -175,6 +181,7 @@ describe('AnnotationExport', () => {
         version: 1,
         bookId: 'book-1',
         notes: [],
+        highlights: [],
         exportedAt: Date.now(),
       };
 
