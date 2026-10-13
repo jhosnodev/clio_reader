@@ -280,7 +280,10 @@ export function validateHighlight(note: unknown): ValidationResult {
   const errors: ValidationError[] = [];
 
   if (typeof note !== 'object' || note === null || Array.isArray(note)) {
-    return { valid: false, errors: [{ field: 'highlight', message: 'highlight must be an object' }] };
+    return {
+      valid: false,
+      errors: [{ field: 'highlight', message: 'highlight must be an object' }],
+    };
   }
 
   const h = note as Record<string, unknown>;

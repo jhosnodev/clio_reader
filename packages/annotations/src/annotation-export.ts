@@ -1,7 +1,11 @@
 import type { Bookmark, Highlight, Note } from '@clio-reader/domain';
 
 import { AnnotationValidationError } from './errors.js';
-import { validateBookmarkForExport, validateHighlightForExport, validateNoteForExport } from './annotation-validator.js';
+import {
+  validateBookmarkForExport,
+  validateHighlightForExport,
+  validateNoteForExport,
+} from './annotation-validator.js';
 
 export interface AnnotationExportData {
   readonly version: 1;

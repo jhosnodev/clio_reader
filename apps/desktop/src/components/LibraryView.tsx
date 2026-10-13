@@ -1369,7 +1369,10 @@ function NotesView({
       }
 
       if (total === 0) {
-        setNotice({ kind: 'warn', message: 'El archivo no contenía anotaciones nuevas para importar.' });
+        setNotice({
+          kind: 'warn',
+          message: 'El archivo no contenía anotaciones nuevas para importar.',
+        });
       } else if (fallback) {
         setNotice({
           kind: 'warn',

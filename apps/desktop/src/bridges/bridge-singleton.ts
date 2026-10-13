@@ -11,5 +11,6 @@ export const bridge = createDesktopBridge();
 
 export const bridgeExtras = {
   saveFile: (data: { defaultPath: string; content: string }) => window.electronAPI.saveFile(data),
-  openFile: (data?: { filters?: Array<{ name: string; extensions: string[] }> }) => window.electronAPI.openFile(data),
+  openFile: (data?: { filters?: Array<{ name: string; extensions: string[] }> }) =>
+    window.electronAPI.openFile(data),
 };

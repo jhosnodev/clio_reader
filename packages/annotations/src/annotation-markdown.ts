@@ -1,6 +1,10 @@
 import type { Bookmark, Highlight, Note, ReaderLocator } from '@clio-reader/domain';
 
-import { validateBookmarkForExport, validateHighlightForExport, validateNoteForExport } from './annotation-validator.js';
+import {
+  validateBookmarkForExport,
+  validateHighlightForExport,
+  validateNoteForExport,
+} from './annotation-validator.js';
 
 export interface AnnotationMarkdownExportOptions {
   readonly bookTitle?: string;
@@ -40,9 +44,10 @@ export function readAnnotationMarkdownMeta(md: string): AnnotationMarkdownMeta {
     if (idx === -1) continue;
     const key = line.slice(0, idx).trim();
     const raw = line.slice(idx + 1).trim();
-    const value = raw.startsWith('"') && raw.endsWith('"') && raw.length >= 2
-      ? raw.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, '\\')
-      : raw;
+    const value =
+      raw.startsWith('"') && raw.endsWith('"') && raw.length >= 2
+        ? raw.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, '\\')
+        : raw;
     map.set(key, value);
   }
   const versionRaw = map.get('version');
@@ -86,7 +91,9 @@ function fenceSelectedText(text: string): string {
   return `${fence}\n${normalized}\n${fence}`;
 }
 
-function extractClioBlocks(md: string): Array<{ type: 'highlight' | 'note' | 'bookmark'; json: string }> {
+function extractClioBlocks(
+  md: string,
+): Array<{ type: 'highlight' | 'note' | 'bookmark'; json: string }> {
   const blocks: Array<{ type: 'highlight' | 'note' | 'bookmark'; json: string }> = [];
   const regex = /<!--\s*clio:(highlight|note|bookmark)\s+(\{[\s\S]*?\})\s*-->/gi;
   let match: RegExpExecArray | null;
@@ -140,7 +147,11 @@ export function exportAnnotationsToMarkdown(
 
   // Order: by position heuristic using locator progression/page/anchor.start
   const allItems = [
-    ...data.highlights.map((h) => ({ type: 'highlight' as const, createdAt: h.createdAt, item: h })),
+    ...data.highlights.map((h) => ({
+      type: 'highlight' as const,
+      createdAt: h.createdAt,
+      item: h,
+    })),
     ...data.notes.map((n) => ({ type: 'note' as const, createdAt: n.createdAt, item: n })),
     ...data.bookmarks.map((b) => ({ type: 'bookmark' as const, createdAt: b.createdAt, item: b })),
   ].sort((a, b) => {
@@ -202,8 +213,21 @@ export function importAnnotationsFromMarkdown(
 
   if (blocks.length === 0) {
     return {
-      data: { version: 1, bookId, bookmarks: [], notes: [], highlights: [], exportedAt: Date.now() },
-      result: { bookmarksImported: 0, notesImported: 0, highlightsImported: 0, skipped: 0, unresolved: 0 },
+      data: {
+        version: 1,
+        bookId,
+        bookmarks: [],
+        notes: [],
+        highlights: [],
+        exportedAt: Date.now(),
+      },
+      result: {
+        bookmarksImported: 0,
+        notesImported: 0,
+        highlightsImported: 0,
+        skipped: 0,
+        unresolved: 0,
+      },
       meta,
     };
   }
@@ -262,7 +286,11 @@ export function importAnnotationsFromMarkdown(
   };
 }
 
-type Entry = { type: 'highlight' | 'note' | 'bookmark'; createdAt: number; item: Highlight | Note | Bookmark };
+type Entry = {
+  type: 'highlight' | 'note' | 'bookmark';
+  createdAt: number;
+  item: Highlight | Note | Bookmark;
+};
 function getSelectedText(entry: Entry): string | undefined {
   if (entry.type === 'highlight') return (entry.item as Highlight).selectedText;
   if (entry.type === 'note') return (entry.item as Note).selectedText;
@@ -325,7 +353,10 @@ function toBookmarkJson(b: Bookmark): unknown {
 
 function normalizeHighlight(obj: Record<string, unknown>, bookId: string): Partial<Highlight> {
   const out: Record<string, unknown> = {
-    id: typeof obj.id === 'string' ? obj.id : `hl-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
+    id:
+      typeof obj.id === 'string'
+        ? obj.id
+        : `hl-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     bookId,
     locatorStart: asReaderLocator(obj.locatorStart) ?? { format: 'epub', href: '#' },
     color: typeof obj.color === 'string' ? obj.color : '#facc15',
@@ -342,7 +373,10 @@ function normalizeHighlight(obj: Record<string, unknown>, bookId: string): Parti
 
 function normalizeNote(obj: Record<string, unknown>, bookId: string): Partial<Note> {
   const out: Record<string, unknown> = {
-    id: typeof obj.id === 'string' ? obj.id : `note-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
+    id:
+      typeof obj.id === 'string'
+        ? obj.id
+        : `note-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     bookId,
     locator: asReaderLocator(obj.locator) ?? { format: 'epub', href: '#' },
     body: typeof obj.body === 'string' ? obj.body : '',
@@ -355,7 +389,10 @@ function normalizeNote(obj: Record<string, unknown>, bookId: string): Partial<No
 
 function normalizeBookmark(obj: Record<string, unknown>, bookId: string): Partial<Bookmark> {
   const out: Record<string, unknown> = {
-    id: typeof obj.id === 'string' ? obj.id : `bm-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
+    id:
+      typeof obj.id === 'string'
+        ? obj.id
+        : `bm-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     bookId,
     locator: asReaderLocator(obj.locator) ?? { format: 'epub', href: '#' },
     createdAt: typeof obj.createdAt === 'number' ? obj.createdAt : Date.now(),
