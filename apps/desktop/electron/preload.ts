@@ -51,6 +51,13 @@ const electronAPI = {
     ipcRenderer.on('app-resume', () => callback());
   },
 
+
+  saveFile: (data: { defaultPath: string; content: string }): Promise<string | null> => {
+    return ipcRenderer.invoke('save-file', data);
+  },
+  openFile: (data?: { filters?: Array<{ name: string; extensions: string[] }> }): Promise<{ filePath: string; content: string } | null> => {
+    return ipcRenderer.invoke('open-file', data);
+  },
   removeAllListeners: (channel: string): void => {
     ipcRenderer.removeAllListeners(channel);
   },

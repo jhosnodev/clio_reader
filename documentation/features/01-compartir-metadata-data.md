@@ -36,7 +36,7 @@ La exportación legible tendrá alta portabilidad, pero la reimportación exacta
 
 ## MVP de esta feature futura
 
-El primer corte debe exportar Markdown y `.echo.json`, e importar `.echo.json` en una instalación local. La exportación a W3C/Readium y los adaptadores para Kobo, Kindle u otros lectores serán incrementos posteriores.
+El primer corte debe exportar Markdown y `.echo.json`, e importar `.echo.json` en una instalación local. El subconjunto de notas y resaltados a Markdown se especifica por separado en [`13-exportar-notas-highlights-markdown.md`](./13-exportar-notas-highlights-markdown.md) (F-008). La exportación a W3C/Readium y los adaptadores para Kobo, Kindle u otros lectores serán incrementos posteriores.
 
 ## Criterios de aceptación
 

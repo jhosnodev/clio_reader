@@ -17,8 +17,10 @@ export {
   validateNoteInput,
   validateNote,
   validateHighlightInput,
+  validateHighlight,
   validateBookmarkForExport,
   validateNoteForExport,
+  validateHighlightForExport,
   throwIfInvalid,
 } from './annotation-validator.js';
 
@@ -64,3 +66,11 @@ export {
 } from './highlight-manager.js';
 
 export { exportAnnotations, importAnnotations } from './annotation-export.js';
+export {
+  exportAnnotationsToMarkdown,
+  importAnnotationsFromMarkdown,
+} from './annotation-markdown.js';
+export type {
+  AnnotationMarkdownExportOptions,
+  AnnotationMarkdownImportResult,
+} from './annotation-markdown.js';
