@@ -16,6 +16,46 @@ export interface AnnotationMarkdownImportResult {
   readonly unresolved: number;
 }
 
+export interface AnnotationMarkdownMeta {
+  readonly version: number | null;
+  readonly bookId: string | null;
+  readonly bookTitle: string | null;
+  readonly bookFormat: string | null;
+  readonly fileHash: string | null;
+}
+
+export function readAnnotationMarkdownMeta(md: string): AnnotationMarkdownMeta {
+  const norm = md.replace(/\r\n/g, '\n');
+  if (!norm.startsWith('---\n')) {
+    return { version: null, bookId: null, bookTitle: null, bookFormat: null, fileHash: null };
+  }
+  const end = norm.indexOf('\n---', 4);
+  if (end === -1) {
+    return { version: null, bookId: null, bookTitle: null, bookFormat: null, fileHash: null };
+  }
+  const frontmatter = norm.slice(4, end);
+  const map = new Map<string, string>();
+  for (const line of frontmatter.split('\n')) {
+    const idx = line.indexOf(':');
+    if (idx === -1) continue;
+    const key = line.slice(0, idx).trim();
+    const raw = line.slice(idx + 1).trim();
+    const value = raw.startsWith('"') && raw.endsWith('"') && raw.length >= 2
+      ? raw.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, '\\')
+      : raw;
+    map.set(key, value);
+  }
+  const versionRaw = map.get('version');
+  const parsedVersion = versionRaw ? Number.parseInt(versionRaw, 10) : Number.NaN;
+  return {
+    version: Number.isNaN(parsedVersion) ? null : parsedVersion,
+    bookId: map.get('bookId') ?? null,
+    bookTitle: map.get('bookTitle') ?? null,
+    bookFormat: map.get('format') ?? null,
+    fileHash: map.get('fileHash') ?? null,
+  };
+}
+
 function escapeYamlString(value: string): string {
   return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
@@ -145,10 +185,9 @@ export function exportAnnotationsToMarkdown(
 export function importAnnotationsFromMarkdown(
   md: string,
   bookId: string,
-  _expectedBookId?: string,
-  _fileHash?: string,
-): { data: unknown; result: AnnotationMarkdownImportResult } {
+): { data: unknown; result: AnnotationMarkdownImportResult; meta: AnnotationMarkdownMeta } {
   const blocks = extractClioBlocks(md);
+  const meta = readAnnotationMarkdownMeta(md);
   let result: AnnotationMarkdownImportResult = {
     bookmarksImported: 0,
     notesImported: 0,
@@ -165,11 +204,12 @@ export function importAnnotationsFromMarkdown(
     return {
       data: { version: 1, bookId, bookmarks: [], notes: [], highlights: [], exportedAt: Date.now() },
       result: { bookmarksImported: 0, notesImported: 0, highlightsImported: 0, skipped: 0, unresolved: 0 },
+      meta,
     };
   }
 
-  // Optional: warn if book mismatch? but just proceed per spec (we can ignore)
-  // Parse each block
+  // El libro destino es autoritativo: cada anotación se remapea a `bookId`
+  // para permitir importar un archivo de otro libro (fallback por desajuste).
   for (const b of blocks) {
     try {
       const parsed = JSON.parse(b.json);
@@ -218,6 +258,7 @@ export function importAnnotationsFromMarkdown(
       notesImported: notes.length,
       highlightsImported: highlights.length,
     },
+    meta,
   };
 }
 
@@ -285,7 +326,7 @@ function toBookmarkJson(b: Bookmark): unknown {
 function normalizeHighlight(obj: Record<string, unknown>, bookId: string): Partial<Highlight> {
   const out: Record<string, unknown> = {
     id: typeof obj.id === 'string' ? obj.id : `hl-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
-    bookId: typeof obj.bookId === 'string' ? obj.bookId : bookId,
+    bookId,
     locatorStart: asReaderLocator(obj.locatorStart) ?? { format: 'epub', href: '#' },
     color: typeof obj.color === 'string' ? obj.color : '#facc15',
     style: obj.style === 'underline' ? 'underline' : 'highlight',
@@ -302,7 +343,7 @@ function normalizeHighlight(obj: Record<string, unknown>, bookId: string): Parti
 function normalizeNote(obj: Record<string, unknown>, bookId: string): Partial<Note> {
   const out: Record<string, unknown> = {
     id: typeof obj.id === 'string' ? obj.id : `note-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
-    bookId: typeof obj.bookId === 'string' ? obj.bookId : bookId,
+    bookId,
     locator: asReaderLocator(obj.locator) ?? { format: 'epub', href: '#' },
     body: typeof obj.body === 'string' ? obj.body : '',
     createdAt: typeof obj.createdAt === 'number' ? obj.createdAt : Date.now(),
@@ -315,7 +356,7 @@ function normalizeNote(obj: Record<string, unknown>, bookId: string): Partial<No
 function normalizeBookmark(obj: Record<string, unknown>, bookId: string): Partial<Bookmark> {
   const out: Record<string, unknown> = {
     id: typeof obj.id === 'string' ? obj.id : `bm-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
-    bookId: typeof obj.bookId === 'string' ? obj.bookId : bookId,
+    bookId,
     locator: asReaderLocator(obj.locator) ?? { format: 'epub', href: '#' },
     createdAt: typeof obj.createdAt === 'number' ? obj.createdAt : Date.now(),
   };

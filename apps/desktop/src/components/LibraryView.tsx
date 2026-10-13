@@ -16,7 +16,17 @@ import type {
   ReadingProgress,
 } from '@clio-reader/domain';
 import type { LibraryRepository } from '@clio-reader/library';
-import { removeNoteManaged, removeHighlightManaged } from '@clio-reader/annotations';
+import {
+  removeNoteManaged,
+  removeHighlightManaged,
+  exportAnnotations,
+  importAnnotations,
+  exportAnnotationsToMarkdown,
+  importAnnotationsFromMarkdown,
+  readAnnotationMarkdownMeta,
+} from '@clio-reader/annotations';
+import { bridgeExtras } from '../bridges/bridge-singleton';
+import { NotesExportDialog } from './NotesExportDialog';
 import type { ThemePalette } from '../themes';
 import { PALETTES } from '../themes';
 import { BrandIcon } from './BrandIcon';
@@ -1153,6 +1163,12 @@ function fmtLocator(locator: ReaderLocator): string {
 
 type AnnotationItemKind = 'note' | 'highlight';
 
+const NOTICE_KINDS: Record<'success' | 'warn' | 'error', React.CSSProperties> = {
+  success: { borderColor: 'var(--verdigris)' },
+  warn: { borderColor: 'var(--gold)' },
+  error: { borderColor: 'var(--rose)' },
+};
+
 interface AnnotationItem {
   readonly kind: AnnotationItemKind;
   readonly id: string;
@@ -1203,6 +1219,11 @@ function NotesView({
   const [notes, setNotes] = useState<readonly Note[]>([]);
   const [highlights, setHighlights] = useState<readonly Highlight[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [notice, setNotice] = useState<{
+    readonly kind: 'success' | 'warn' | 'error';
+    readonly message: string;
+  } | null>(null);
 
   const bookTitle = useCallback(
     (bookId: string) => books.find((b) => b.id === bookId)?.title ?? 'Libro desconocido',
@@ -1260,6 +1281,113 @@ function NotesView({
   useEffect(() => {
     loadNotes();
   }, [loadNotes]);
+
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(null), 6000);
+    return () => clearTimeout(timer);
+  }, [notice]);
+
+  const selectedBook = useMemo(
+    () => books.find((b) => b.id === selectedBookId),
+    [books, selectedBookId],
+  );
+
+  const handleExportAnnotations = useCallback(async () => {
+    const book = books.find((b) => b.id === selectedBookId);
+    if (!book) return;
+    try {
+      const data = await exportAnnotations(repository, book.id);
+      const markdown = exportAnnotationsToMarkdown(data, {
+        bookTitle: book.title,
+        bookFormat: book.format,
+        ...(book.fileHash ? { fileHash: book.fileHash } : {}),
+      });
+      const baseName = book.title.replace(/[\\/:*?"<>|\s]+/g, '-').replace(/^-+|-+$/g, '');
+      const savedPath = await bridgeExtras.saveFile({
+        defaultPath: `${baseName || 'anotaciones'}.md`,
+        content: markdown,
+      });
+      if (savedPath) {
+        setNotice({ kind: 'success', message: `Anotaciones exportadas a ${savedPath}` });
+      }
+    } catch (err) {
+      console.error('Error exportando anotaciones:', err);
+      setNotice({ kind: 'error', message: 'No se pudieron exportar las anotaciones.' });
+    }
+  }, [books, repository, selectedBookId]);
+
+  const handleImportAnnotations = useCallback(async () => {
+    try {
+      const file = await bridgeExtras.openFile({
+        filters: [
+          { name: 'Markdown', extensions: ['md', 'markdown'] },
+          { name: 'Todos los archivos', extensions: ['*'] },
+        ],
+      });
+      if (!file) return;
+
+      const meta = readAnnotationMarkdownMeta(file.content);
+      const hasClioBlocks = /clio:(highlight|note|bookmark)/.test(file.content);
+      if (meta.version !== 1 && !hasClioBlocks) {
+        setNotice({
+          kind: 'error',
+          message: 'El archivo no es una exportación de anotaciones de Clio Reader.',
+        });
+        return;
+      }
+
+      // Resolución del libro destino con fallback por desajuste.
+      let targetBookId = selectedBookId;
+      let fallback = false;
+      if (meta.bookId === selectedBookId) {
+        targetBookId = selectedBookId;
+      } else if (meta.bookId && books.some((b) => b.id === meta.bookId)) {
+        targetBookId = meta.bookId;
+      } else {
+        const hashMatch = meta.fileHash
+          ? books.find((b) => b.fileHash && b.fileHash === meta.fileHash)
+          : undefined;
+        if (hashMatch) {
+          targetBookId = hashMatch.id;
+        } else {
+          targetBookId = selectedBookId;
+          fallback = true;
+        }
+      }
+
+      const { data, result } = importAnnotationsFromMarkdown(file.content, targetBookId);
+      await importAnnotations(repository, targetBookId, data);
+
+      const total = result.bookmarksImported + result.notesImported + result.highlightsImported;
+      const targetTitle = books.find((b) => b.id === targetBookId)?.title ?? targetBookId;
+
+      if (targetBookId !== selectedBookId) {
+        setSelectedBookId(targetBookId);
+      } else {
+        await loadNotes();
+      }
+
+      if (total === 0) {
+        setNotice({ kind: 'warn', message: 'El archivo no contenía anotaciones nuevas para importar.' });
+      } else if (fallback) {
+        setNotice({
+          kind: 'warn',
+          message: `El archivo pertenece a otro libro; se importaron ${total} anotación(es) en “${targetTitle}”.`,
+        });
+      } else if (targetBookId !== selectedBookId) {
+        setNotice({
+          kind: 'success',
+          message: `Importadas ${total} anotación(es) en “${targetTitle}”.`,
+        });
+      } else {
+        setNotice({ kind: 'success', message: `Importadas ${total} anotación(es) en este libro.` });
+      }
+    } catch (err) {
+      console.error('Error importando anotaciones:', err);
+      setNotice({ kind: 'error', message: 'No se pudo importar el archivo de anotaciones.' });
+    }
+  }, [books, loadNotes, repository, selectedBookId]);
 
   const items = useMemo<AnnotationItem[]>(() => {
     const noteItems: AnnotationItem[] = notes.map((n) => ({
@@ -1381,7 +1509,42 @@ function NotesView({
           <option value="date-asc">Más antiguas</option>
           <option value="position">Por posición</option>
         </select>
+        <div style={{ flex: 1 }} />
+        <button
+          style={S.notesActionBtn}
+          onClick={() => setShowExportDialog(true)}
+          aria-label="Exportar o importar anotaciones del libro"
+        >
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M12 3v12" />
+            <path d="M7 10l5 5 5-5" />
+            <path d="M5 21h14" />
+          </svg>
+          Exportar / Importar
+        </button>
       </div>
+
+      {notice && (
+        <div style={{ ...S.notesNotice, ...NOTICE_KINDS[notice.kind] }} role="status">
+          <span>{notice.message}</span>
+          <button
+            style={S.notesNoticeClose}
+            onClick={() => setNotice(null)}
+            aria-label="Cerrar aviso"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {loading ? (
         <div style={S.emptyBookmarks}>
@@ -1484,6 +1647,14 @@ function NotesView({
           ))}
         </div>
       )}
+
+      <NotesExportDialog
+        open={showExportDialog}
+        bookTitle={selectedBook?.title ?? ''}
+        onClose={() => setShowExportDialog(false)}
+        onExportMarkdown={handleExportAnnotations}
+        onImportMarkdown={handleImportAnnotations}
+      />
     </div>
   );
 }
@@ -2297,6 +2468,47 @@ const S: Record<string, React.CSSProperties> = {
     fontFamily: 'inherit',
     cursor: 'pointer',
     minWidth: 180,
+  },
+  notesActionBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '8px 14px',
+    borderRadius: 8,
+    background: 'var(--ink-850)',
+    border: '1px solid var(--gold-dim)',
+    color: 'var(--tx)',
+    fontSize: 13,
+    fontFamily: 'inherit',
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: '.15s',
+  },
+  notesNotice: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    padding: '10px 14px',
+    marginBottom: 16,
+    borderRadius: 8,
+    background: 'var(--ink-850)',
+    border: '1px solid var(--line)',
+    color: 'var(--tx)',
+    fontSize: 13,
+    lineHeight: 1.4,
+    overflowWrap: 'anywhere',
+  },
+  notesNoticeClose: {
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--tx-faint)',
+    fontSize: 18,
+    lineHeight: 1,
+    cursor: 'pointer',
+    padding: '0 4px',
+    fontFamily: 'inherit',
+    flexShrink: 0,
   },
   noteBody: {
     fontSize: 14,

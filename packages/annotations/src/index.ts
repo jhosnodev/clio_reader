@@ -69,8 +69,10 @@ export { exportAnnotations, importAnnotations } from './annotation-export.js';
 export {
   exportAnnotationsToMarkdown,
   importAnnotationsFromMarkdown,
+  readAnnotationMarkdownMeta,
 } from './annotation-markdown.js';
 export type {
   AnnotationMarkdownExportOptions,
   AnnotationMarkdownImportResult,
+  AnnotationMarkdownMeta,
 } from './annotation-markdown.js';
