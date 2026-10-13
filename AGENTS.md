@@ -449,6 +449,30 @@ pnpm --filter @clio-reader/desktop build      # Build de producción
 pnpm --filter @clio-reader/desktop build:win  # Build + instalador NSIS
 ```
 
+### Aplicación mobile (Android)
+
+El lector de mobile reutiliza el bundle del reader de desktop dentro de
+`react-native-webview`. El HTML autocontenido (`apps/mobile/assets/reader.html`)
+se genera desde `vite.reader.mobile.config.ts` y está en `.gitignore`; hay que
+construirlo antes de empaquetar.
+
+```bash
+pnpm build                                                # Requerido: dist de packages
+pnpm --filter @clio-reader/mobile build:reader            # Genera assets/reader.html
+pnpm --filter @clio-reader/mobile start                   # Metro
+pnpm --filter @clio-reader/mobile android                 # Metro + dispositivo/emulador
+```
+
+Notas:
+
+- pnpm + Metro: los `metro.config.cjs`/`babel.config.cjs` son CJS (el paquete es
+  `"type": "module"`); el entry es `index.js` (no `expo/AppEntry.js`).
+- Los paquetes `reader-*` compilan a `dist/src/index.js` (ver `tsconfig.build.json`
+  con `rootDir: "."` y `paths: {}`), y Metro resuelve vía `package.json` `exports`.
+- La comunicación reader→host usa sentinelas de `console.log` (`__clio_back__`,
+  `__clio_rank__`, `__clio_prefs__`) reenviadas por un shim de `console.log`
+  inyectado antes de cargar el contenido.
+
 ## 14. Estrategia de tests
 
 - **Unitarias**: Reglas puras y adaptadores aislados (`src/feature.test.ts` junto a `src/feature.ts`)

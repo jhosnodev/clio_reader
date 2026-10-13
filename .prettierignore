@@ -1,6 +1,8 @@
 node_modules
 dist
+dist-reader-mobile
 dist-electron
 coverage
 pnpm-lock.yaml
 packages/reader-epub/repro-runtime.mjs
+apps/mobile/assets/reader.html

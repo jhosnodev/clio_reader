@@ -15,6 +15,7 @@ interface BookCardProps {
   rank?: Rank | undefined;
   progressPercent?: number | undefined;
   onPress: () => void;
+  onLongPress?: (() => void) | undefined;
   onSaveRank?: ((rank: Rank) => void) | undefined;
 }
 
@@ -96,6 +97,7 @@ export function BookCard({
   rank,
   progressPercent,
   onPress,
+  onLongPress,
   onSaveRank,
 }: BookCardProps): JSX.Element {
   const status = getStatus(readingStatus, lastOpenedAt);
@@ -111,7 +113,12 @@ export function BookCard({
   };
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={onPress}
+      onLongPress={onLongPress}
+      activeOpacity={0.7}
+    >
       <View style={[styles.cover, { backgroundColor: c1 }]}>
         {coverImage ? (
           <Image source={{ uri: coverImage }} style={styles.coverImage} resizeMode="cover" />

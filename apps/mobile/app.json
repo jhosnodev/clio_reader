@@ -7,7 +7,9 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "backgroundColor": "#f9fafb"
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#100f18"
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
@@ -15,10 +17,15 @@
       "bundleIdentifier": "com.clio-reader.mobile"
     },
     "android": {
+      "package": "com.clio_reader.mobile",
       "adaptiveIcon": {
-        "backgroundColor": "#f9fafb"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#100f18"
       },
-      "package": "com.clio_reader.mobile"
+      "permissions": []
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
     },
     "plugins": ["expo-document-picker"]
   }

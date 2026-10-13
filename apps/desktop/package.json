@@ -14,6 +14,7 @@
     "build:win:portable": "tsc && vite build && electron-builder --win --portable",
     "build:linux": "tsc && vite build && electron-builder --linux",
     "build:linux:appimage": "tsc && vite build && electron-builder --linux --publish=never --config electron-builder.yml",
+    "build:reader-mobile": "vite build --config vite.reader.mobile.config.ts",
     "preview": "vite preview",
     "check": "tsc -p tsconfig.json",
     "lint": "tsc -p tsconfig.json --noEmit",

@@ -29,7 +29,7 @@ describe('Mobile Bridge', () => {
     });
 
     it('should pick file and return FileSource', async () => {
-      const result: PickerResult = {
+      const pickerResult: PickerResult = {
         canceled: false,
         assets: [
           {
@@ -39,7 +39,7 @@ describe('Mobile Bridge', () => {
           },
         ],
       };
-      vi.mocked(mockDocumentPicker.getDocumentAsync).mockResolvedValue(result);
+      vi.mocked(mockDocumentPicker.getDocumentAsync).mockResolvedValue(pickerResult);
 
       const { createMobileBridge } = await import('../src/bridges/mobile-bridge');
       const bridge = createMobileBridge();
@@ -53,11 +53,11 @@ describe('Mobile Bridge', () => {
     });
 
     it('should return null when file picker is canceled', async () => {
-      const result: PickerResult = {
+      const pickerResult: PickerResult = {
         canceled: true,
         assets: [],
       };
-      vi.mocked(mockDocumentPicker.getDocumentAsync).mockResolvedValue(result);
+      vi.mocked(mockDocumentPicker.getDocumentAsync).mockResolvedValue(pickerResult);
 
       const { createMobileBridge } = await import('../src/bridges/mobile-bridge');
       const bridge = createMobileBridge();
