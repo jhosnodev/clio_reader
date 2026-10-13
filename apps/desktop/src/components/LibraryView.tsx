@@ -9,13 +9,14 @@ import type {
   Book,
   Bookmark,
   Note,
+  Highlight,
   ReaderLocator,
   ReadingStatus,
   Rank,
   ReadingProgress,
 } from '@clio-reader/domain';
 import type { LibraryRepository } from '@clio-reader/library';
-import { listNotesManaged, removeNoteManaged } from '@clio-reader/annotations';
+import { removeNoteManaged, removeHighlightManaged } from '@clio-reader/annotations';
 import type { ThemePalette } from '../themes';
 import { PALETTES } from '../themes';
 import { BrandIcon } from './BrandIcon';
@@ -368,24 +369,25 @@ function Rail({
         </svg>
       ),
     },
-    {
-      id: 'bookmarks',
-      label: 'Marcadores',
-      icon: (
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.7"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M6 4h12v16l-6-4-6 4z" />
-        </svg>
-      ),
-    },
+    /* TODO: marcadores no funcional — re-habilitar cuando el CRUD esté completo */
+    // {
+    //   id: 'bookmarks',
+    //   label: 'Marcadores',
+    //   icon: (
+    //     <svg
+    //       width="22"
+    //       height="22"
+    //       viewBox="0 0 24 24"
+    //       fill="none"
+    //       stroke="currentColor"
+    //       strokeWidth="1.7"
+    //       strokeLinecap="round"
+    //       strokeLinejoin="round"
+    //     >
+    //       <path d="M6 4h12v16l-6-4-6 4z" />
+    //     </svg>
+    //   ),
+    // },
     {
       id: 'notes',
       label: 'Notas',
@@ -1149,6 +1151,44 @@ function fmtLocator(locator: ReaderLocator): string {
   }
 }
 
+type AnnotationItemKind = 'note' | 'highlight';
+
+interface AnnotationItem {
+  readonly kind: AnnotationItemKind;
+  readonly id: string;
+  readonly bookId: string;
+  readonly locator: ReaderLocator;
+  readonly selectedText?: string;
+  readonly body?: string;
+  readonly color?: string;
+  readonly createdAt: number;
+}
+
+/** Clave de posición ordenable que combina progreso de libro y ancla en el capítulo. */
+function annotationPositionKey(locator: ReaderLocator): number {
+  let base = 0;
+  if ('progression' in locator && locator.progression !== undefined) {
+    base = locator.progression;
+  } else if ('positionOrder' in locator && locator.positionOrder !== undefined) {
+    base = locator.positionOrder;
+  } else if ('page' in locator && locator.page !== undefined) {
+    base = locator.page;
+  }
+  const anchor = 'anchor' in locator ? locator.anchor : undefined;
+  return base * 1_000_000 + (anchor?.start ?? 0);
+}
+
+function sortAnnotationItems(items: readonly AnnotationItem[], sort: NotesSort): AnnotationItem[] {
+  const sorted = [...items];
+  if (sort === 'position') {
+    return sorted.sort(
+      (a, b) => annotationPositionKey(a.locator) - annotationPositionKey(b.locator),
+    );
+  }
+  const direction = sort === 'date-asc' ? 1 : -1;
+  return sorted.sort((a, b) => direction * (a.createdAt - b.createdAt));
+}
+
 function NotesView({
   books,
   repository,
@@ -1161,6 +1201,7 @@ function NotesView({
   const [selectedBookId, setSelectedBookId] = useState<string>('');
   const [sort, setSort] = useState<NotesSort>('date-desc');
   const [notes, setNotes] = useState<readonly Note[]>([]);
+  const [highlights, setHighlights] = useState<readonly Highlight[]>([]);
   const [loading, setLoading] = useState(false);
 
   const bookTitle = useCallback(
@@ -1168,15 +1209,18 @@ function NotesView({
     [books],
   );
 
-  // Libro por defecto: el primero con notas, o el primero de la biblioteca
+  // Libro por defecto: el primero con notas o resaltados, o el primero de la biblioteca
   useEffect(() => {
     if (selectedBookId) return;
     let cancelled = false;
     const pick = async () => {
       let found = '';
       for (const b of books) {
-        const list = await repository.listNotes(b.id).catch(() => []);
-        if (list.length > 0) {
+        const [noteList, highlightList] = await Promise.all([
+          repository.listNotes(b.id).catch(() => []),
+          repository.listHighlights(b.id).catch(() => []),
+        ]);
+        if (noteList.length > 0 || highlightList.length > 0) {
           found = b.id;
           break;
         }
@@ -1193,38 +1237,64 @@ function NotesView({
   const loadNotes = useCallback(async () => {
     if (!selectedBookId) {
       setNotes([]);
+      setHighlights([]);
       return;
     }
     setLoading(true);
     try {
-      const sortOptions =
-        sort === 'position'
-          ? { field: 'position' as const }
-          : {
-              field: 'date' as const,
-              order: sort === 'date-asc' ? ('asc' as const) : ('desc' as const),
-            };
-      const list = await listNotesManaged(repository, selectedBookId, { sort: sortOptions });
-      setNotes(list);
+      const [noteList, highlightList] = await Promise.all([
+        repository.listNotes(selectedBookId).catch(() => []),
+        repository.listHighlights(selectedBookId).catch(() => []),
+      ]);
+      setNotes(noteList);
+      setHighlights(highlightList);
     } catch (err) {
-      console.error('Error cargando notas:', err);
+      console.error('Error cargando anotaciones:', err);
       setNotes([]);
+      setHighlights([]);
     } finally {
       setLoading(false);
     }
-  }, [repository, selectedBookId, sort]);
+  }, [repository, selectedBookId]);
 
   useEffect(() => {
     loadNotes();
   }, [loadNotes]);
 
-  const handleDelete = useCallback(
-    async (noteId: string) => {
+  const items = useMemo<AnnotationItem[]>(() => {
+    const noteItems: AnnotationItem[] = notes.map((n) => ({
+      kind: 'note',
+      id: n.id,
+      bookId: n.bookId,
+      locator: n.locator,
+      body: n.body,
+      createdAt: n.createdAt,
+      ...(n.selectedText !== undefined ? { selectedText: n.selectedText } : {}),
+    }));
+    const highlightItems: AnnotationItem[] = highlights.map((h) => ({
+      kind: 'highlight',
+      id: h.id,
+      bookId: h.bookId,
+      locator: h.locatorStart,
+      color: h.color,
+      createdAt: h.createdAt,
+      ...(h.selectedText !== undefined ? { selectedText: h.selectedText } : {}),
+    }));
+    return sortAnnotationItems([...noteItems, ...highlightItems], sort);
+  }, [notes, highlights, sort]);
+
+  const handleDeleteItem = useCallback(
+    async (item: AnnotationItem) => {
       try {
-        await removeNoteManaged(repository, noteId, selectedBookId);
-        setNotes((prev) => prev.filter((n) => n.id !== noteId));
+        if (item.kind === 'note') {
+          await removeNoteManaged(repository, item.id, selectedBookId);
+          setNotes((prev) => prev.filter((n) => n.id !== item.id));
+        } else {
+          await removeHighlightManaged(repository, item.id, selectedBookId);
+          setHighlights((prev) => prev.filter((h) => h.id !== item.id));
+        }
       } catch (err) {
-        console.error('Error eliminando nota:', err);
+        console.error('Error eliminando anotación:', err);
       }
     },
     [repository, selectedBookId],
@@ -1279,9 +1349,10 @@ function NotesView({
     <div style={S.wrap}>
       <header style={S.topbar}>
         <div>
-          <h1 style={S.h1}>Notas</h1>
+          <h1 style={S.h1}>Notas y resaltados</h1>
           <div style={S.sub}>
-            {notes.length} nota{notes.length !== 1 ? 's' : ''} en {bookTitle(selectedBookId)}
+            {notes.length} nota{notes.length !== 1 ? 's' : ''} y {highlights.length} resaltado
+            {highlights.length !== 1 ? 's' : ''} en {bookTitle(selectedBookId)}
           </div>
         </div>
       </header>
@@ -1315,9 +1386,9 @@ function NotesView({
       {loading ? (
         <div style={S.emptyBookmarks}>
           <div style={{ ...S.spinner, width: 24, height: 24 }} aria-hidden="true" />
-          <p style={S.emptyHint}>Cargando notas…</p>
+          <p style={S.emptyHint}>Cargando anotaciones…</p>
         </div>
-      ) : notes.length === 0 ? (
+      ) : items.length === 0 ? (
         <div style={S.emptyBookmarks}>
           <svg
             width="40"
@@ -1333,54 +1404,67 @@ function NotesView({
             <path d="M16 20v-4h4" />
             <path d="M8 9h8M8 13h5" />
           </svg>
-          <h3 style={S.emptyTitle}>Sin notas en este libro</h3>
-          <p style={S.emptyHint}>Selecciona otro libro o abre uno para escribir una nota.</p>
+          <h3 style={S.emptyTitle}>Sin anotaciones en este libro</h3>
+          <p style={S.emptyHint}>
+            Selecciona otro libro o abre uno para escribir notas y resaltar texto.
+          </p>
         </div>
       ) : (
         <div style={S.bookmarksList}>
-          {notes.map((note) => (
-            <div key={note.id} style={S.bookmarkItem}>
+          {items.map((item) => (
+            <div key={`${item.kind}-${item.id}`} style={S.bookmarkItem}>
               <div
                 style={S.bookmarkContent}
-                onClick={() => handleOpenBook(note.bookId, JSON.stringify(note.locator))}
+                onClick={() => handleOpenBook(item.bookId, JSON.stringify(item.locator))}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleOpenBook(note.bookId, JSON.stringify(note.locator));
+                  if (e.key === 'Enter') handleOpenBook(item.bookId, JSON.stringify(item.locator));
                 }}
                 role="button"
                 tabIndex={0}
               >
-                <div style={S.bookmarkIcon}>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="var(--gold)"
-                    strokeWidth="1.7"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M4 5h16v11l-4 4H4z" />
-                    <path d="M16 20v-4h4" />
-                    <path d="M8 9h8M8 13h5" />
-                  </svg>
-                </div>
+                {item.kind === 'highlight' ? (
+                  <div
+                    style={{ ...S.highlightSwatch, background: item.color }}
+                    aria-label={`Resaltado en color ${item.color}`}
+                  />
+                ) : (
+                  <div style={S.bookmarkIcon}>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="var(--gold)"
+                      strokeWidth="1.7"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M4 5h16v11l-4 4H4z" />
+                      <path d="M16 20v-4h4" />
+                      <path d="M8 9h8M8 13h5" />
+                    </svg>
+                  </div>
+                )}
                 <div style={S.bookmarkInfo}>
-                  {note.selectedText && <div style={S.noteQuote}>“{note.selectedText}”</div>}
-                  <div style={S.noteBody}>{note.body}</div>
+                  {item.selectedText && <div style={S.noteQuote}>“{item.selectedText}”</div>}
+                  {item.kind === 'note' ? (
+                    <div style={S.noteBody}>{item.body}</div>
+                  ) : (
+                    <div style={S.highlightLabel}>Resaltado</div>
+                  )}
                   <div style={S.bookmarkMeta}>
-                    <span>{bookTitle(note.bookId)}</span>
+                    <span>{bookTitle(item.bookId)}</span>
                     <span style={S.bookmarkDot}>·</span>
-                    <span>{fmtLocator(note.locator)}</span>
+                    <span>{fmtLocator(item.locator)}</span>
                     <span style={S.bookmarkDot}>·</span>
-                    <span>{fmtDate(note.createdAt)}</span>
+                    <span>{fmtDate(item.createdAt)}</span>
                   </div>
                 </div>
               </div>
               <button
                 style={S.bookmarkDelete}
-                onClick={() => handleDelete(note.id)}
-                aria-label="Eliminar nota"
+                onClick={() => handleDeleteItem(item)}
+                aria-label={item.kind === 'note' ? 'Eliminar nota' : 'Eliminar resaltado'}
               >
                 <svg
                   width="14"
@@ -2234,6 +2318,21 @@ const S: Record<string, React.CSSProperties> = {
     WebkitBoxOrient: 'vertical',
     overflow: 'hidden',
     overflowWrap: 'anywhere',
+  },
+  highlightSwatch: {
+    width: 18,
+    height: 34,
+    borderRadius: 6,
+    border: '1px solid var(--line)',
+    flexShrink: 0,
+  },
+  highlightLabel: {
+    fontSize: 12,
+    fontWeight: 600,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    color: 'var(--tx-faint)',
+    marginBottom: 2,
   },
   emptyTitle: {
     fontFamily: '"Fraunces", serif',

@@ -5,6 +5,7 @@ import {
   validateBookmark,
   validateNoteInput,
   validateNote,
+  validateHighlightInput,
   validateBookmarkForExport,
   validateNoteForExport,
   throwIfInvalid,
@@ -133,6 +134,56 @@ describe('AnnotationValidator', () => {
       });
       expect(result.valid).toBe(false);
       expect(result.errors.some((e) => e.field === 'updatedAt')).toBe(true);
+    });
+  });
+
+  describe('validateHighlightInput', () => {
+    it('returns valid for correct input', () => {
+      const result = validateHighlightInput({
+        bookId: 'book-1',
+        locator: { format: 'epub', href: 'ch1', anchor: { start: 0, end: 5 } },
+        color: '#facc15',
+      });
+      expect(result.valid).toBe(true);
+    });
+
+    it('rejects color outside the palette', () => {
+      const result = validateHighlightInput({
+        bookId: 'book-1',
+        locator: { format: 'epub', href: 'ch1' },
+        color: '#123456',
+      });
+      expect(result.valid).toBe(false);
+      expect(result.errors.some((e) => e.field === 'color')).toBe(true);
+    });
+
+    it('rejects non-hex color', () => {
+      const result = validateHighlightInput({
+        bookId: 'book-1',
+        locator: { format: 'epub', href: 'ch1' },
+        color: 'yellowish',
+      });
+      expect(result.valid).toBe(false);
+    });
+
+    it('rejects invalid style', () => {
+      const result = validateHighlightInput({
+        bookId: 'book-1',
+        locator: { format: 'epub', href: 'ch1' },
+        color: '#4ade80',
+        style: 'bold',
+      });
+      expect(result.valid).toBe(false);
+      expect(result.errors.some((e) => e.field === 'style')).toBe(true);
+    });
+
+    it('rejects missing bookId', () => {
+      const result = validateHighlightInput({
+        bookId: '',
+        locator: { format: 'epub', href: 'ch1' },
+        color: '#4ade80',
+      });
+      expect(result.valid).toBe(false);
     });
   });
 

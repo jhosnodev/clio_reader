@@ -44,4 +44,60 @@ describe('reader-entry initialisation order', () => {
   it('forwards the saved position when resuming a chapter', () => {
     expect(source).toContain('renderChapter(currentReaderDoc, currentPreferences, restoreRatio)');
   });
+
+  it('registers keyboard navigation together with the other reader controls', () => {
+    const init = source.slice(source.indexOf('__initFromHost = async'));
+    const setupIndex = init.indexOf('setupNavigation(currentReaderDoc, currentPreferences)');
+    const keyboardIndex = init.indexOf('setupKeyboardNavigation()');
+
+    expect(setupIndex).toBeGreaterThan(-1);
+    expect(keyboardIndex).toBeGreaterThan(setupIndex);
+  });
+
+  it('maps ArrowUp/ArrowDown to vertical scrolling within the chapter', () => {
+    const nav = source.slice(source.indexOf('function keyboardDirectionForKey'));
+    expect(nav).toContain("case 'ArrowUp'");
+    expect(nav).toContain("case 'ArrowDown'");
+    expect(nav).toContain('scrollWithinChapter');
+    expect(nav).toContain('event.preventDefault()');
+  });
+
+  it('maps ArrowLeft/ArrowRight to previous/next chapter', () => {
+    const nav = source.slice(source.indexOf('function keyboardDirectionForKey'));
+    expect(nav).toContain("case 'ArrowLeft'");
+    expect(nav).toContain("case 'ArrowRight'");
+    expect(nav).toContain('navigateChapter(readerDoc, currentPreferences');
+  });
+
+  it('does not scroll when the chapter is not scrollable', () => {
+    expect(source).toContain('if (maxScroll <= 0) return false;');
+    expect(source).toContain('function scrollWithinChapter');
+  });
+
+  it('shows the selection widget instead of opening the notes drawer', () => {
+    const apply = source.slice(
+      source.indexOf('function applyPendingSelection'),
+      source.indexOf('function hideSelectionWidget'),
+    );
+    expect(apply).toContain('showSelectionWidget()');
+    expect(apply).not.toContain("openDrawer('notes', 'Notas', { scrim: false })");
+  });
+
+  it('defines the pending highlights queue and its delete queue', () => {
+    expect(source).toContain('window.__pendingHighlights');
+    expect(source).toContain('window.__pendingHighlightDeletes');
+    expect(source).toContain('function enqueueHighlightDelete');
+  });
+
+  it('repaints highlights together with note highlights', () => {
+    const refresh = source.slice(source.indexOf('function refreshHighlightHighlights'));
+    expect(refresh).toContain('paintHighlightRanges(byName)');
+    expect(refresh).toContain('resolveAnchorRange(index, locator, highlight.selectedText)');
+  });
+
+  it('updates highlight state from the host after draining', () => {
+    const init = source.slice(source.indexOf('__initFromHost = async'));
+    expect(init).toContain('currentHighlights = data.highlights ?? []');
+    expect(source).toContain('window.__updateHighlights');
+  });
 });
