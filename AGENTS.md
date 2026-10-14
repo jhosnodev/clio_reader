@@ -595,6 +595,7 @@ test: add integration tests for progress persistence
 | Release MVP         | `documentation/features/10-release-mvp.md`                    |
 | Paletas de color    | `documentation/features/11-paletas-color-customizacion.md`    |
 | Cover optimization  | `documentation/features/cover-image-optimization.md`          |
+| Lector mobile       | `documentation/features/14-lector-mobile-android.md`          |
 
 ## 19. Plataformas objetivo
 
@@ -648,6 +649,16 @@ test: add integration tests for progress persistence
 - [x] Integrar `@clio-reader/annotations` en desktop (filtro/orden/búsqueda/export)
 - [ ] Reemplazar el stub `setupBookmark()` del reader
 - [ ] Mobile (Android): notas (fuera de alcance desktop)
+
+### Fase 9 — Mobile Android (MVP A–D)
+
+Spec: `documentation/features/14-lector-mobile-android.md`
+
+- [x] Bundle del reader reutilizable en WebView (`vite.reader.mobile.config.ts`)
+- [x] Importar, abrir, eliminar y rank de libros
+- [x] Progreso (locator + percent) y preferencias globales desde el reader
+- [x] Persistencia JSON sobre `expo-file-system` (`LocalRepository`)
+- [ ] Validar en dispositivo: worker PDF, memoria de archivos grandes, carga `file://` (ver riesgos en la spec)
 
 ### Features futuras (fuera del MVP)
 
