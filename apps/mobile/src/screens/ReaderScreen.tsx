@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { WebView } from 'react-native-webview';
 import type { WebViewMessageEvent } from 'react-native-webview';
-import { Asset } from 'expo-asset';
 import readerHtmlAsset from '../../assets/reader.html';
 import {
   updateProgress,
@@ -25,6 +24,7 @@ import {
 } from '@clio-reader/reader-core';
 import type { MobileBridge } from '../bridges/mobile-bridge';
 import { interpretMessage } from '../reader/host-messages';
+import { resolveReaderHtmlUri } from '../reader/reader-asset';
 
 interface ReaderScreenProps {
   bookId: string;
@@ -101,12 +101,9 @@ export function ReaderScreen({
 
   useEffect(() => {
     let cancelled = false;
-    const asset = Asset.fromModule(readerHtmlAsset);
-    asset
-      .downloadAsync()
-      .then(() => {
+    resolveReaderHtmlUri(readerHtmlAsset)
+      .then((localUri) => {
         if (cancelled) return;
-        const localUri = asset.localUri ?? asset.uri;
         setReaderUri(localUri);
       })
       .catch(() => {
@@ -296,9 +293,9 @@ export function ReaderScreen({
     };
   }, []);
 
-  const sourceUri = readerUri
-    ? `${readerUri}?uri=${encodeURIComponent(fileUri)}&format=${encodeURIComponent(format)}`
-    : null;
+  // La uri/format llegan por `window.__clioHostParams` (inyectado antes del
+  // contenido); no añadimos query al `file://` para evitar fallos de resolución.
+  const sourceUri = readerUri;
 
   return (
     <View style={styles.container}>
