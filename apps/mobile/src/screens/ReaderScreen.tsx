@@ -12,6 +12,8 @@ import {
 } from '@clio-reader/library';
 import {
   createDefaultPreferences,
+  normalizeRank,
+  type Rank,
   type ReaderLocator,
   type ReaderPreferences,
 } from '@clio-reader/domain';
@@ -22,6 +24,7 @@ import {
   parseLocator,
 } from '@clio-reader/reader-core';
 import type { MobileBridge } from '../bridges/mobile-bridge';
+import { interpretMessage } from '../reader/host-messages';
 
 interface ReaderScreenProps {
   bookId: string;
@@ -51,11 +54,6 @@ interface HostInitData {
   notes: readonly unknown[];
   highlights: readonly unknown[];
 }
-
-type MessagePayload =
-  | { __clio: true; message: string }
-  | { __clio: 'locator'; value: string | null }
-  | Record<string, unknown>;
 
 const PROGRESS_POLL_MS = 2000;
 const PROGRESS_DEBOUNCE_MS = 800;
@@ -147,6 +145,29 @@ export function ReaderScreen({
     );
   }, []);
 
+  const saveRank = useCallback(
+    async (rank: Rank): Promise<void> => {
+      try {
+        const book = await repository.getBook(bookId);
+        if (book) await repository.upsertBook({ ...book, rank });
+      } catch (err) {
+        console.warn('[mobile] error guardando rank:', err);
+      }
+    },
+    [bookId, repository],
+  );
+
+  const savePreferences = useCallback(
+    async (preferences: ReaderPreferences): Promise<void> => {
+      try {
+        await repository.saveGlobalPreferences(preferences);
+      } catch (err) {
+        console.warn('[mobile] error guardando preferencias:', err);
+      }
+    },
+    [repository],
+  );
+
   const handleClose = useCallback((): void => {
     if (closingRef.current) return;
     closingRef.current = true;
@@ -159,33 +180,38 @@ export function ReaderScreen({
 
   const handleMessage = useCallback(
     (event: WebViewMessageEvent): void => {
-      let data: MessagePayload;
+      let data: unknown;
       try {
-        data = JSON.parse(event.nativeEvent.data) as MessagePayload;
+        data = JSON.parse(event.nativeEvent.data) as unknown;
       } catch {
         return;
       }
 
-      if (data && (data as { __clio?: unknown }).__clio === 'locator') {
-        const raw = (data as { value: string | null }).value;
-        const locator = parseLocator(raw ?? undefined);
-        if (locator) {
-          lastLocatorRef.current = locator;
-          lastPercentRef.current = locatorToPercent(locator);
-          scheduleSaveProgress();
-        }
-        return;
-      }
+      const message = interpretMessage(data);
+      if (!message) return;
 
-      if (data && (data as { __clio?: unknown }).__clio === true) {
-        const message = (data as { message: string }).message;
-        if (message === '__clio_back__') {
-          handleClose();
+      switch (message.type) {
+        case 'locator': {
+          const locator = parseLocator(message.value ?? undefined);
+          if (locator) {
+            lastLocatorRef.current = locator;
+            lastPercentRef.current = locatorToPercent(locator);
+            scheduleSaveProgress();
+          }
+          break;
         }
-        return;
+        case 'close':
+          handleClose();
+          break;
+        case 'rank':
+          void saveRank(normalizeRank(message.rank));
+          break;
+        case 'preferences':
+          void savePreferences(message.preferences);
+          break;
       }
     },
-    [handleClose, scheduleSaveProgress],
+    [handleClose, savePreferences, saveRank, scheduleSaveProgress],
   );
 
   const handleLoadEnd = useCallback(async (): Promise<void> => {

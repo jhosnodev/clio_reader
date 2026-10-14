@@ -9,6 +9,7 @@ export interface MobileBridge {
   readFileBase64(uri: string): Promise<string>;
   copyToStorage(uri: string, fileName: string): Promise<string>;
   checkFileExists(uri: string): Promise<boolean>;
+  deleteFile(uri: string): Promise<void>;
   getStoragePath(): string;
   onSuspend(callback: () => void): void;
   onResume(callback: () => void): void;
@@ -71,6 +72,11 @@ export function createMobileBridge(): MobileBridge {
       const FileSystem = await import('expo-file-system');
       const info = await FileSystem.getInfoAsync(uri);
       return info.exists;
+    },
+
+    async deleteFile(uri: string): Promise<void> {
+      const FileSystem = await import('expo-file-system');
+      await FileSystem.deleteAsync(uri, { idempotent: true });
     },
 
     getStoragePath(): string {

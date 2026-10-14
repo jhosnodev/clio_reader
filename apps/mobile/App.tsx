@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { SafeAreaView, StyleSheet } from 'react-native';
+import { Alert, SafeAreaView, StyleSheet } from 'react-native';
 import type { Book, Rank } from '@clio-reader/domain';
 import { listBooks, removeBook, type LibraryRepository } from '@clio-reader/library';
 import { LibraryScreen } from './src/screens/LibraryScreen';
@@ -57,6 +57,8 @@ export default function App(): JSX.Element {
       await loadBooks();
     } catch (err) {
       console.warn('[mobile] error importando libro:', err);
+      const message = err instanceof Error ? err.message : 'No se pudo importar el libro.';
+      Alert.alert('No se pudo importar', message);
     } finally {
       setImporting(false);
     }
@@ -88,6 +90,9 @@ export default function App(): JSX.Element {
       } catch (err) {
         console.warn('[mobile] error eliminando libro:', err);
       }
+      void bridge.deleteFile(book.uri).catch(() => {
+        /* limpieza best-effort del archivo copiado */
+      });
     },
     [loadBooks],
   );
