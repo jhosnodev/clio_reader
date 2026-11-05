@@ -218,7 +218,7 @@ button {
 .page {
   max-width: 680px;
   margin: 0 auto;
-  padding: 64px 40px 120px;
+  padding: 64px var(--read-margin, 40px) 120px;
 }
 .page h2 {
   font-family: 'Fraunces', serif;
@@ -390,7 +390,7 @@ button {
 }
 
 .zen-exit {
-  position: absolute;
+  position: fixed;
   top: 16px;
   right: 18px;
   z-index: 8;
@@ -1079,6 +1079,21 @@ button {
   font-weight: 600;
 }
 
+/* margin slider */
+.margin-control {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  color: var(--chrome-fg-lo);
+  font-size: 11px;
+}
+.margin-control input[type='range'] {
+  width: 100%;
+  accent-color: var(--gold);
+  cursor: pointer;
+}
+
 /* stepper */
 .stepper {
   display: flex;
@@ -1205,7 +1220,7 @@ button {
     max-width: 130px;
   }
   .page {
-    padding: 40px 20px 100px;
+    padding: 40px var(--read-margin, 20px) 100px;
   }
 }
 

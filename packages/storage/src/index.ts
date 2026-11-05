@@ -5,6 +5,7 @@ import {
   createDefaultUserSettings,
   DomainValidationError,
   Highlight,
+  normalizeReaderMargin,
   Note,
   ReaderPreferences,
   ReadingProgress,
@@ -258,6 +259,25 @@ export function createInitialState(): PersistenceState {
   };
 }
 
+function normalizeStoredPreferences(preferences: ReaderPreferences): ReaderPreferences {
+  return { ...preferences, margin: normalizeReaderMargin(preferences.margin) };
+}
+
+function normalizeStoredBookPreferences(
+  raw: Record<string, unknown>,
+): Record<string, Partial<ReaderPreferences>> {
+  const result: Record<string, Partial<ReaderPreferences>> = {};
+  for (const [bookId, value] of Object.entries(raw)) {
+    if (!isRecord(value)) continue;
+    const preferences = { ...(value as Partial<ReaderPreferences>) };
+    if (preferences.margin !== undefined) {
+      preferences.margin = normalizeReaderMargin(preferences.margin);
+    }
+    result[bookId] = preferences;
+  }
+  return result;
+}
+
 export function migrateState(input: unknown): PersistenceState {
   if (!isRecord(input)) {
     throw new PersistenceError('Stored state must be an object');
@@ -269,7 +289,10 @@ export function migrateState(input: unknown): PersistenceState {
     ? candidate.preferences
     : {};
   const global = isRecord(rawPreferences.global)
-    ? ({ ...initial.preferences.global, ...rawPreferences.global } as ReaderPreferences)
+    ? normalizeStoredPreferences({
+        ...initial.preferences.global,
+        ...rawPreferences.global,
+      } as ReaderPreferences)
     : initial.preferences.global;
   validateReaderPreferences(global);
 
@@ -284,7 +307,7 @@ export function migrateState(input: unknown): PersistenceState {
     preferences: {
       global,
       byBook: isRecord(rawPreferences.byBook)
-        ? (rawPreferences.byBook as Record<string, Partial<ReaderPreferences>>)
+        ? normalizeStoredBookPreferences(rawPreferences.byBook)
         : {},
     },
     bookmarks: Array.isArray(candidate.bookmarks) ? candidate.bookmarks : [],

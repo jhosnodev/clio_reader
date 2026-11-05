@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS `reader_preferences` (
   `font_family` text NOT NULL DEFAULT 'system',
   `font_scale` real NOT NULL DEFAULT 1,
   `line_height` real NOT NULL DEFAULT 1.5,
-  `margin` text NOT NULL DEFAULT 'comfortable',
+  `margin` text NOT NULL DEFAULT '48',
   `reading_direction` text NOT NULL DEFAULT 'ltr',
   `updated_at` integer NOT NULL DEFAULT (unixepoch())
 );

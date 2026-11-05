@@ -1,4 +1,4 @@
-import type { ReaderPreferences } from '@clio-reader/domain';
+import { normalizeReaderMargin, type ReaderPreferences } from '@clio-reader/domain';
 
 const THEME_COLORS: Record<string, { bg: string; fg: string; accent: string }> = {
   light: { bg: '#ffffff', fg: '#1f2937', accent: '#2563eb' },
@@ -12,12 +12,6 @@ const FONT_FAMILIES: Record<string, string> = {
   serif: 'Georgia, "Times New Roman", Times, serif',
   sans: 'Arial, Helvetica, sans-serif',
   dyslexic: 'OpenDyslexic, Comic Sans MS, sans-serif',
-};
-
-const MARGINS: Record<string, string> = {
-  compact: '16px',
-  comfortable: '48px',
-  wide: '96px',
 };
 
 export function generateThemeCss(prefs: ReaderPreferences): string {
@@ -68,17 +62,16 @@ export function generateFontCss(prefs: ReaderPreferences): string {
 }
 
 export function generateMarginCss(prefs: ReaderPreferences): string {
-  const margin = MARGINS[prefs.margin] ?? MARGINS.comfortable;
+  const margin = `${normalizeReaderMargin(prefs.margin)}px`;
 
   return `
     body {
       margin: 0;
       padding: 0;
     }
-    .epub-content {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 24px ${margin};
+    .page {
+      padding-left: var(--read-margin, ${margin});
+      padding-right: var(--read-margin, ${margin});
     }
   `;
 }

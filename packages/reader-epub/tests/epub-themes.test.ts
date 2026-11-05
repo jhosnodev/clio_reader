@@ -17,7 +17,7 @@ const basePrefs: ReaderPreferences = {
   fontFamily: 'system',
   fontScale: 1,
   lineHeight: 1.5,
-  margin: 'comfortable',
+  margin: 48,
   readingDirection: 'ltr',
 };
 
@@ -145,29 +145,31 @@ describe('generateMarginCss', () => {
   it('generates compact margin CSS', () => {
     const css = generateMarginCss({
       ...basePrefs,
-      margin: 'compact',
+      margin: 16,
     });
 
-    expect(css).toContain('padding: 24px 16px');
-    expect(css).toContain('max-width: 800px');
+    expect(css).toContain('padding-left: var(--read-margin, 16px)');
+    expect(css).toContain('padding-right: var(--read-margin, 16px)');
   });
 
   it('generates comfortable margin CSS', () => {
     const css = generateMarginCss({
       ...basePrefs,
-      margin: 'comfortable',
+      margin: 48,
     });
 
-    expect(css).toContain('padding: 24px 48px');
+    expect(css).toContain('padding-left: var(--read-margin, 48px)');
+    expect(css).toContain('padding-right: var(--read-margin, 48px)');
   });
 
   it('generates wide margin CSS', () => {
     const css = generateMarginCss({
       ...basePrefs,
-      margin: 'wide',
+      margin: 96,
     });
 
-    expect(css).toContain('padding: 24px 96px');
+    expect(css).toContain('padding-left: var(--read-margin, 96px)');
+    expect(css).toContain('padding-right: var(--read-margin, 96px)');
   });
 });
 
@@ -181,14 +183,14 @@ describe('generateReaderStyle', () => {
       fontFamily: 'serif',
       fontScale: 1.2,
       lineHeight: 1.8,
-      margin: 'comfortable',
+      margin: 48,
       readingDirection: 'ltr',
     });
 
     expect(css).toContain('#1a1a2e');
     expect(css).toContain('font-size: 1.2rem');
     expect(css).toContain('line-height: 1.8');
-    expect(css).toContain('padding: 24px 48px');
+    expect(css).toContain('padding-left: var(--read-margin, 48px)');
     expect(css).toContain('direction: ltr');
   });
 

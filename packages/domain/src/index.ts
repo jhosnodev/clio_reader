@@ -86,6 +86,16 @@ export interface ReadingProgress {
   readonly updatedAt: number;
 }
 
+export const MIN_READER_MARGIN = 8;
+export const MAX_READER_MARGIN = 120;
+export const DEFAULT_READER_MARGIN = 48;
+
+const LEGACY_READER_MARGINS: Record<string, number> = {
+  compact: 16,
+  comfortable: DEFAULT_READER_MARGIN,
+  wide: 96,
+};
+
 export interface ReaderPreferences {
   readonly theme: 'light' | 'dark' | 'sepia' | 'custom';
   readonly backgroundColor: string;
@@ -94,7 +104,8 @@ export interface ReaderPreferences {
   readonly fontFamily: 'system' | 'serif' | 'sans' | 'dyslexic';
   readonly fontScale: number;
   readonly lineHeight: number;
-  readonly margin: 'compact' | 'comfortable' | 'wide';
+  /** Margen horizontal de lectura en píxeles */
+  readonly margin: number;
   readonly readingDirection: 'ltr' | 'rtl';
 }
 
@@ -151,7 +162,7 @@ export const DEFAULT_READER_PREFERENCES: ReaderPreferences = {
   fontFamily: 'system',
   fontScale: 1,
   lineHeight: 1.5,
-  margin: 'comfortable',
+  margin: DEFAULT_READER_MARGIN,
   readingDirection: 'ltr',
 };
 
@@ -182,6 +193,27 @@ export function createDefaultPreferences(): ReaderPreferences {
   return { ...DEFAULT_READER_PREFERENCES };
 }
 
+export function normalizeReaderMargin(value: unknown): number {
+  if (typeof value === 'string') {
+    const legacy = LEGACY_READER_MARGINS[value];
+    if (legacy !== undefined) return legacy;
+
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return clampReaderMargin(parsed);
+    return DEFAULT_READER_MARGIN;
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return clampReaderMargin(value);
+  }
+
+  return DEFAULT_READER_MARGIN;
+}
+
+function clampReaderMargin(margin: number): number {
+  return Math.min(MAX_READER_MARGIN, Math.max(MIN_READER_MARGIN, Math.round(margin)));
+}
+
 export function validateReaderPreferences(preferences: ReaderPreferences): void {
   assertColor(preferences.backgroundColor, 'backgroundColor');
   assertColor(preferences.foregroundColor, 'foregroundColor');
@@ -193,6 +225,16 @@ export function validateReaderPreferences(preferences: ReaderPreferences): void 
 
   if (preferences.lineHeight < 1 || preferences.lineHeight > 2.5) {
     throw new DomainValidationError('lineHeight must be between 1 and 2.5');
+  }
+
+  if (
+    !Number.isFinite(preferences.margin) ||
+    preferences.margin < MIN_READER_MARGIN ||
+    preferences.margin > MAX_READER_MARGIN
+  ) {
+    throw new DomainValidationError(
+      `margin must be between ${MIN_READER_MARGIN} and ${MAX_READER_MARGIN}`,
+    );
   }
 }
 

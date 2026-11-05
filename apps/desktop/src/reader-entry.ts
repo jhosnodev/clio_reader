@@ -14,7 +14,12 @@ window.addEventListener('unhandledrejection', (e) => {
 
 import type { ReaderDocument, TocNavEntry, TocTree } from '@clio-reader/reader-core';
 import { ReaderFactory, hasTextAnchor, withTextAnchor } from '@clio-reader/reader-core';
-import type { ReaderPreferences, ReaderLocator, TextAnchor } from '@clio-reader/domain';
+import {
+  DEFAULT_READER_MARGIN,
+  type ReaderPreferences,
+  type ReaderLocator,
+  type TextAnchor,
+} from '@clio-reader/domain';
 import { highlightRegistryName } from '@clio-reader/annotations';
 import { EpubReaderAdapter } from '@clio-reader/reader-epub';
 import { PdfReaderAdapter } from '@clio-reader/reader-pdf';
@@ -23,6 +28,7 @@ import { MarkdownReaderAdapter } from '@clio-reader/reader-md';
 import {
   PREFERENCES_SENTINEL,
   lineHeightToButton,
+  marginToPx,
   pixelSizeFor,
   stepFontScale,
   themeFromWebview,
@@ -83,7 +89,7 @@ const DEFAULT_PREFERENCES: ReaderPreferences = {
   fontFamily: 'system',
   fontScale: 1,
   lineHeight: 1.5,
-  margin: 'comfortable',
+  margin: DEFAULT_READER_MARGIN,
   readingDirection: 'ltr',
 };
 
@@ -850,11 +856,13 @@ function applySettingsToDom(): void {
   const theme = webviewThemeFor(currentPreferences.theme);
   const font = webviewFontFor(currentPreferences.fontFamily);
   const sizePx = pixelSizeFor(currentPreferences.fontScale);
+  const marginPx = marginToPx(currentPreferences.margin);
 
   reader.setAttribute('data-theme', theme);
   reader.setAttribute('data-font', font);
   page.style.setProperty('--read-size', `${sizePx}px`);
   page.style.setProperty('--read-lh', String(currentPreferences.lineHeight));
+  page.style.setProperty('--read-margin', `${marginPx}px`);
 
   document.querySelectorAll('.sw[data-t]').forEach((sw) => {
     sw.classList.toggle('sel', (sw as HTMLElement).dataset.t === theme);
@@ -871,6 +879,15 @@ function applySettingsToDom(): void {
   document.querySelectorAll('#sw-lh button[data-lh]').forEach((btn) => {
     btn.classList.toggle('sel', (btn as HTMLElement).dataset.lh === lhButton);
   });
+
+  const marginInput = document.getElementById('margin-range') as HTMLInputElement | null;
+  if (marginInput) {
+    const value = String(marginPx);
+    if (marginInput.value !== value) marginInput.value = value;
+  }
+
+  const marginVal = document.getElementById('margin-val');
+  if (marginVal) marginVal.textContent = `${marginPx} px`;
 }
 
 function sendPreferencesToHost(): void {
@@ -935,6 +952,23 @@ function setupSettings(): void {
       sendPreferencesToHost();
     });
   });
+
+  // Margin slider
+  const marginInput = document.getElementById('margin-range') as HTMLInputElement | null;
+  if (marginInput) {
+    const applyMargin = (persist: boolean) => {
+      const margin = marginToPx(Number(marginInput.value));
+      currentPreferences = { ...currentPreferences, margin };
+      applySettingsToDom();
+      if (currentReaderDoc) {
+        void refreshReaderStyle(currentReaderDoc, currentPreferences);
+      }
+      if (persist) sendPreferencesToHost();
+    };
+
+    marginInput.addEventListener('input', () => applyMargin(false));
+    marginInput.addEventListener('change', () => applyMargin(true));
+  }
 
   applySettingsToDom();
 }
