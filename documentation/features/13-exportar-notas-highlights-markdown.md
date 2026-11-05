@@ -15,28 +15,28 @@ Permitir exportar las notas y los resaltados de un libro a un único archivo Mar
 
 ## Alcance propuesto
 
-| Capacidad                                              | Prioridad                 |
-| ------------------------------------------------------ | ------------------------- |
-| Exportar notas + resaltados de un libro a un `.md`     | Alta                      |
-| Reimportar ese `.md` y reconstruir las anotaciones     | Alta                      |
-| Preservar `selectedText`, `anchor` (offsets y contexto) y color/estilo | Alta     |
-| Ordenar por posición de lectura                        | Alta                      |
-| Exportar/importar marcadores en el mismo archivo       | Media, incremento         |
-| Adjuntar el `.md` al libro o a un directorio elegido   | Media                     |
-| Sincronización cloud del archivo                       | Feature separada          |
+| Capacidad                                                              | Prioridad         |
+| ---------------------------------------------------------------------- | ----------------- |
+| Exportar notas + resaltados de un libro a un `.md`                     | Alta              |
+| Reimportar ese `.md` y reconstruir las anotaciones                     | Alta              |
+| Preservar `selectedText`, `anchor` (offsets y contexto) y color/estilo | Alta              |
+| Ordenar por posición de lectura                                        | Alta              |
+| Exportar/importar marcadores en el mismo archivo                       | Media, incremento |
+| Adjuntar el `.md` al libro o a un directorio elegido                   | Media             |
+| Sincronización cloud del archivo                                       | Feature separada  |
 
 ## Formato Markdown propuesto
 
 El archivo combina una parte legible (encabezado, cita y comentario) con un bloque legible por máquina por anotación, para que el mismo documento sirva a humanos y a reimportación. El locator exacto viaja en un comentario HTML con JSON; el resto es solo presentación.
 
-````markdown
+```markdown
 ---
 clio: annotations
 version: 1
 bookId: book-abc
-bookTitle: "El nombre del viento"
+bookTitle: 'El nombre del viento'
 format: epub
-fileHash: "sha256:..."
+fileHash: 'sha256:...'
 exportedAt: 2026-10-13T00:00:00Z
 ---
 
@@ -53,7 +53,7 @@ exportedAt: 2026-10-13T00:00:00Z
 
 - **Nota** — cuerpo del comentario del usuario
   <!-- clio:note {"id":"note-1","locator":{"cfi":"epubcfi(/6/4!/4/2/2:0)","anchor":{"start":42,"end":80}},"selectedText":"Otro pasaje subrayado","body":"cuerpo del comentario","createdAt":1730000000000,"updatedAt":1730000001000} -->
-````
+```
 
 ## Reimportación
 

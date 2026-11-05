@@ -3,23 +3,13 @@
   "compilerOptions": {
     "outDir": "dist",
     "jsx": "react-jsx",
-    "lib": ["ES2022"],
+    "lib": ["ES2022", "DOM"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "types": ["node"],
     "noEmit": true,
     "skipLibCheck": true,
-    "composite": false,
-    "baseUrl": ".",
-    "paths": {
-      "@clio-reader/domain": ["../../packages/domain/src"],
-      "@clio-reader/reader-core": ["../../packages/reader-core/src"],
-      "@clio-reader/reader-epub": ["../../packages/reader-epub/src"],
-      "@clio-reader/reader-pdf": ["../../packages/reader-pdf/src"],
-      "@clio-reader/reader-cbz": ["../../packages/reader-cbz/src"],
-      "@clio-reader/reader-session": ["../../packages/reader-session/src"],
-      "@clio-reader/storage": ["../../packages/storage/src"]
-    }
+    "composite": false
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "App.tsx"],
   "exclude": ["node_modules"]

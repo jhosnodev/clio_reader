@@ -45,8 +45,8 @@ export function NotesExportDialog({
       <div style={dialogStyle} role="dialog" aria-modal="true">
         <h2 style={titleStyle}>Exportar / Importar anotaciones</h2>
         <p style={descStyle}>
-          Exportar notas, resaltados y marcadores de <strong>{bookTitle}</strong> como archivo Markdown.
-          Al reimportarlo, se restaurarán las anotaciones para este libro.
+          Exportar notas, resaltados y marcadores de <strong>{bookTitle}</strong> como archivo
+          Markdown. Al reimportarlo, se restaurarán las anotaciones para este libro.
         </p>
         <div style={actionsStyle}>
           <button style={secondaryBtn} onClick={onClose} disabled={exporting || importing}>

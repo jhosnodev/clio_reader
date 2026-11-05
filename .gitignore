@@ -1,6 +1,7 @@
 ﻿node_modules/
 dist/
 dist-electron/
+dist-reader-mobile/
 coverage/
 .env
 packages/*/src/index.d.ts
@@ -9,3 +10,6 @@ packages/*/dist/
 release/
 __pycache__/
 *.pyc
+apps/mobile/assets/reader.html
+apps/mobile/android/
+apps/mobile/ios/

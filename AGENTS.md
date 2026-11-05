@@ -449,6 +449,30 @@ pnpm --filter @clio-reader/desktop build      # Build de producción
 pnpm --filter @clio-reader/desktop build:win  # Build + instalador NSIS
 ```
 
+### Aplicación mobile (Android)
+
+El lector de mobile reutiliza el bundle del reader de desktop dentro de
+`react-native-webview`. El HTML autocontenido (`apps/mobile/assets/reader.html`)
+se genera desde `vite.reader.mobile.config.ts` y está en `.gitignore`; hay que
+construirlo antes de empaquetar.
+
+```bash
+pnpm build                                                # Requerido: dist de packages
+pnpm --filter @clio-reader/mobile build:reader            # Genera assets/reader.html
+pnpm --filter @clio-reader/mobile start                   # Metro
+pnpm --filter @clio-reader/mobile android                 # Metro + dispositivo/emulador
+```
+
+Notas:
+
+- pnpm + Metro: los `metro.config.cjs`/`babel.config.cjs` son CJS (el paquete es
+  `"type": "module"`); el entry es `index.js` (no `expo/AppEntry.js`).
+- Los paquetes `reader-*` compilan a `dist/src/index.js` (ver `tsconfig.build.json`
+  con `rootDir: "."` y `paths: {}`), y Metro resuelve vía `package.json` `exports`.
+- La comunicación reader→host usa sentinelas de `console.log` (`__clio_back__`,
+  `__clio_rank__`, `__clio_prefs__`) reenviadas por un shim de `console.log`
+  inyectado antes de cargar el contenido.
+
 ## 14. Estrategia de tests
 
 - **Unitarias**: Reglas puras y adaptadores aislados (`src/feature.test.ts` junto a `src/feature.ts`)
@@ -571,6 +595,7 @@ test: add integration tests for progress persistence
 | Release MVP         | `documentation/features/10-release-mvp.md`                    |
 | Paletas de color    | `documentation/features/11-paletas-color-customizacion.md`    |
 | Cover optimization  | `documentation/features/cover-image-optimization.md`          |
+| Lector mobile       | `documentation/features/14-lector-mobile-android.md`          |
 
 ## 19. Plataformas objetivo
 
@@ -624,6 +649,16 @@ test: add integration tests for progress persistence
 - [x] Integrar `@clio-reader/annotations` en desktop (filtro/orden/búsqueda/export)
 - [ ] Reemplazar el stub `setupBookmark()` del reader
 - [ ] Mobile (Android): notas (fuera de alcance desktop)
+
+### Fase 9 — Mobile Android (MVP A–D)
+
+Spec: `documentation/features/14-lector-mobile-android.md`
+
+- [x] Bundle del reader reutilizable en WebView (`vite.reader.mobile.config.ts`)
+- [x] Importar, abrir, eliminar y rank de libros
+- [x] Progreso (locator + percent) y preferencias globales desde el reader
+- [x] Persistencia JSON sobre `expo-file-system` (`LocalRepository`)
+- [ ] Validar en dispositivo: worker PDF, memoria de archivos grandes, carga `file://` (ver riesgos en la spec)
 
 ### Features futuras (fuera del MVP)
 

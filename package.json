@@ -3,14 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Biblioteca local multiplataforma para leer EPUB, PDF, CBZ y futuros formatos.",
-  "packageManager": "pnpm@10.15.1",
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "better-sqlite3",
-      "electron",
-      "esbuild"
-    ]
-  },
+  "packageManager": "pnpm@12.16.1+sha256.ca362a16f2e1c3cfa81d406f3242446179a0e4aea457ba3e9e6c39e6476aba65",
   "scripts": {
     "build": "pnpm --recursive --if-present run build",
     "check": "pnpm build && pnpm --recursive run check",

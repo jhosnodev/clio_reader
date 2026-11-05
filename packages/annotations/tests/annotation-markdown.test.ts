@@ -41,7 +41,12 @@ function buildData(bookId: string): {
     {
       id: 'hl-1',
       bookId,
-      locatorStart: { format: 'epub', href: 'ch1', progression: 0.3, anchor: { start: 30, end: 40 } },
+      locatorStart: {
+        format: 'epub',
+        href: 'ch1',
+        progression: 0.3,
+        anchor: { start: 30, end: 40 },
+      },
       locatorEnd: { format: 'epub', href: 'ch1', progression: 0.3, anchor: { start: 30, end: 40 } },
       selectedText: 'fragmento resaltado',
       color: '#facc15',
@@ -112,7 +117,12 @@ describe('AnnotationMarkdown', () => {
       expect(result.highlightsImported).toBe(1);
       expect(result.bookmarksImported).toBe(1);
 
-      const d = data as { bookId: string; bookmarks: Bookmark[]; notes: Note[]; highlights: Highlight[] };
+      const d = data as {
+        bookId: string;
+        bookmarks: Bookmark[];
+        notes: Note[];
+        highlights: Highlight[];
+      };
       expect(d.bookId).toBe('target-book');
       for (const item of [...d.bookmarks, ...d.notes, ...d.highlights]) {
         expect(item.bookId).toBe('target-book');

@@ -20,6 +20,8 @@ export default defineConfig({
       '@clio-reader/reader-cbz': resolve(repositoryRoot, 'packages/reader-cbz/src/index.ts'),
       '@clio-reader/reader-pdf': resolve(repositoryRoot, 'packages/reader-pdf/src/index.ts'),
       '@clio-reader/reader-epub': resolve(repositoryRoot, 'packages/reader-epub/src/index.ts'),
+      '@clio-reader/reader-md': resolve(repositoryRoot, 'packages/reader-md/src/index.ts'),
+      '@clio-reader/annotations': resolve(repositoryRoot, 'packages/annotations/src/index.ts'),
       '@clio-reader/reader-session': resolve(
         repositoryRoot,
         'packages/reader-session/src/index.ts',
@@ -27,7 +29,11 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['packages/**/tests/**/*.test.ts', 'apps/desktop/src/**/*.test.ts'],
+    include: [
+      'packages/**/tests/**/*.test.ts',
+      'apps/desktop/src/**/*.test.ts',
+      'apps/mobile/tests/**/*.test.ts',
+    ],
     passWithNoTests: false,
     coverage: {
       reporter: ['text', 'json-summary'],

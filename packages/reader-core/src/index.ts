@@ -12,6 +12,21 @@ export {
 } from './text-anchor.js';
 export type { AnchorResolution, ResolvedAnchor } from './text-anchor.js';
 
+export {
+  clamp01,
+  scrollRatio,
+  scrollTopForRatio,
+  progressPercent,
+  formatProgressLabel,
+  chapterIndexFromRatio,
+  getResumePositionOrder,
+  locatorToPercent,
+  getResumeScrollRatio,
+  withScrollRatio,
+  isSameDocumentPosition,
+  parseLocator,
+} from './progress.js';
+
 export interface FileSource {
   readonly uri: string;
   readonly name: string;

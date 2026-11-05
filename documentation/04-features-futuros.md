@@ -15,15 +15,15 @@ Este documento indexa las capacidades que están fuera del MVP de biblioteca loc
 
 ## Índice de features fuera del MVP
 
-| ID    | Feature                                                | Documento                                                                            | Dependencias                                          |
-| ----- | ------------------------------------------------------ | ------------------------------------------------------------------------------------ | ----------------------------------------------------- |
-| F-001 | Compartir y exportar metadata/data con otros elementos | [`features/01-compartir-metadata-data.md`](./features/01-compartir-metadata-data.md) | Modelo de anotaciones, locators y exportación local   |
-| F-002 | Sincronización con la nube                             | [`features/02-sincronizacion-nube.md`](./features/02-sincronizacion-nube.md)         | Identidad, API, conflictos y almacenamiento remoto    |
-| F-003 | Arquitectura SaaS                                      | [`features/03-arquitectura-saas.md`](./features/03-arquitectura-saas.md)             | Nube, usuarios, billing, observabilidad y seguridad   |
-| F-004 | Soporte para otras plataformas                         | [`features/04-otras-plataformas.md`](./features/04-otras-plataformas.md)             | Estabilidad del núcleo y matriz de compatibilidad     |
-| F-005 | Lectura de archivos Markdown (`.md`)                   | [`features/05-lectura-markdown.md`](./features/05-lectura-markdown.md)               | Renderer refluible, sanitización y locators textuales |
-| F-006 | Preferencias de lectura por libro                      | [`features/12-preferencias-por-libro.md`](./features/12-preferencias-por-libro.md)   | Overrides por libro y merge con preferencias globales |
-| F-007 | Resaltado de texto en PDF                              | —                                                                                    | Deriva de geometría PDF a texto, anclaje por página   |
+| ID    | Feature                                                | Documento                                                                                                  | Dependencias                                          |
+| ----- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| F-001 | Compartir y exportar metadata/data con otros elementos | [`features/01-compartir-metadata-data.md`](./features/01-compartir-metadata-data.md)                       | Modelo de anotaciones, locators y exportación local   |
+| F-002 | Sincronización con la nube                             | [`features/02-sincronizacion-nube.md`](./features/02-sincronizacion-nube.md)                               | Identidad, API, conflictos y almacenamiento remoto    |
+| F-003 | Arquitectura SaaS                                      | [`features/03-arquitectura-saas.md`](./features/03-arquitectura-saas.md)                                   | Nube, usuarios, billing, observabilidad y seguridad   |
+| F-004 | Soporte para otras plataformas                         | [`features/04-otras-plataformas.md`](./features/04-otras-plataformas.md)                                   | Estabilidad del núcleo y matriz de compatibilidad     |
+| F-005 | Lectura de archivos Markdown (`.md`)                   | [`features/05-lectura-markdown.md`](./features/05-lectura-markdown.md)                                     | Renderer refluible, sanitización y locators textuales |
+| F-006 | Preferencias de lectura por libro                      | [`features/12-preferencias-por-libro.md`](./features/12-preferencias-por-libro.md)                         | Overrides por libro y merge con preferencias globales |
+| F-007 | Resaltado de texto en PDF                              | —                                                                                                          | Deriva de geometría PDF a texto, anclaje por página   |
 | F-008 | Exportar e importar notas y resaltados como Markdown   | [`features/13-exportar-notas-highlights-markdown.md`](./features/13-exportar-notas-highlights-markdown.md) | Modelo de anotaciones, locators y exportación local   |
 
 ## Priorización inicial

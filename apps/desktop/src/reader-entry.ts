@@ -247,10 +247,21 @@ interface QueryParams {
   readonly format: SupportedFormat;
 }
 
+interface HostParams {
+  readonly uri?: string;
+  readonly format?: string;
+}
+
+function readHostParams(): HostParams {
+  const hostParams = (window as unknown as { __clioHostParams?: HostParams }).__clioHostParams;
+  return hostParams ?? {};
+}
+
 function parseQueryParams(): QueryParams {
   const params = new URLSearchParams(window.location.search);
-  const uri = params.get('uri');
-  const format = params.get('format')?.toLowerCase();
+  const hostParams = readHostParams();
+  const uri = params.get('uri') ?? hostParams.uri;
+  const format = (params.get('format') ?? hostParams.format)?.toLowerCase();
   if (!uri) throw new ReaderError('Falta el parámetro "uri" en la URL');
   if (!format || !isSupportedFormat(format))
     throw new ReaderError(`Formato no soportado: "${format ?? 'desconocido'}"`);
