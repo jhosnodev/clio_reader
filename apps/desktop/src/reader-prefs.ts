@@ -1,4 +1,4 @@
-import type { ReaderPreferences } from '@clio-reader/domain';
+import { MAX_READER_MARGIN, MIN_READER_MARGIN, type ReaderPreferences } from '@clio-reader/domain';
 
 export const PREFERENCES_SENTINEL = '__clio_prefs__';
 
@@ -56,4 +56,8 @@ export function lineHeightToButton(lineHeight: number): '1.55' | '1.75' | '2' {
   if (lineHeight <= 1.6) return '1.55';
   if (lineHeight < 1.9) return '1.75';
   return '2';
+}
+
+export function marginToPx(margin: number): number {
+  return Math.min(MAX_READER_MARGIN, Math.max(MIN_READER_MARGIN, Math.round(margin)));
 }

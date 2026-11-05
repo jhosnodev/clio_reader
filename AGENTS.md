@@ -125,7 +125,7 @@ interface ReaderPreferences {
   fontFamily: 'system' | 'serif' | 'sans' | 'dyslexic';
   fontScale: number;
   lineHeight: number;
-  margin: 'compact' | 'comfortable' | 'wide';
+  margin: number;
   readingDirection: 'ltr' | 'rtl';
 }
 
@@ -414,15 +414,15 @@ interface PersistenceState {
 
 ## 12. Validaciones y rangos
 
-| Campo              | Rango válido                  | Default     |
-| ------------------ | ----------------------------- | ----------- |
-| `fontScale`        | 0.8 – 2.0                     | 1.0         |
-| `lineHeight`       | 1.0 – 2.5                     | 1.5         |
-| `theme`            | light, dark, sepia, custom    | dark        |
-| `fontFamily`       | system, serif, sans, dyslexic | system      |
-| `margin`           | compact, comfortable, wide    | comfortable |
-| `readingDirection` | ltr, rtl                      | ltr         |
-| `percent`          | 0 – 100                       | 0           |
+| Campo              | Rango válido                  | Default |
+| ------------------ | ----------------------------- | ------- |
+| `fontScale`        | 0.8 – 2.0                     | 1.0     |
+| `lineHeight`       | 1.0 – 2.5                     | 1.5     |
+| `theme`            | light, dark, sepia, custom    | dark    |
+| `fontFamily`       | system, serif, sans, dyslexic | system  |
+| `margin`           | 8 – 120 px                    | 48      |
+| `readingDirection` | ltr, rtl                      | ltr     |
+| `percent`          | 0 – 100                       | 0       |
 
 ### Colores
 

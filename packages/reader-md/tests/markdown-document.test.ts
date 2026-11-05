@@ -19,7 +19,7 @@ const PREFS: ReaderPreferences = {
   fontFamily: 'serif',
   fontScale: 1.2,
   lineHeight: 1.6,
-  margin: 'wide',
+  margin: 96,
   readingDirection: 'ltr',
 };
 
@@ -117,7 +117,7 @@ describe('MarkdownReaderDocument', () => {
     const css = await doc.applyPreferences(PREFS);
     expect(css).toContain('serif');
     expect(css).toContain('22.80px');
-    expect(css).toContain('padding-left: 96px');
+    expect(css).toContain('padding-left: var(--read-margin, 96px)');
   });
 
   it('deriva el título del primer H1', async () => {

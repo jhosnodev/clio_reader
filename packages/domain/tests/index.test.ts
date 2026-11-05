@@ -6,6 +6,7 @@ import {
   createReadingProgress,
   DomainValidationError,
   normalizePercent,
+  normalizeReaderMargin,
   validateReaderPreferences,
 } from '../src/index.js';
 
@@ -49,6 +50,25 @@ describe('reader preferences', () => {
         fontScale: 3,
       }),
     ).toThrow('fontScale must be between 0.8 and 2');
+  });
+
+  it('rejects an out-of-range margin', () => {
+    expect(() =>
+      validateReaderPreferences({
+        ...createDefaultPreferences(),
+        margin: 200,
+      }),
+    ).toThrow('margin must be between 8 and 120');
+  });
+
+  it('normalizes legacy and numeric margins', () => {
+    expect(normalizeReaderMargin('compact')).toBe(16);
+    expect(normalizeReaderMargin('comfortable')).toBe(48);
+    expect(normalizeReaderMargin('wide')).toBe(96);
+    expect(normalizeReaderMargin('64')).toBe(64);
+    expect(normalizeReaderMargin(0)).toBe(8);
+    expect(normalizeReaderMargin(999)).toBe(120);
+    expect(normalizeReaderMargin('unknown')).toBe(48);
   });
 });
 

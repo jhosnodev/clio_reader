@@ -48,7 +48,7 @@ export const readerPreferences = sqliteTable('reader_preferences', {
   fontFamily: text('font_family').notNull().default('system'),
   fontScale: real('font_scale').notNull().default(1),
   lineHeight: real('line_height').notNull().default(1.5),
-  margin: text('margin').notNull().default('comfortable'),
+  margin: text('margin').notNull().default('48'),
   readingDirection: text('reading_direction').notNull().default('ltr'),
   updatedAt: integer('updated_at')
     .notNull()

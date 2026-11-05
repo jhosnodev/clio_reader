@@ -7,6 +7,7 @@ import {
   DomainValidationError,
   Highlight,
   Note,
+  normalizeReaderMargin,
   ReaderPreferences,
   ReadingProgress,
   UserSettings,
@@ -511,7 +512,7 @@ export class DrizzleRepository {
       fontFamily: row.fontFamily as ReaderPreferences['fontFamily'],
       fontScale: row.fontScale,
       lineHeight: row.lineHeight,
-      margin: row.margin as ReaderPreferences['margin'],
+      margin: normalizeReaderMargin(row.margin),
       readingDirection: row.readingDirection as ReaderPreferences['readingDirection'],
     };
   }
@@ -525,7 +526,7 @@ export class DrizzleRepository {
       fontFamily: preferences.fontFamily,
       fontScale: preferences.fontScale,
       lineHeight: preferences.lineHeight,
-      margin: preferences.margin,
+      margin: String(preferences.margin),
       readingDirection: preferences.readingDirection,
     };
   }
@@ -552,7 +553,7 @@ export class DrizzleRepository {
     if (row.fontFamily) result.fontFamily = row.fontFamily as ReaderPreferences['fontFamily'];
     if (row.fontScale) result.fontScale = row.fontScale;
     if (row.lineHeight) result.lineHeight = row.lineHeight;
-    if (row.margin) result.margin = row.margin as ReaderPreferences['margin'];
+    if (row.margin) result.margin = normalizeReaderMargin(row.margin);
     if (row.readingDirection)
       result.readingDirection = row.readingDirection as ReaderPreferences['readingDirection'];
 
@@ -568,7 +569,7 @@ export class DrizzleRepository {
       fontFamily: preferences.fontFamily,
       fontScale: preferences.fontScale,
       lineHeight: preferences.lineHeight,
-      margin: preferences.margin,
+      margin: preferences.margin === undefined ? undefined : String(preferences.margin),
       readingDirection: preferences.readingDirection,
     };
   }

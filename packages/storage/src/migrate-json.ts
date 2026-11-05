@@ -11,7 +11,11 @@ import {
   userSettings,
 } from './schema.js';
 import type { PersistenceState } from './index.js';
-import type { ReaderPreferences as DomainReaderPreferences } from '@clio-reader/domain';
+import {
+  DEFAULT_READER_MARGIN,
+  normalizeReaderMargin,
+  type ReaderPreferences as DomainReaderPreferences,
+} from '@clio-reader/domain';
 
 export interface MigrateJsonToSqliteOptions {
   readonly jsonPath: string;
@@ -50,7 +54,7 @@ function parseJsonState(jsonPath: string): PersistenceState | null {
                   fontFamily: 'system',
                   fontScale: 1,
                   lineHeight: 1.5,
-                  margin: 'comfortable',
+                  margin: DEFAULT_READER_MARGIN,
                   readingDirection: 'ltr',
                 },
             byBook: isRecord((candidate.preferences as Record<string, unknown>).byBook)
@@ -69,7 +73,7 @@ function parseJsonState(jsonPath: string): PersistenceState | null {
               fontFamily: 'system',
               fontScale: 1,
               lineHeight: 1.5,
-              margin: 'comfortable',
+              margin: DEFAULT_READER_MARGIN,
               readingDirection: 'ltr',
             },
             byBook: {},
@@ -160,7 +164,7 @@ export async function migrateJsonToSqlite(
         fontFamily: globalPrefs.fontFamily,
         fontScale: globalPrefs.fontScale,
         lineHeight: globalPrefs.lineHeight,
-        margin: globalPrefs.margin,
+        margin: String(normalizeReaderMargin(globalPrefs.margin)),
         readingDirection: globalPrefs.readingDirection,
         updatedAt: now,
       })
@@ -177,7 +181,8 @@ export async function migrateJsonToSqlite(
           fontFamily: prefs.fontFamily,
           fontScale: prefs.fontScale,
           lineHeight: prefs.lineHeight,
-          margin: prefs.margin,
+          margin:
+            prefs.margin === undefined ? undefined : String(normalizeReaderMargin(prefs.margin)),
           readingDirection: prefs.readingDirection,
           updatedAt: now,
         })

@@ -1,4 +1,4 @@
-import type { ReaderPreferences } from '@clio-reader/domain';
+import { normalizeReaderMargin, type ReaderPreferences } from '@clio-reader/domain';
 
 const FONT_FAMILIES: Record<string, string> = {
   system: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
@@ -12,12 +12,6 @@ const FONT_FAMILIES_UI: Record<string, string> = {
   serif: 'Georgia, "Times New Roman", Times, serif',
   sans: 'Arial, Helvetica, sans-serif',
   dyslexic: 'OpenDyslexic, Comic Sans MS, sans-serif',
-};
-
-const MARGINS: Record<string, string> = {
-  compact: '16px',
-  comfortable: '48px',
-  wide: '96px',
 };
 
 const BASE_FONT_PX = 19;
@@ -46,11 +40,11 @@ export function generateFontCss(prefs: ReaderPreferences): string {
 }
 
 export function generateMarginCss(prefs: ReaderPreferences): string {
-  const margin = MARGINS[prefs.margin] ?? MARGINS.comfortable!;
+  const margin = `${normalizeReaderMargin(prefs.margin)}px`;
   return `
     .page {
-      padding-left: ${margin};
-      padding-right: ${margin};
+      padding-left: var(--read-margin, ${margin});
+      padding-right: var(--read-margin, ${margin});
     }
   `;
 }

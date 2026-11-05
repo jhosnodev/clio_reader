@@ -360,7 +360,7 @@ describe('EpubReaderDocument', () => {
         fontFamily: 'system',
         fontScale: 1,
         lineHeight: 1.5,
-        margin: 'comfortable',
+        margin: 48,
         readingDirection: 'ltr',
       });
 
@@ -385,14 +385,14 @@ describe('EpubReaderDocument', () => {
         fontFamily: 'serif',
         fontScale: 1.2,
         lineHeight: 1.8,
-        margin: 'wide',
+        margin: 96,
         readingDirection: 'rtl',
       });
 
       expect(css).toContain('#1a1a2e');
       expect(css).toContain('direction: rtl');
       expect(css).toContain('font-size: 1.2rem');
-      expect(css).toContain('padding: 24px 96px');
+      expect(css).toContain('padding-left: var(--read-margin, 96px)');
 
       await doc.close();
     });
@@ -410,13 +410,13 @@ describe('EpubReaderDocument', () => {
         fontFamily: 'dyslexic',
         fontScale: 1.5,
         lineHeight: 2.0,
-        margin: 'compact',
+        margin: 16,
         readingDirection: 'ltr',
       });
 
       expect(css).toContain('#f4ecd8');
       expect(css).toContain('font-size: 1.5rem');
-      expect(css).toContain('padding: 24px 16px');
+      expect(css).toContain('padding-left: var(--read-margin, 16px)');
 
       await doc.close();
     });

@@ -56,7 +56,7 @@ interface ReaderPreferences {
   fontFamily: 'system' | 'serif' | 'sans' | 'dyslexic';
   fontScale: number;
   lineHeight: number;
-  margin: 'compact' | 'comfortable' | 'wide';
+  margin: number;
   readingDirection: 'ltr' | 'rtl';
 }
 

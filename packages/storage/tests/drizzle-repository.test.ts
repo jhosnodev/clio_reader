@@ -170,7 +170,7 @@ describe('DrizzleRepository', () => {
         fontFamily: 'serif' as const,
         fontScale: 1.2,
         lineHeight: 1.8,
-        margin: 'wide' as const,
+        margin: 96 as const,
         readingDirection: 'rtl' as const,
       };
 

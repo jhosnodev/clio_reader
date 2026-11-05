@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   lineHeightToButton,
+  marginToPx,
   pixelSizeFor,
   stepFontScale,
   themeFromWebview,
@@ -102,5 +103,19 @@ describe('lineHeightToButton', () => {
 
   it('maps 2 to 2', () => {
     expect(lineHeightToButton(2)).toBe('2');
+  });
+});
+
+describe('marginToPx', () => {
+  it('rounds the margin to whole pixels', () => {
+    expect(marginToPx(47.6)).toBe(48);
+  });
+
+  it('clamps values below the minimum', () => {
+    expect(marginToPx(0)).toBe(8);
+  });
+
+  it('clamps values above the maximum', () => {
+    expect(marginToPx(999)).toBe(120);
   });
 });
