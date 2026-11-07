@@ -1,17 +1,21 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { prepareWindowsNative, restoreHostNative } from './win-native.mjs';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const desktopDir = resolve(scriptDir, '..');
-const electronBuilder = join(
-  desktopDir,
-  'node_modules',
-  '.bin',
-  process.platform === 'win32' ? 'electron-builder.cmd' : 'electron-builder',
-);
+
+function resolveElectronBuilderCli() {
+  const requireFromDesktop = createRequire(join(desktopDir, 'package.json'));
+  try {
+    return requireFromDesktop.resolve('electron-builder/cli.js');
+  } catch {
+    return null;
+  }
+}
 
 const args = process.argv.slice(2);
 const wantsNsis = args.includes('--nsis');
@@ -37,8 +41,9 @@ if (!isWindowsHost && (target === 'nsis' || target === 'portable')) {
   }
 }
 
-if (!existsSync(electronBuilder)) {
-  console.error(`[build-win] No se encontró electron-builder en ${electronBuilder}`);
+const electronBuilderCli = resolveElectronBuilderCli();
+if (!electronBuilderCli || !existsSync(electronBuilderCli)) {
+  console.error('[build-win] No se encontró electron-builder (electron-builder/cli.js)');
   process.exit(1);
 }
 
@@ -52,7 +57,10 @@ try {
   }
 
   console.log(`[build-win] Generando target "${target}" (host: ${process.platform})`);
-  execFileSync(electronBuilder, builderArgs, { cwd: desktopDir, stdio: 'inherit' });
+  execFileSync(process.execPath, [electronBuilderCli, ...builderArgs], {
+    cwd: desktopDir,
+    stdio: 'inherit',
+  });
 } finally {
   restoreHostNative(backups);
 }
