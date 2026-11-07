@@ -188,6 +188,29 @@ electron-builder necesita herramientas de Windows. Asegúrate de tener:
 - Espacio en disco suficiente (~2GB para el build)
 - Sin antivirus bloqueando la compilación
 
+### El .exe no abre / hace clic y no ocurre nada
+
+Causa más común: el instalador se compiló desde Linux con el binario nativo de
+`better-sqlite3` de Linux (ELF). El proceso principal de Electron falla al
+cargar SQLite y se cierra antes de mostrar la ventana.
+
+Soluciones:
+
+1. Compila en Windows con `pnpm --filter @clio-reader/desktop build:win`, o
+2. Usa el workflow de GitHub Actions `windows-build.yml`, o
+3. En Linux, ejecuta `pnpm --filter @clio-reader/desktop build:win`: prepara
+   los binarios `win32` y genera un zip portable (el instalador NSIS requiere
+   `wine`).
+
+Verifica cualquier build con:
+
+```bash
+pnpm --filter @clio-reader/desktop exec node scripts/verify-win-build.mjs
+```
+
+También revisa el tamaño del `.exe` del instalador: si pesa menos de ~20 MB,
+no contiene la app (build interrumpido). Un build completo es de decenas de MB.
+
 ## Estructura del proyecto
 
 ```

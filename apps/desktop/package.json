@@ -10,8 +10,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "build:win": "tsc && vite build && electron-builder --win",
-    "build:win:portable": "tsc && vite build && electron-builder --win --portable",
+    "build:win": "tsc && vite build && node scripts/build-win.mjs",
+    "build:win:nsis": "tsc && vite build && node scripts/build-win.mjs --nsis",
+    "build:win:portable": "tsc && vite build && node scripts/build-win.mjs --portable",
     "build:linux": "tsc && vite build && electron-builder --linux",
     "build:linux:appimage": "tsc && vite build && electron-builder --linux --publish=never --config electron-builder.yml",
     "build:reader-mobile": "vite build --config vite.reader.mobile.config.ts",

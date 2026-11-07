@@ -446,7 +446,9 @@ pnpm validate       # Validación completa (format + check + lint + test)
 ```bash
 pnpm --filter @clio-reader/desktop dev        # Desarrollo con HMR
 pnpm --filter @clio-reader/desktop build      # Build de producción
-pnpm --filter @clio-reader/desktop build:win  # Build + instalador NSIS
+pnpm --filter @clio-reader/desktop build:win        # Windows: NSIS; Linux/macOS: zip portable (prepara binarios win32)
+pnpm --filter @clio-reader/desktop build:win:nsis  # Instalador NSIS (requiere Windows o wine)
+pnpm --filter @clio-reader/desktop build:win:portable # Build portable Windows
 ```
 
 ### Aplicación mobile (Android)
