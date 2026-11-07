@@ -2,6 +2,21 @@
 
 Guía paso a paso para configurar el entorno de desarrollo en Windows y ejecutar la app de Clio Reader.
 
+## Compatibilidad con Windows
+
+El build de escritorio usa **Electron 28.3.3** y se empaqueta para `win32-x64`.
+
+| Aspecto                            | Soporte                                            |
+| ---------------------------------- | -------------------------------------------------- |
+| Windows 11 (todas las versiones)   | ✅                                                 |
+| Windows 10 (x64, 1607 en adelante) | ✅                                                 |
+| Windows 7 / 8 / 8.1                | ❌ — Electron 28 / Chromium 120 ya no los soportan |
+| Windows 32-bit (x86)               | ❌ — solo se compila `x64`                         |
+| Windows 11 ARM64 (Snapdragon)      | ⚠️ corre por emulación x64, no nativo              |
+
+El binario nativo de `better-sqlite3` también está compilado para `win32-x64`,
+válido en Windows 10 y Windows 11 sin diferencia.
+
 ## 1. Instalar Node.js
 
 1. Descarga Node.js 22+ desde [nodejs.org](https://nodejs.org/)
