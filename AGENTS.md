@@ -13,6 +13,7 @@
 | 6    | Renderer EPUB           | ✅ Completa |
 | 7    | Progreso/settings       | ⚠️ Parcial  |
 | 8    | Marcadores/notas        | ⚠️ Parcial  |
+| 9    | Mobile Android (MVP)    | ⚠️ Parcial  |
 
 ## 2. Arquitectura
 
@@ -23,7 +24,7 @@ Casos de uso y estado (packages/library)
   ↓
 Dominio TypeScript y contratos (packages/domain, packages/reader-core)
   ↓
-Adaptadores de formato (packages/reader-epub, reader-pdf, reader-cbz)
+Adaptadores de formato (packages/reader-epub, reader-pdf, reader-cbz, reader-md)
   ↓
 Persistencia (packages/storage)
   ↓
@@ -176,6 +177,8 @@ interface UserSettings {
 
 ### IDs generados
 
+El helper portable vive en `packages/library/src/id.ts` y lo usan libros y anotaciones:
+
 ```typescript
 // Portable, sin dependencias externas
 const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -241,12 +244,22 @@ function detectBookFormat(filename: string, mimeType?: string): BookFormat;
 
 El locator es específico por formato y es la fuente de verdad para reanudar. `percent` solo se usa para mostrar en UI.
 
-| Formato | Locator                   | Ejemplo                            | Notas                                 |
-| ------- | ------------------------- | ---------------------------------- | ------------------------------------- |
-| EPUB    | CFI o capítulo + posición | `epubcfi(/6/4!/4/2/1:0)`           | positionOrder calculado por adaptador |
-| PDF     | Página + viewport         | `{page: 5, zoom: 1.5, width: 800}` | Incluye dimensiones del viewport      |
-| CBZ     | Índice de imagen          | `{imageIndex: 12}`                 | Orden natural por nombre              |
-| MD      | Offset o heading          | `{line: 45, heading: "## Intro"}`  | Contexto textual para recuperación    |
+| Formato | Locator                        | Ejemplo                                          | Notas                                   |
+| ------- | ------------------------------ | ------------------------------------------------ | --------------------------------------- |
+| EPUB    | `href` + CFI/progreso + ancla  | `{format:'epub', href:'text/c1.xhtml', cfi:'…'}` | `positionOrder` calculado por adaptador |
+| PDF     | Página + zoom/scroll           | `{format:'pdf', page:5, zoom:1.5, scrollY:120}`  | Página 0-based en dominio               |
+| CBZ     | Página + escala/scroll         | `{format:'cbz', page:12, scale:1, scrollY:0}`    | Orden natural por nombre                |
+| MD      | Offset/href + progreso + ancla | `{format:'md', href:'#intro', offset:45}`        | Contexto textual para recuperación      |
+
+### UI del lector (desktop)
+
+El lector (`apps/desktop/reader.html` + `reader-entry.ts`) ofrece:
+
+- Paneles de **información**, **índice (TOC)**, **búsqueda**, **notas** y **ajustes de lectura**.
+- Ajustes de tema (papel/sepia/noche), tipografía, tamaño de letra e interlineado.
+- **Márgenes** con slider de 8 a 120 px (paso 2, default 48) que persiste en `ReaderPreferences.margin`.
+- **Modo Zen**: oculta los cintillos y expande la página a todo el ancho (`max-width: none`); se entra/sale con el botón o el botón flotante.
+- Selección de texto con widget de 6 colores para resaltar o crear nota (EPUB/MD).
 
 ### Recuperación de locator
 
@@ -333,11 +346,13 @@ Implementa `LibraryRepository` usando Drizzle ORM + better-sqlite3. Tablas norma
 
 Se deriva de `app.getPath('userData')` + `/clio-reader/clio.db` en `apps/desktop/electron/main.ts`:
 
-- **Linux**: `~/.config/@clio-reader/desktop/clio-reader/clio.db`
-- **Windows**: `%APPDATA%\@clio-reader\desktop\clio-reader\clio.db`
-- **macOS**: `~/Library/Application Support/@clio-reader/desktop/clio-reader/clio.db`
+- **Linux**: `~/.config/clio-reader/clio-reader/clio.db`
+- **Windows**: `%APPDATA%\clio-reader\clio-reader\clio.db`
+- **macOS**: `~/Library/Application Support/clio-reader/clio-reader/clio.db`
 
-En desarrollo (`app.isPackaged === false`) se usa un `userData` separado con sufijo `-dev` (p. ej. `~/.config/@clio-reader/desktop-dev/`), fijado con `app.setPath('userData', ...)` antes del single-instance lock, para no compartir DB ni lock con la build de producción.
+`main.ts` fija `app.setName('clio-reader')`, por lo que la ruta no usa el nombre del paquete (`@clio-reader/desktop`). En desarrollo (`app.isPackaged === false`) se usa un `userData` separado con sufijo `-dev` (p. ej. `~/.config/clio-reader-dev/`), fijado con `app.setPath('userData', ...)` antes del single-instance lock, para no compartir DB ni lock con la build de producción.
+
+El campo `margin` se guarda en SQLite como texto numérico (`"48"`) y se normaliza a número al leer; los valores legacy `compact`/`comfortable`/`wide` se migran a 16/48/96.
 
 Los archivos `-shm`/`-wal` son temporales del journal WAL; solo se respalda `clio.db`.
 
@@ -473,7 +488,9 @@ Notas:
   con `rootDir: "."` y `paths: {}`), y Metro resuelve vía `package.json` `exports`.
 - La comunicación reader→host usa sentinelas de `console.log` (`__clio_back__`,
   `__clio_rank__`, `__clio_prefs__`) reenviadas por un shim de `console.log`
-  inyectado antes de cargar el contenido.
+  inyectado antes de cargar el contenido. Desktop usa el mismo mecanismo vía
+  `webview` (`console-message`); mobile inyecta
+  `window.__clioHostParams = { uri, format }` y llama a `window.__initFromHost(data)`.
 
 ## 14. Estrategia de tests
 
