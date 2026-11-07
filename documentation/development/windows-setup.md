@@ -2,6 +2,21 @@
 
 Guía paso a paso para configurar el entorno de desarrollo en Windows y ejecutar la app de Clio Reader.
 
+## Compatibilidad con Windows
+
+El build de escritorio usa **Electron 28.3.3** y se empaqueta para `win32-x64`.
+
+| Aspecto                            | Soporte                                            |
+| ---------------------------------- | -------------------------------------------------- |
+| Windows 11 (todas las versiones)   | ✅                                                 |
+| Windows 10 (x64, 1607 en adelante) | ✅                                                 |
+| Windows 7 / 8 / 8.1                | ❌ — Electron 28 / Chromium 120 ya no los soportan |
+| Windows 32-bit (x86)               | ❌ — solo se compila `x64`                         |
+| Windows 11 ARM64 (Snapdragon)      | ⚠️ corre por emulación x64, no nativo              |
+
+El binario nativo de `better-sqlite3` también está compilado para `win32-x64`,
+válido en Windows 10 y Windows 11 sin diferencia.
+
 ## 1. Instalar Node.js
 
 1. Descarga Node.js 22+ desde [nodejs.org](https://nodejs.org/)
@@ -187,6 +202,29 @@ electron-builder necesita herramientas de Windows. Asegúrate de tener:
 - Windows 10/11 actualizado
 - Espacio en disco suficiente (~2GB para el build)
 - Sin antivirus bloqueando la compilación
+
+### El .exe no abre / hace clic y no ocurre nada
+
+Causa más común: el instalador se compiló desde Linux con el binario nativo de
+`better-sqlite3` de Linux (ELF). El proceso principal de Electron falla al
+cargar SQLite y se cierra antes de mostrar la ventana.
+
+Soluciones:
+
+1. Compila en Windows con `pnpm --filter @clio-reader/desktop build:win`, o
+2. Usa el workflow de GitHub Actions `windows-build.yml`, o
+3. En Linux, ejecuta `pnpm --filter @clio-reader/desktop build:win`: prepara
+   los binarios `win32` y genera un zip portable (el instalador NSIS requiere
+   `wine`).
+
+Verifica cualquier build con:
+
+```bash
+pnpm --filter @clio-reader/desktop exec node scripts/verify-win-build.mjs
+```
+
+También revisa el tamaño del `.exe` del instalador: si pesa menos de ~20 MB,
+no contiene la app (build interrumpido). Un build completo es de decenas de MB.
 
 ## Estructura del proyecto
 

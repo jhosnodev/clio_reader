@@ -62,7 +62,16 @@ Esto abrirá la aplicación de Electron con hot-reload. Cualquier cambio en el c
 pnpm --filter @clio-reader/desktop build:win
 ```
 
-Genera un instalador `.exe` en `apps/desktop/release/`.
+En **Windows** genera un instalador `.exe` en `apps/desktop/release/`.
+
+En **Linux/macOS** el instalador NSIS requiere `wine`; sin él, el mismo comando
+genera `Clio-Reader-0.1.0-win.zip` con la app portable (`win-unpacked/Clio Reader.exe`),
+que sí funciona en Windows.
+
+> **Importante:** nunca uses un `.exe` de Windows empaquetado desde Linux sin
+> contar con los binarios nativos de `better-sqlite3` para `win32`; la app no
+> arrancaría (el proceso principal falla al cargar SQLite). El script
+> `build:win` prepara y verifica esos binarios automáticamente.
 
 ### Versión portable (sin instalar)
 
@@ -70,7 +79,22 @@ Genera un instalador `.exe` en `apps/desktop/release/`.
 pnpm --filter @clio-reader/desktop build:win:portable
 ```
 
-Genera un ejecutable portable que no requiere instalación.
+Genera un ejecutable portable que no requiere instalación (requiere Windows o `wine`).
+
+### Build automático en Windows (GitHub Actions)
+
+El workflow `.github/workflows/windows-build.yml` compila el instalador en
+`windows-latest` en cada tag `v*` (o manualmente desde la pestaña Actions) y
+sube el `.exe` como artifact.
+
+### Verificar un build existente
+
+```bash
+pnpm --filter @clio-reader/desktop exec node scripts/verify-win-build.mjs
+```
+
+Comprueba que los módulos nativos sean binarios de Windows y que el instalador
+contenga la app.
 
 ## Ejecutar el build existente
 
@@ -96,12 +120,13 @@ start "apps/desktop/release/Clio Reader Setup 0.1.0.exe"
 
 ### Aplicación desktop
 
-| Script                    | Descripción                     |
-| ------------------------- | ------------------------------- |
-| `pnpm dev`                | Desarrollo con HMR (Electron)   |
-| `pnpm build`              | Build de producción             |
-| `pnpm build:win`          | Build + instalador Windows NSIS |
-| `pnpm build:win:portable` | Build portable Windows          |
+| Script                    | Descripción                                            |
+| ------------------------- | ------------------------------------------------------ |
+| `pnpm dev`                | Desarrollo con HMR (Electron)                          |
+| `pnpm build`              | Build de producción                                    |
+| `pnpm build:win`          | Build Windows (NSIS en Windows, zip portable en Linux) |
+| `pnpm build:win:nsis`     | Instalador NSIS (requiere Windows o wine)              |
+| `pnpm build:win:portable` | Build portable Windows                                 |
 
 ## Estructura del proyecto
 

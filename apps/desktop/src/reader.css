@@ -216,7 +216,7 @@ button {
 }
 
 .page {
-  max-width: 680px;
+  max-width: none;
   margin: 0 auto;
   padding: 64px var(--read-margin, 40px) 120px;
 }
