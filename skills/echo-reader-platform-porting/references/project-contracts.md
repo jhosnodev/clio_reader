@@ -8,11 +8,11 @@
 
 `packages/storage` define `KeyValueStore`, `LocalRepository`, `PersistenceState`, migración de estado y operaciones para libros, progreso, preferencias, marcadores y notas. Cada plataforma debe proporcionar el almacenamiento local mediante el contrato, no reimplementar las reglas de negocio.
 
-## Puntos aún incompletos
+## Estado actual y puntos incompletos
 
-`packages/library` y los shells de `apps/desktop` y `apps/mobile` todavía son esqueletos. No existe una UI funcional, ni adaptadores EPUB/PDF/CBZ concretos, ni contratos explícitos para file picker, ciclo de vida, importación durable, errores de archivo perdido o bridge WebView. El skill debe crear esos contratos antes de acoplar una nueva plataforma.
+Los shells de `apps/desktop` y `apps/mobile` están implementados, con UI funcional (biblioteca + lector) y adaptadores concretos para EPUB (`packages/reader-epub`, parser propio con jszip), PDF (`packages/reader-pdf`, PDF.js), CBZ (`packages/reader-cbz`) y Markdown (`packages/reader-md`). `BookFormat` incluye `md` y su adaptador ya está registrado en `ReaderFactory`.
 
-Aunque `BookFormat` incluye `md` y existe `MarkdownLocator`, el `ReaderFactory` no obtiene soporte automáticamente. El porting debe tratar Markdown como una capacidad separada y añadir su adaptador y pruebas si el alcance lo exige.
+Permanecen sin contrato explícito: file picker, ciclo de vida (suspensión/resume), importación durable de archivos y errores de archivo perdido, que hoy se resuelven de forma ad hoc en cada shell. El porting debe definir esos contratos antes de acoplar una nueva plataforma.
 
 ## Contratos recomendados para el shell
 

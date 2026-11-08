@@ -511,3 +511,38 @@ interface Book {
   status: 'available' | 'missing';
 }
 ```
+
+---
+
+## 12. Controles del lector (reader.html / reader.css)
+
+El lector tiene su propio set de controles; usar los mismos tokens (`var(--gold)`,
+`var(--tx)`, etc.) y no colores inline.
+
+### Paneles
+
+| Panel        | Id / botón                | Contenido                                        |
+| ------------ | ------------------------- | ------------------------------------------------ |
+| Información  | `r-info`                  | Metadata, portada, rank                          |
+| Índice (TOC) | `r-toc`                   | Capítulos del libro                              |
+| Búsqueda     | `r-search`                | Búsqueda en el contenido                         |
+| Notas        | `r-notes` / `panel-notes` | Cita seleccionada, textarea, lista de notas      |
+| Ajustes      | `r-set`                   | Tema, tipografía, tamaño, interlineado, márgenes |
+
+### Márgenes (slider)
+
+- Rango **8 – 120 px**, paso **2**, default **48**
+- Constantes: `MIN_READER_MARGIN` / `MAX_READER_MARGIN` / `DEFAULT_READER_MARGIN` en `packages/domain`
+- Persiste en `ReaderPreferences.margin` (SQLite lo guarda como texto numérico; los valores legacy `compact`/`comfortable`/`wide` migran a 16/48/96)
+
+### Modo Zen
+
+- Botón `r-zen` + salida `zen-exit`
+- Oculta cintillos y pone `max-width: none` en la página para ocupar todo el ancho
+
+### Widget de selección (resaltado/nota)
+
+- `sel-widget` con paleta `sel-colors`, `sel-note` y `sel-delete`
+- 6 colores fijos (`packages/annotations/src/highlight-colors.ts`):
+  `#facc15` (amarillo), `#4ade80` (verde), `#38bdf8` (azul), `#f472b6` (rosa), `#fb923c` (naranja), `#c084fc` (morado)
+- Solo disponible en formatos refluibles (EPUB/MD); en PDF/CBZ se oculta

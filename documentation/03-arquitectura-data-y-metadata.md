@@ -5,8 +5,8 @@
 | **Nombre**                        | clio_reader — Data, metadata y estado de lectura |
 | **Autor**                         | Manus AI                                         |
 | **Fecha de creación**             | 28 de agosto de 2026                             |
-| **Fecha de última actualización** | 28 de agosto de 2026                             |
-| **Estado**                        | Propuesta inicial                                |
+| **Fecha de última actualización** | 7 de noviembre de 2026                           |
+| **Estado**                        | Implementada (en uso)                            |
 | **Versión del documento**         | 1.0.0                                            |
 
 ## 1. Principio local-first
@@ -15,14 +15,16 @@ El MVP no tendrá backend, cuentas, perfiles ni sincronización. Los libros, met
 
 ## 2. Separación de datos
 
-| Grupo              | Ejemplos                                               | Persistencia                                     |
-| ------------------ | ------------------------------------------------------ | ------------------------------------------------ |
-| Metadata del libro | Título, autor, portada, idioma, formato, tamaño y hash | Tabla `books`                                    |
-| Data de lectura    | Última posición, porcentaje, zoom y desplazamiento     | Tabla `reading_progress`                         |
-| Preferencias       | Tema, colores, fuente, escala, márgenes y dirección    | Tabla `preferences` o almacenamiento clave-valor |
-| Anotaciones        | Marcadores, notas y texto seleccionado                 | Tablas `bookmarks` y `notes`                     |
-| Estado técnico     | Versión de esquema y migraciones                       | Tabla `app_state`                                |
-| Archivo físico     | EPUB, PDF, CBZ o Markdown importado                    | Directorio gestionado por la aplicación          |
+| Grupo              | Ejemplos                                               | Persistencia                                                          |
+| ------------------ | ------------------------------------------------------ | --------------------------------------------------------------------- |
+| Metadata del libro | Título, autor, portada, idioma, formato, tamaño y hash | Tabla `books`                                                         |
+| Data de lectura    | Última posición, porcentaje, zoom y desplazamiento     | Tabla `reading_progress`                                              |
+| Preferencias       | Tema, colores, fuente, escala, márgenes y dirección    | Tablas `reader_preferences` (global) y `book_preferences` (por libro) |
+| Anotaciones        | Marcadores, notas, resaltados y texto seleccionado     | Tablas `bookmarks`, `notes` y `highlights`                            |
+| Estado técnico     | Versión de esquema, paleta activa y modo               | Tabla `user_settings` (esquema versionado en la app)                  |
+| Archivo físico     | EPUB, PDF, CBZ o Markdown importado                    | Directorio gestionado por la aplicación                               |
+
+Búsquedas de texto en notas y resaltados se indexan en las tablas virtuales FTS5 `notes_fts` y `highlights_fts`.
 
 ## 3. Modelo mínimo
 
@@ -40,12 +42,8 @@ interface Book {
 
 interface ReadingProgress {
   bookId: string;
-  locator: string;
+  locator: ReaderLocator;
   percent: number;
-  positionOrder?: number;
-  zoom?: number;
-  scrollX?: number;
-  scrollY?: number;
   updatedAt: number;
 }
 
@@ -63,8 +61,7 @@ interface ReaderPreferences {
 interface Bookmark {
   id: string;
   bookId: string;
-  locator: string;
-  positionOrder?: number;
+  locator: ReaderLocator;
   label?: string;
   createdAt: number;
 }
@@ -72,8 +69,7 @@ interface Bookmark {
 interface Note {
   id: string;
   bookId: string;
-  locator: string;
-  positionOrder?: number;
+  locator: ReaderLocator;
   selectedText?: string;
   body: string;
   createdAt: number;
@@ -89,7 +85,7 @@ El renderer emitirá cambios significativos y el repositorio guardará con debou
 
 ## 5. Settings
 
-Los settings globales se cargan al iniciar y se aplican antes de mostrar el lector. Los settings por libro pueden sobrescribir tamaño de letra, fuente, márgenes o dirección. Cada escritura debe validar rangos y colores, y guardar `settingsSchemaVersion` para futuras migraciones.
+Los settings globales se cargan al iniciar y se aplican antes de mostrar el lector. Los settings por libro pueden sobrescribir tamaño de letra, fuente, márgenes o dirección. Cada escritura debe validar rangos y colores, y guardar `schemaVersion` (actualmente `CURRENT_SCHEMA_VERSION = 3`) para futuras migraciones.
 
 ## 6. Marcadores, notas e índices
 

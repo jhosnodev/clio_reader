@@ -14,7 +14,7 @@
 Este documento explica, de principio a fin:
 
 1. **Preparar la PC** (Linux) con Node, JDK y el Android SDK.
-2. **Probar la app en un emulador** que corre en la misma PC (Fase 1, detallada).
+2. **Probar la app en un emulador** que corre en la misma PC (Paso 1, detallado).
 3. **Desplegar a un dispositivo físico** para pruebas reales (development build).
 4. **Generar un APK de release** para repartir a testers que no tienen Metro.
 
@@ -33,11 +33,11 @@ pasos en orden; no saltes al emulador sin completar el SDK.
 
 ### 2.1 Node.js y pnpm
 
-Ya presentes (Node 22+, pnpm 10.15.1). Verifica:
+Ya presentes (Node 22+, pnpm 12.16.1). Verifica:
 
 ```bash
 node --version     # >= 22
-pnpm --version     # 10.15.1
+pnpm --version     # 12.16.1
 ```
 
 Desde la raíz del repo instala dependencias:
@@ -103,7 +103,7 @@ _SDK Tools_). Versiones que requiere Expo SDK 52 / RN 0.76:
 | SDK Platform                              | **Android 15 (API 35)** | `compileSdk` / `targetSdk` |
 | Build-Tools                               | **35.0.0**              | empaquetado del APK        |
 | Platform-Tools                            | última                  | `adb` (instalar en device) |
-| Emulator                                  | última                  | emulador de la Fase 1      |
+| Emulator                                  | última                  | emulador del Paso 1        |
 | Android SDK Command-line Tools            | última (latest)         | `sdkmanager`, `avdmanager` |
 | NDK (Side by side)                        | **26.1.10909125**       | módulos nativos (RN)       |
 | CMake                                     | **3.22.1**              | build nativo, worker PDF   |
@@ -165,11 +165,16 @@ Sin KVM el emulador arranca en modo software (muy lento) o no arranca.
 ### 2.7 Instalar herramientas CLI de Expo
 
 No hace falta instalación global; `npx expo` usa la versión local del proyecto.
-Verifica la salud del proyecto móvil:
+Para verificar la salud del proyecto móvil usa `expo-doctor` vía npx (no está en
+`node_modules/.bin` del paquete):
 
 ```bash
-pnpm --filter @clio-reader/mobile exec expo-doctor
+cd apps/mobile && npx expo-doctor
 ```
+
+No hay CI de Android en este repo: no existe workflow de APK. Los builds de
+Android son locales (esta guía). Si se necesita un APK reproducible habría que
+añadir un workflow tipo `apk-build.yml`.
 
 ## 3. Preparar el bundle del reader (obligatorio)
 
@@ -189,7 +194,7 @@ Verifica que exista `apps/mobile/assets/reader.html`. **Regénéralo cada vez qu
 cambie código del reader de escritorio** (`apps/desktop/src/reader/**`,
 `packages/reader-*`).
 
-## 4. Fase 1 — Probar en el emulador (PC)
+## 4. Paso 1 — Probar en el emulador (PC)
 
 Objetivo: validar la app completa sin necesidad de un teléfono. Es la fase más
 detallada porque concentra la configuración y el diagnóstico.
@@ -292,7 +297,7 @@ Sigue el checklist de la sección 7. Como mínimo:
 | Estado del device         | `adb devices`, `adb shell`                                        |
 | Recargar app              | tecla `r` en Metro, o `adb shell input keyevent 82` (menú dev)    |
 
-### 4.7 Problemas frecuentes de la Fase 1
+### 4.7 Problemas frecuentes del Paso 1
 
 | Síntoma                                     | Causa probable / solución                                        |
 | ------------------------------------------- | ---------------------------------------------------------------- |
@@ -306,7 +311,7 @@ Sigue el checklist de la sección 7. Como mínimo:
 | `Unable to resolve module @clio-reader/...` | Faltó `pnpm build` (§3) o reiniciar Metro con `--clear`.         |
 | Metro no conecta desde el device            | `adb reverse tcp:8081 tcp:8081`.                                 |
 
-## 5. Fase 2 — Dispositivo físico (development build)
+## 5. Paso 2 — Dispositivo físico (development build)
 
 1. **Activa opciones de desarrollador** en el teléfono: Ajustes → Acerca del
    teléfono → toca 7 veces "Número de compilación".
@@ -336,7 +341,7 @@ Prueba los mismos casos del checklist (§7), prestando atención a los riesgos
 pendientes de la spec 14 (worker de PDF desde `file://`, memoria con archivos
 grandes, `allowFileAccess` en Android 10+).
 
-## 6. Fase 3 — APK de release para pruebas reales
+## 6. Paso 3 — APK de release para pruebas reales
 
 Para entregar la app a testers que **no** tienen Metro ni cable USB, genera un
 APK que incluya el bundle JS.
@@ -399,23 +404,26 @@ necesitarás una keystore de release propia y configuración en
 
 ## 8. Comandos rápidos
 
+> Nota: en este documento "Paso" se refiere a los pasos de esta guía, no a las
+> fases del plan de implementación (Fase 9 = Mobile Android).
+
 ```bash
 # Preparación
 pnpm install
 pnpm build
 pnpm --filter @clio-reader/mobile build:reader
 
-# Emulador (Fase 1)
+# Emulador (Paso 1)
 emulator -avd Pixel7_API35 &
 adb devices
 pnpm --filter @clio-reader/mobile exec expo run:android
 
-# Dispositivo físico (Fase 2)
+# Dispositivo físico (Paso 2)
 adb devices
 pnpm --filter @clio-reader/mobile exec expo run:android --device
 adb reverse tcp:8081 tcp:8081
 
-# Release APK (Fase 3)
+# Release APK (Paso 3)
 pnpm --filter @clio-reader/mobile exec expo run:android --variant release
 # o
 cd apps/mobile/android && ./gradlew assembleRelease

@@ -10,18 +10,18 @@ de anotaciones por libro con filtro y orden, según
 
 ## Estado
 
-| Pieza                                                           | Antes             | Ahora                               |
-| --------------------------------------------------------------- | ----------------- | ----------------------------------- |
-| Dominio `Note` / `Bookmark`                                     | ✅                | ✅                                  |
-| CRUD de notas (`packages/library`)                              | ✅                | ✅                                  |
-| Persistencia JSON + SQLite + FTS                                | ✅                | ✅                                  |
-| Paquete `@clio-reader/annotations`                              | ❌ dead code      | ✅ integrado en desktop             |
-| Notas dentro del reader (crear/editar/borrar/listar por página) | ⚠️ WIP con bugs   | ✅ sin bugs conocidos               |
-| Vista de anotaciones por libro (filtro + orden)                 | ❌                | ✅ `LibraryView` → "Notas"          |
-| Highlights (dominio + SQLite)                                   | ⚠️ sin dominio/UI | ✅ desktop EPUB/MD (widget + vista) |
-| Resaltado en PDF                                                | ❌                | ❌ feature futura (F-007)           |
-| Crear marcador desde el reader                                  | ❌ stub           | ❌ pendiente (fuera de notas)       |
-| Mobile (Android)                                                | ❌                | ❌ fuera de alcance                 |
+| Pieza                                                           | Antes             | Ahora                                   |
+| --------------------------------------------------------------- | ----------------- | --------------------------------------- |
+| Dominio `Note` / `Bookmark`                                     | ✅                | ✅                                      |
+| CRUD de notas (`packages/library`)                              | ✅                | ✅                                      |
+| Persistencia JSON + SQLite + FTS                                | ✅                | ✅                                      |
+| Paquete `@clio-reader/annotations`                              | ❌ dead code      | ✅ integrado en desktop                 |
+| Notas dentro del reader (crear/editar/borrar/listar por página) | ⚠️ WIP con bugs   | ✅ sin bugs conocidos                   |
+| Vista de anotaciones por libro (filtro + orden)                 | ❌                | ✅ `LibraryView` → "Notas y resaltados" |
+| Highlights (dominio + SQLite)                                   | ⚠️ sin dominio/UI | ✅ desktop EPUB/MD (widget + vista)     |
+| Resaltado en PDF                                                | ❌                | ❌ feature futura (F-007)               |
+| Crear marcador desde el reader                                  | ❌ stub           | ❌ pendiente (fuera de notas)           |
+| Mobile (Android)                                                | ❌                | ❌ fuera de alcance                     |
 
 ## Bugs corregidos
 
@@ -76,7 +76,7 @@ de anotaciones por libro con filtro y orden, según
 
 ### Fase 4 — Validación
 
-- `pnpm vitest run` — 341 tests pasan (incluye test nuevo de B4).
+- `pnpm vitest run` — 341 tests pasaban en esa ronda (incluye el test nuevo de B4).
 - `pnpm --filter @clio-reader/desktop check` — limpio.
 - `pnpm --filter @clio-reader/desktop build` — OK.
 
@@ -94,7 +94,8 @@ de anotaciones por libro con filtro y orden, según
 - Crear marcador desde el reader (`setupBookmark()` sigue siendo stub).
 - `listAllNotes` global + vista de anotaciones de toda la biblioteca.
 - Mobile (Android): integración completa.
-- Export/import de anotaciones en la UI (el paquete ya lo implementa).
+- ~~Export/import de anotaciones en la UI~~ → ✅ hecho (`NotesExportDialog.tsx`,
+  ver `13-exportar-notas-highlights-markdown.md`).
 
 ## Fase 6 — Highlights en desktop (EPUB/MD)
 
@@ -134,7 +135,7 @@ junto a las notas en `LibraryView` → "Notas y resaltados".
 - `annotation-validator.test.ts` (+validación de highlight).
 - `reader-text-anchor.test.ts` (+pintado/limpieza de rangos).
 - `reader-entry-order.test.ts` (+fuentes de highlights en init).
-- Suite completa: 571 tests pasan.
+- Suite completa: 610 tests pasan (7-nov-2026, `pnpm validate`).
 
 ## Fase 5 — Notas ancladas al texto seleccionado
 

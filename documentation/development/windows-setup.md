@@ -31,13 +31,13 @@ npm --version
 ## 2. Instalar pnpm
 
 ```bash
-npm install -g pnpm@10.15.1
+npm install -g pnpm@12.16.1
 ```
 
 Verifica:
 
 ```bash
-pnpm --version   # Debe mostrar 10.15.1
+pnpm --version   # Debe mostrar 12.16.1
 ```
 
 ## 3. Instalar Git
@@ -55,7 +55,7 @@ git --version
 ```bash
 # Clonar
 git clone <url-del-repo>
-cd clio_reader
+cd echo_reader
 
 # Instalar todas las dependencias del monorepo
 pnpm install
@@ -80,13 +80,10 @@ La app se recarga automáticamente al guardar cambios.
 ## 6. Ejecutar tests
 
 ```bash
-# Todos los tests del monorepo
+# Todos los tests del monorepo (los tests del desktop están en apps/desktop/tests/)
 pnpm test
 
-# Tests solo del desktop
-pnpm --filter @clio-reader/desktop test
-
-# Validación completa (recomendado antes de un PR)
+# Validación completa (recomendado antes de un PR; también la ejecuta el CI)
 pnpm validate
 ```
 
@@ -108,13 +105,15 @@ pnpm --filter @clio-reader/desktop build:win:portable
 
 Genera una carpeta `win-unpacked/` con el ejecutable portátil.
 
-### Abrir el build existente
+### Abrir un build existente
 
-Ya hay un build compilado en el repositorio:
+Si ya generaste un build (o descargaste un artefacto del CI), ábrelo con:
 
 ```bash
 start "apps/desktop/release/Clio Reader Setup 0.1.0.exe"
 ```
+
+> La carpeta `release/` está en `.gitignore`: los builds no se commitean. En CI, `windows-build.yml` sube el `.exe` como artefacto de la ejecución.
 
 ## Troubleshooting
 
@@ -129,9 +128,10 @@ packages:
   - 'apps/*'
   - 'packages/*'
 
-onlyBuiltDependencies:
-  - electron
-  - esbuild
+allowBuilds:
+  better-sqlite3: true
+  electron: true
+  esbuild: true
 ```
 
 Luego reinstala:
@@ -145,7 +145,7 @@ pnpm install --force
 Asegúrate de que pnpm está en tu PATH:
 
 ```bash
-npm install -g pnpm@10.15.1
+npm install -g pnpm@12.16.1
 ```
 
 Si persiste, reinicia la terminal o el sistema.
@@ -229,16 +229,18 @@ no contiene la app (build interrumpido). Un build completo es de decenas de MB.
 ## Estructura del proyecto
 
 ```
-clio_reader/
+echo_reader/
 ├── apps/
-│   └── desktop/          ← App de Electron (Windows)
-│       ├── electron/     ← Proceso principal de Electron
-│       ├── src/          ← React UI + bridges de plataforma
-│       ├── release/      ← Builds compilados (.exe)
-│       └── package.json
+│   ├── desktop/          ← App de Electron (Windows/Linux)
+│   │   ├── electron/     ← Proceso principal de Electron
+│   │   ├── src/          ← React UI + bridges de plataforma
+│   │   ├── release/      ← Builds compilados (.exe, AppImage, .deb; gitignored)
+│   │   └── package.json
+│   └── mobile/           ← App Expo (Android/iOS)
 ├── packages/             ← Paquetes compartidos (domain, readers, storage, etc.)
 ├── documentation/        ← Documentación del proyecto
-└── development/          ← Esta carpeta (guías de desarrollo)
+│   └── development/      ← Esta carpeta (guías de desarrollo)
+└── skills/               ← Skills reutilizables del proyecto
 ```
 
 ## Comandos rápidos
