@@ -6,10 +6,15 @@
 
 - **Local-first**: Todo se almacena en tu dispositivo, sin dependencia de servicios externos
 - **Multi-formato**: Soporte para EPUB, PDF, CBZ y Markdown
-- **Biblioteca organizada**: Importa, ordena y gestiona tu colección de libros
-- **Lector personalizable**: Paletas de color, modo oscuro/claro y preferencias visuales
-- **Persistencia**: Progreso de lectura, marcadores y notas guardados localmente
+- **Biblioteca organizada**: Importa, ordena (rating) y gestiona tu colección de libros
+- **Lector personalizable**: Paletas de color, modo oscuro/claro, tipografía, tamaño de letra, interlineado y **márgenes con slider** (8–120 px)
+- **Modo Zen**: Oculta los cintillos y expande la página a todo el ancho
+- **Anotaciones**: Notas ancladas al texto, **resaltado con 6 colores** (EPUB/MD) y vista "Notas y resaltados" en la biblioteca
+- **Exportar/importar anotaciones**: Notas y resaltados por libro como Markdown
+- **Persistencia**: Progreso de lectura y preferencias guardados localmente (SQLite en desktop, JSON en mobile)
 - **Sin DRM**: Acceso completo a tus archivos sin restricciones
+
+> Los **marcadores** (bookmark) están implementados en dominio/persistencia pero deshabilitados en la UI hasta completar su CRUD desde el lector.
 
 ## Formatos soportados
 
@@ -25,7 +30,7 @@
 | Requisito | Versión                    |
 | --------- | -------------------------- |
 | Node.js   | 22+                        |
-| pnpm      | 10.15.1                    |
+| pnpm      | 12.16.1                    |
 | Git       | Cualquier versión reciente |
 
 > No se requiere Rust, .NET ni ninguna otra herramienta. El proyecto es 100% TypeScript/JavaScript.
@@ -36,7 +41,7 @@
 
 ```bash
 git clone <url-del-repo>
-cd clio_reader
+cd echo_reader
 ```
 
 ### Instalar dependencias
@@ -65,7 +70,7 @@ pnpm --filter @clio-reader/desktop build:win
 En **Windows** genera un instalador `.exe` en `apps/desktop/release/`.
 
 En **Linux/macOS** el instalador NSIS requiere `wine`; sin él, el mismo comando
-genera `Clio-Reader-0.1.0-win.zip` con la app portable (`win-unpacked/Clio Reader.exe`),
+genera `Clio Reader-0.1.0-win.zip` con la app portable (`win-unpacked/Clio Reader.exe`),
 que sí funciona en Windows.
 
 > **Importante:** nunca uses un `.exe` de Windows empaquetado desde Linux sin
@@ -85,7 +90,7 @@ Genera un ejecutable portable que no requiere instalación (requiere Windows o `
 
 El workflow `.github/workflows/windows-build.yml` compila el instalador en
 `windows-latest` en cada tag `v*` (o manualmente desde la pestaña Actions) y
-sube el `.exe` como artifact.
+sube el `.exe` como artifact `clio-reader-windows`.
 
 ### Verificar un build existente
 
@@ -96,6 +101,37 @@ pnpm --filter @clio-reader/desktop exec node scripts/verify-win-build.mjs
 Comprueba que los módulos nativos sean binarios de Windows y que el instalador
 contenga la app.
 
+## Build para Linux
+
+### AppImage + .deb
+
+```bash
+pnpm --filter @clio-reader/desktop build:linux
+```
+
+Genera en `apps/desktop/release/`:
+
+- `Clio Reader-0.1.0.AppImage`
+- `clio-reader_0.1.0_amd64.deb`
+
+### Solo AppImage
+
+```bash
+pnpm --filter @clio-reader/desktop build:linux:appimage
+```
+
+### Verificar un build existente
+
+```bash
+pnpm --filter @clio-reader/desktop exec node scripts/verify-linux-build.mjs
+```
+
+### Build automático en Linux (GitHub Actions)
+
+El workflow `.github/workflows/linux-build.yml` compila en `ubuntu-latest` en
+cada tag `v*` (o manualmente) y sube AppImage + `.deb` como artifact
+`clio-reader-linux`.
+
 ## Ejecutar el build existente
 
 Si ya tienes un build compilado:
@@ -103,49 +139,93 @@ Si ya tienes un build compilado:
 ```bash
 # Windows
 start "apps/desktop/release/Clio Reader Setup 0.1.0.exe"
+
+# Linux
+./apps/desktop/release/Clio\ Reader-0.1.0.AppImage
 ```
+
+## Aplicación mobile (Android)
+
+```bash
+# Genera apps/mobile/assets/reader.html desde el bundle del reader (requiere pnpm build previo)
+pnpm --filter @clio-reader/mobile build:reader
+
+# Metro + dispositivo/emulador
+pnpm --filter @clio-reader/mobile android
+```
+
+La spec completa está en [`documentation/features/14-lector-mobile-android.md`](./documentation/features/14-lector-mobile-android.md).
+
+## CI / GitHub Actions
+
+| Workflow            | Trigger                                    | Qué ejecuta                                           | Artefactos            |
+| ------------------- | ------------------------------------------ | ----------------------------------------------------- | --------------------- |
+| `quality.yml`       | push a `main` + PR                         | `pnpm validate` (format + check + lint + test)        | —                     |
+| `build-checks.yml`  | PR (paths de `apps/desktop/**` y lockfile) | `build:linux` y `build:win` (verificación, sin subir) | —                     |
+| `windows-build.yml` | tags `v*` + manual                         | `build:win`                                           | `clio-reader-windows` |
+| `linux-build.yml`   | tags `v*` + manual                         | `build:linux`                                         | `clio-reader-linux`   |
+
+Todo PR pasa por `quality.yml`; los PRs que tocan el desktop además compilan de verdad en Linux y Windows con `build-checks.yml`.
 
 ## Scripts disponibles
 
 ### Raíz del monorepo
 
-| Script          | Descripción                                        |
-| --------------- | -------------------------------------------------- |
-| `pnpm build`    | Build recursivo de todos los paquetes              |
-| `pnpm check`    | Type-check completo                                |
-| `pnpm format`   | Formateo de código con Prettier                    |
-| `pnpm lint`     | Linting con ESLint                                 |
-| `pnpm test`     | Ejecutar tests con Vitest                          |
-| `pnpm validate` | Validación completa (format + check + lint + test) |
+| Script              | Descripción                                        |
+| ------------------- | -------------------------------------------------- |
+| `pnpm build`        | Build recursivo de todos los paquetes              |
+| `pnpm check`        | Type-check completo                                |
+| `pnpm format`       | Formateo de código con Prettier                    |
+| `pnpm format:check` | Verificación de formato (sin escribir)             |
+| `pnpm lint`         | Linting con ESLint                                 |
+| `pnpm test`         | Ejecutar tests con Vitest                          |
+| `pnpm test:watch`   | Tests en modo watch                                |
+| `pnpm validate`     | Validación completa (format + check + lint + test) |
 
 ### Aplicación desktop
 
-| Script                    | Descripción                                            |
-| ------------------------- | ------------------------------------------------------ |
-| `pnpm dev`                | Desarrollo con HMR (Electron)                          |
-| `pnpm build`              | Build de producción                                    |
-| `pnpm build:win`          | Build Windows (NSIS en Windows, zip portable en Linux) |
-| `pnpm build:win:nsis`     | Instalador NSIS (requiere Windows o wine)              |
-| `pnpm build:win:portable` | Build portable Windows                                 |
+Todos van con `--filter @clio-reader/desktop`:
+
+| Script                 | Descripción                                             |
+| ---------------------- | ------------------------------------------------------- |
+| `dev`                  | Desarrollo con HMR (Electron)                           |
+| `build`                | Build de producción                                     |
+| `build:win`            | Build Windows (NSIS en Windows, zip portable en Linux)  |
+| `build:win:nsis`       | Instalador NSIS (requiere Windows o wine)               |
+| `build:win:portable`   | Build portable Windows                                  |
+| `build:linux`          | AppImage + .deb                                         |
+| `build:linux:appimage` | Solo AppImage                                           |
+| `build:reader-mobile`  | Bundle del reader para `apps/mobile/assets/reader.html` |
+| `preview`              | Vista previa del build web                              |
+| `generate-icons`       | Regenera iconos de la app                               |
+
+### Aplicación mobile
+
+| Script                      | Descripción                               |
+| --------------------------- | ----------------------------------------- |
+| `build:reader`              | Genera `assets/reader.html` (vía desktop) |
+| `start` / `android` / `ios` | Metro + dispositivo/emulador              |
 
 ## Estructura del proyecto
 
 ```
 echo_reader/
 ├── apps/
-│   ├── desktop/          # Aplicación Electron + React (Windows)
+│   ├── desktop/          # Aplicación Electron + React (Windows/Linux)
 │   └── mobile/           # Aplicación Expo + React Native (Android/iOS)
 ├── packages/
 │   ├── domain/           # Tipos y modelos de dominio
 │   ├── reader-core/      # Contratos abstractos y máquina de estados
-│   ├── reader-epub/      # Renderer de EPUB
-│   ├── reader-pdf/       # Renderer de PDF
-│   ├── reader-cbz/       # Renderer de CBZ
+│   ├── reader-epub/      # Adaptador/reader de EPUB
+│   ├── reader-pdf/       # Adaptador/reader de PDF
+│   ├── reader-cbz/       # Adaptador/reader de CBZ
+│   ├── reader-md/        # Adaptador/reader de Markdown
 │   ├── reader-session/   # Gestión de sesión de lectura
-│   ├── storage/          # Persistencia local (SQLite)
+│   ├── storage/          # Persistencia local (SQLite en desktop, JSON en mobile)
 │   ├── library/          # Casos de uso de biblioteca
 │   └── annotations/      # Gestión de anotaciones
-└── documentation/        # Documentación del proyecto
+├── documentation/        # Documentación del proyecto
+└── skills/               # Skills reutilizables
 ```
 
 ## Tests
@@ -168,24 +248,32 @@ La documentación completa se encuentra en [`documentation/`](./documentation/):
 - [Features futuros](./documentation/04-features-futuros.md)
 - [Plan de implementación por fases](./documentation/05-plan-implementacion.md)
 - [Guía de desarrollo local](./documentation/06-desarrollo-local.md)
+- [Flujo de comunicación con la WebView](./documentation/07-flujo-webview.md)
+- [Guía de estilos (STYLE-GUIDE)](./documentation/STYLE-GUIDE.md)
+- [Diseño de la base de datos](./documentation/diseño-de-DB.md)
+- [Guías de desarrollo](./documentation/development/)
+- [Especificaciones de features](./documentation/features/)
+- [Architecture Decision Records](./documentation/adr/)
 
 ## Estado del proyecto
 
-| Fase                             | Estado       |
-| -------------------------------- | ------------ |
-| Fase 0 — Preparación repo        | ✅ Completa  |
-| Fase 1 — Spike Windows           | ✅ Completa  |
-| Fase 2 — Dominio/contratos       | ✅ Completa  |
-| Fase 3 — Biblioteca/persistencia | ✅ Completa  |
-| Fase 4 — Renderer CBZ            | ✅ Completa  |
-| Fase 5 — Renderer PDF            | ✅ Completa  |
-| Fase 6 — Renderer EPUB           | ✅ Completa  |
-| Fase 7 — Progreso/settings       | ⚠️ Parcial   |
-| Fase 8 — Marcadores/notas        | ❌ Pendiente |
+| Fase                             | Estado      |
+| -------------------------------- | ----------- |
+| Fase 0 — Preparación repo        | ✅ Completa |
+| Fase 1 — Spike Windows           | ✅ Completa |
+| Fase 2 — Dominio/contratos       | ✅ Completa |
+| Fase 3 — Biblioteca/persistencia | ✅ Completa |
+| Fase 4 — Renderer CBZ            | ✅ Completa |
+| Fase 5 — Renderer PDF            | ✅ Completa |
+| Fase 6 — Renderer EPUB/MD        | ✅ Completa |
+| Fase 7 — Progreso/settings       | ⚠️ Parcial  |
+| Fase 8 — Marcadores/notas        | ⚠️ Parcial  |
+| Fase 9 — Mobile Android (MVP)    | ⚠️ Parcial  |
 
 ## Plataformas objetivo
 
 - **Windows**: Versión desktop completa (Electron)
+- **Linux**: AppImage + .deb (Electron)
 - **Android**: Versión mobile en desarrollo (Expo)
 - **iOS**: Preparada pero no prioridad para el MVP
 

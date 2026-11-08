@@ -1,13 +1,13 @@
 # F-005: Lectura de archivos Markdown
 
-| Campo                             | Valor                          |
-| --------------------------------- | ------------------------------ |
-| **Nombre**                        | Lectura de archivos Markdown   |
-| **Autor**                         | Manus AI                       |
-| **Fecha de creación**             | 28 de agosto de 2026           |
-| **Fecha de última actualización** | 28 de agosto de 2026           |
-| **Estado**                        | Feature futura — fuera del MVP |
-| **Versión del documento**         | 1.0.0                          |
+| Campo                             | Valor                            |
+| --------------------------------- | -------------------------------- |
+| **Nombre**                        | Lectura de archivos Markdown     |
+| **Autor**                         | Manus AI                         |
+| **Fecha de creación**             | 28 de agosto de 2026             |
+| **Fecha de última actualización** | 7 de noviembre de 2026           |
+| **Estado**                        | ✅ Implementada (dentro del MVP) |
+| **Versión del documento**         | 1.0.0                            |
 
 ## Objetivo
 

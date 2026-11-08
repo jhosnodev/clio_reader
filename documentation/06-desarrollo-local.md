@@ -5,13 +5,13 @@
 | **Nombre**                        | clio_reader — Guía de desarrollo local |
 | **Autor**                         | Manus AI                               |
 | **Fecha de creación**             | 28 de agosto de 2026                   |
-| **Fecha de última actualización** | 28 de agosto de 2026                   |
-| **Estado**                        | Guía inicial de Fase 0                 |
-| **Versión del documento**         | 1.0.0                                  |
+| **Fecha de última actualización** | 7 de noviembre de 2026                 |
+| **Estado**                        | Guía operativa (fases 0–9 en curso)    |
+| **Versión del documento**         | 1.1.0                                  |
 
 ## Requisitos
 
-Se requiere Node.js compatible con el proyecto, pnpm 10.x y Git. Windows y Android son las plataformas primarias del MVP; la preparación de los shells se realizará en las fases siguientes.
+Se requiere Node.js 22+, pnpm 12.16.1 y Git. Windows y Linux son las plataformas de escritorio del MVP (builds con `build:win` / `build:linux`), y Android es la plataforma mobile (Expo).
 
 ## Instalación
 
@@ -29,7 +29,25 @@ pnpm test
 pnpm validate
 ```
 
-`validate` debe ejecutarse antes de abrir un pull request. Los tests del dominio y los futuros tests de cada paquete deben permanecer independientes de red y de servicios externos.
+`validate` debe ejecutarse antes de abrir un pull request. Los tests del dominio y los tests de cada paquete deben permanecer independientes de red y de servicios externos.
+
+## CI
+
+| Workflow           | Trigger                             | Qué ejecuta                 |
+| ------------------ | ----------------------------------- | --------------------------- |
+| `quality.yml`      | push a `main` + todo PR             | `pnpm validate`             |
+| `build-checks.yml` | PR con cambios en `apps/desktop/**` | `build:linux` + `build:win` |
+
+Un PR solo se considera verde cuando pasa `quality.yml`; si toca el desktop, además debe compilar en Linux y Windows.
+
+## Builds de paquete
+
+```bash
+pnpm --filter @clio-reader/desktop dev          # desarrollo con HMR
+pnpm --filter @clio-reader/desktop build:win    # Windows (NSIS / zip portable)
+pnpm --filter @clio-reader/desktop build:linux  # AppImage + .deb
+pnpm --filter @clio-reader/mobile build:reader  # bundle del reader para mobile
+```
 
 ## Convenciones
 

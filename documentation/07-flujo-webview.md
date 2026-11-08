@@ -5,13 +5,13 @@
 | **Nombre**                        | clio_reader — Flujo del WebView |
 | **Autor**                         | Manus AI                        |
 | **Fecha de creación**             | 28 de agosto de 2026            |
-| **Fecha de última actualización** | 28 de agosto de 2026            |
+| **Fecha de última actualización** | 7 de noviembre de 2026          |
 | **Estado**                        | Implementado                    |
-| **Versión del documento**         | 1.0.0                           |
+| **Versión del documento**         | 1.1.0                           |
 
 ## 1. Propósito
 
-Este documento describe cómo el lector de libros utiliza un `<webview>` de Electron para renderizar contenido EPUB de forma aislada y segura. Explica la comunicación entre el shell de la aplicación y el contenido del lector.
+Este documento describe cómo el lector utiliza un `<webview>` de Electron (y en Android un `react-native-webview`) para renderizar contenido **EPUB, PDF, CBZ y Markdown** de forma aislada y segura. Explica la comunicación entre el shell de la aplicación y el contenido del lector.
 
 ## 2. Arquitectura del WebView
 
@@ -27,8 +27,9 @@ Este documento describe cómo el lector de libros utiliza un `<webview>` de Elec
 │  │  │  │  ┌───────────────────────┐  │ │  │  │
 │  │  │  │  │  reader-entry.ts      │  │ │  │  │
 │  │  │  │  │  ┌─────────────────┐  │  │ │  │  │
-│  │  │  │  │  │  EpubReaderDoc  │  │  │ │  │  │
-│  │  │  │  │  │  (reader-epub)  │  │  │ │  │  │
+│  │  │  │  │  │ ReaderFactory   │  │  │ │  │  │
+│  │  │  │  │  │ → adaptador     │  │  │ │  │  │
+│  │  │  │  │  │  epub/pdf/cbz/md│  │  │ │  │  │
 │  │  │  │  │  └─────────────────┘  │  │ │  │  │
 │  │  │  │  └───────────────────────┘  │ │  │  │
 │  │  │  └─────────────────────────────┘ │  │  │
@@ -36,6 +37,8 @@ Este documento describe cómo el lector de libros utiliza un `<webview>` de Elec
 │  └───────────────────────────────────────┘  │
 └─────────────────────────────────────────────┘
 ```
+
+El adaptador concreto se elige dentro del webview con `ReaderFactory.create(source, format)`. El shell no conoce el detalle de cada formato.
 
 ## 3. Flujo de apertura de un libro
 
@@ -60,49 +63,57 @@ Este documento describe cómo el lector de libros utiliza un `<webview>` de Elec
 
 ### 3.4 Inicialización del lector (reader-entry.ts)
 
-1. Se parsean los query params (`uri`, `format`)
+1. Se leen `uri` y `format` de los query params (o de `window.__clioHostParams` en mobile)
 2. Se valida que el formato sea soportado
-3. Se crea el adaptador correspondiente (`EpubReaderDocument`)
-4. Se llama a `document.open()`:
-   - `fetch(uri)` obtiene el archivo EPUB
-   - `parseEpub()` extrae OPF, spine, manifest
-   - `extractToc()` extrae la tabla de contenidos
-5. Se renderiza el primer capítulo
-6. Se aplican estilos del tema
-7. Se configuran los controles de navegación
+3. El **host** (`ReaderView`) lee el archivo con `bridge.readFile`, lo pasa en base64 y llama a `window.__initFromHost({ fileDataB64, preferences, metadata, notes, highlights, savedProgress })` vía `executeJavaScript`
+4. El reader crea el adaptador correspondiente con `ReaderFactory.create(...)` y llama a `document.open(bytes)`
+5. Se renderiza la primera página/capítulo/imagen, se aplican estilos del tema y se configuran los controles
+6. El host inyecta la paleta activa con `window.__applyPalette(cssVars)`
 
 ### 3.5 Comunicación Shell ↔ WebView
 
-El webview y el shell se comunican mediante `postMessage`:
+La comunicación **no usa `postMessage`**. Hay dos canales:
 
-| Mensaje                       | Dirección       | Descripción                       |
-| ----------------------------- | --------------- | --------------------------------- |
-| `{ type: 'ready' }`           | WebView → Shell | El libro está cargado y listo     |
-| `{ type: 'chapter-changed' }` | WebView → Shell | Se cambió de capítulo             |
-| `{ type: 'error', message }`  | WebView → Shell | Ocurrió un error en el lector     |
-| `{ type: 'close' }`           | WebView → Shell | El usuario quiere cerrar el libro |
+#### Shell → WebView: `executeJavaScript`
 
-## 4. Navegación entre capítulos
+| Llamada                                                                   | Descripción                                                         |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `window.__initFromHost(initData)`                                         | Arranque: bytes del archivo, prefs, metadata, anotaciones, progreso |
+| `window.__applyPalette(cssVars)`                                          | Aplica la paleta activa de la app al reader                         |
+| `window.__updateRank(rank)`                                               | Empuja un cambio de rating sin reinicializar                        |
+| `window.__getCurrentLocator()`                                            | Lee el locator actual (retorno como string JSON)                    |
+| `window.__pendingNotes` / `__pendingNoteUpdates` / `__pendingNoteDeletes` | Colas de notas a persistir (el host hace el drain)                  |
+| `window.__pendingHighlights` / `__pendingHighlightDeletes`                | Colas de resaltados a persistir                                     |
+| `window.__noteSaved()` / `__noteError()`                                  | Acks de confirmación/error de cada operación                        |
 
-### 4.1 Capítulo siguiente
+#### WebView → Shell: sentinelas por `console.log` + evento `console-message`
 
-1. Usuario hace clic en "Siguiente →"
-2. `reader-entry.ts` llama a `document.goNext()`
-3. `EpubReaderDocument` incrementa `currentChapterIndex`
-4. Se obtiene el locator actualizado
-5. Se renderiza el nuevo capítulo
-6. Se actualizan los botones (deshabilitar "Siguiente" en el último capítulo)
-7. Se envía `{ type: 'chapter-changed' }` al shell
+| Sentinela        | Payload                  | Acción en el shell                                                                 |
+| ---------------- | ------------------------ | ---------------------------------------------------------------------------------- |
+| `__clio_back__`  | —                        | Cerrar el libro (además de `will-navigate`/`did-navigate` a la raíz como fallback) |
+| `__clio_rank__`  | JSON `{ rank }`          | `onSaveRank(rank)` → repositorio                                                   |
+| `__clio_prefs__` | JSON `ReaderPreferences` | `repository.saveGlobalPreferences(prefs)`                                          |
 
-### 4.2 Capítulo anterior
+El host detecta estas sentinelas en el evento `console-message` del `<webview>` (`ReaderView.tsx`), validando tipo y payload antes de actuar. Las colas de notas/resaltados se drenan con un `setInterval` de 1 s (el reader encola, el host persiste y devuelve el ack).
 
-1. Usuario hace clic en "← Anterior"
-2. `reader-entry.ts` llama a `document.goPrevious()`
-3. `EpubReaderDocument` decrementa `currentChapterIndex`
-4. Se obtiene el locator actualizado
-5. Se renderiza el nuevo capítulo
-6. Se actualizan los botones (deshabilitar "Anterior" en el primer capítulo)
-7. Se envía `{ type: 'chapter-changed' }` al shell
+> En mobile el mismo mecanismo de sentinelas se reenvía mediante un shim de
+> `console.log` inyectado antes de cargar el contenido.
+
+## 4. Navegación y progreso
+
+### 4.1 Navegación (formatos refluibles y de página fija)
+
+1. El usuario activa siguiente/anterior (o teclado/gesto)
+2. `reader-entry.ts` llama a `document.goNext()` / `goPrevious()`
+3. El adaptador devuelve el locator actualizado y se re-renderiza
+4. Se actualizan los botones y el indicador de posición
+
+### 4.2 Progreso (poll + debounce)
+
+1. Un `setInterval` de 1 s en el shell llama a `window.__getCurrentLocator()`
+2. El locator y `percent` se cachean en refs
+3. Tras 800 ms sin cambios (debounce) se llama a `updateProgress(repository, …)`
+4. Al cerrar la ventana (`beforeunload`) se hace flush inmediato del progreso pendiente y se drenan las colas de notas
 
 ## 5. Aislamiento y seguridad
 
@@ -116,49 +127,51 @@ El `<webview>` usa `partition="persist:reader"` para:
 
 ### 5.2 Políticas de contenido
 
-- El contenido EPUB se renderiza en el contexto del webview
-- No se permite navegación externa inesperada
-- Los scripts activos del EPUB se ejecutan bajo las políticas del webview
+- El contenido se renderiza en el contexto del webview
+- No se permite navegación externa inesperada (navegación a la raíz = "atrás")
+- Los recursos se resuelven dentro del contenedor del documento (`resolveResources`)
+- El Markdown/HTML se sanitiza antes de renderizar
 
 ### 5.3 Comunicación segura
 
-- Solo se transmiten mensajes JSON serializables
+- El host valida el tipo y el payload de cada sentinela antes de actuar
 - No se comparten referencias de objetos entre shell y webview
-- Los message handlers validan el tipo de mensaje recibido
+- El archivo cruza como bytes (base64 en `__initFromHost`), no por URLs arbitrarias
 
 ## 6. Manejo de errores
 
-| Error                   | Causa                         | Manejo                                 |
-| ----------------------- | ----------------------------- | -------------------------------------- |
-| `Falta parámetro uri`   | URL mal formada               | Se muestra error en el webview         |
-| `Formato no soportado`  | Extensión no reconocida       | Se muestra error con formatos válidos  |
-| `Archivo no encontrado` | URI inválida o archivo movido | Se muestra error en ReaderView (shell) |
-| `Error de parseo EPUB`  | Archivo corrupto o inválido   | Se muestra error en el webview         |
-| `Navegación en límite`  | Primer/último capítulo        | Se ignora silenciosamente              |
-| `Error de renderizado`  | CSS o HTML inválido del EPUB  | Se muestra error en el webview         |
+| Error                   | Causa                         | Manejo                                               |
+| ----------------------- | ----------------------------- | ---------------------------------------------------- |
+| `Falta parámetro uri`   | URL mal formada               | Se muestra error en el webview                       |
+| `Formato no soportado`  | Extensión no reconocida       | Se muestra error con formatos válidos                |
+| `Archivo no encontrado` | URI inválida o archivo movido | Se muestra error en ReaderView (shell)               |
+| `Error de parseo`       | Archivo corrupto o inválido   | Se muestra error en el webview con reintentar/volver |
+| `Navegación en límite`  | Primera/última página         | Se deshabilita el control                            |
+| `did-fail-load`         | Fallo de carga del webview    | Se muestra pantalla de error en ReaderView           |
 
 ## 7. Rendimiento
 
 ### 7.1 Carga bajo demanda
 
-- Solo se carga el capítulo actual
-- No se mantienen todos los capítulos en memoria
+- Solo se renderiza el capítulo/página actual
+- No se mantienen todas las páginas en memoria (PDF: canvas bajo demanda)
 - El contenido HTML se renderiza directamente en el DOM
 
 ### 7.2 Limpieza de recursos
 
 - Al cerrar el libro, se llama a `document.close()`
-- Se libera la referencia al `Uint8Array` del EPUB
-- Se resetea el índice del capítulo actual
+- Se libera el `Uint8Array` del archivo y los canvas
+- Se resetea el estado del documento
 
 ### 7.3 Optimizaciones futuras
 
-- Precarga del siguiente capítulo
+- Precarga de la siguiente página
 - Caché de capítulos ya visitados
 - Virtual scrolling para capítulos largos
 
 ## 8. Documentos relacionados
 
-- [`02-arquitectura-tecnica.md`](../02-arquitectura-tecnica.md) — Capa de renderizado
-- [`05-plan-implementacion.md`](../05-plan-implementacion.md) — Fase 6 (Renderer EPUB)
-- [`adr/0002-reader-core-state-machine.md`](../adr/0002-reader-core-state-machine.md) — Máquina de estados
+- [`02-arquitectura-tecnica.md`](./02-arquitectura-tecnica.md) — Capa de renderizado
+- [`05-plan-implementacion.md`](./05-plan-implementacion.md) — Fase 6 (Renderer EPUB/MD)
+- [`adr/0002-reader-core-state-machine.md`](./adr/0002-reader-core-state-machine.md) — Máquina de estados
+- [`features/14-lector-mobile-android.md`](./features/14-lector-mobile-android.md) — Mismo flujo en Android

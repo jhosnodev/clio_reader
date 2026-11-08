@@ -5,9 +5,9 @@
 | **Nombre**                        | clio_reader — Arquitectura técnica |
 | **Autor**                         | Manus AI                           |
 | **Fecha de creación**             | 28 de agosto de 2026               |
-| **Fecha de última actualización** | 28 de agosto de 2026               |
-| **Estado**                        | Propuesta inicial                  |
-| **Versión del documento**         | 1.0.0                              |
+| **Fecha de última actualización** | 7 de noviembre de 2026             |
+| **Estado**                        | Implementada (en uso)              |
+| **Versión del documento**         | 1.1.0                              |
 
 ## 1. Decisión arquitectónica
 
@@ -29,21 +29,23 @@ Adaptadores de formato y persistencia
 Electron/Windows o Expo/Android
 ```
 
-El lector debe depender de una interfaz `ReaderAdapter`, no de PDF.js, epub.js o un parser ZIP directamente. La selección del adaptador se hará mediante una `ReaderFactory`, mientras que cada adaptador ocultará la API específica del renderer.
+El lector depende de una interfaz `ReaderAdapter`, no de PDF.js, el parser EPUB o un parser ZIP directamente. La selección del adaptador se hace mediante una `ReaderFactory`, mientras que cada adaptador oculta la API específica del renderer.
 
 ## 3. Monorepo propuesto
 
 ```text
-apps/mobile/                 # Expo + React Native
-apps/desktop/                # Electron + React
+apps/mobile/                 # Expo + React Native (Android/iOS)
+apps/desktop/                # Electron + React (Windows/Linux)
 packages/domain/             # Book, progreso, settings y anotaciones
-packages/reader-core/        # ReaderAdapter, factory y eventos
-packages/reader-epub/        # EPUB y bridge WebView
-packages/reader-pdf/         # PDF.js y bridge WebView
+packages/reader-core/        # ReaderAdapter, ReaderFactory, eventos y máquina de estados
+packages/reader-epub/        # EPUB (parser propio con jszip)
+packages/reader-pdf/         # PDF.js
 packages/reader-cbz/         # ZIP, orden natural e imágenes
+packages/reader-md/          # Markdown (parser propio, refluible)
+packages/reader-session/     # Sesión, progreso con debounce y settings
+packages/annotations/        # Notas, bookmarks y highlights
 packages/library/            # Casos de uso de biblioteca local
-packages/storage/            # Contratos e implementaciones locales
-packages/ui/                 # Componentes compartidos cuando sea viable
+packages/storage/            # Repositorios locales (SQLite/Drizzle + JSON) y migraciones
 documentation/               # Decisiones y especificaciones
 ```
 
@@ -54,12 +56,12 @@ documentation/               # Decisiones y especificaciones
 | Adapter       | Convierte la API específica de cada renderer en el contrato común     |
 | Factory       | Construye el adaptador adecuado a partir del formato detectado        |
 | Strategy      | Permite que EPUB, PDF y CBZ resuelvan navegación de manera distinta   |
-| Repository    | Aísla SQLite, JSON, AsyncStorage u otro mecanismo local               |
+| Repository    | Aísla SQLite/Drizzle (desktop) o JSON sobre `KeyValueStore` (mobile)  |
 | State machine | Controla `idle`, `opening`, `ready`, `navigating`, `error` y `closed` |
 
 ## 5. Renderizado
 
-EPUB se implementará inicialmente con epub.js dentro de un WebView; PDF con PDF.js y CBZ con extracción de imágenes desde ZIP. El bridge intercambiará mensajes JSON versionados entre el shell y el renderer. El contenido se abrirá bajo demanda y se liberarán recursos cuando se cierre el libro.
+EPUB se implementa con un parser propio (`packages/reader-epub`, basado en `jszip`) dentro de un WebView; PDF con PDF.js, CBZ con extracción de imágenes desde ZIP y Markdown con un parser propio refluible. El bridge no usa `postMessage`: el host inyecta datos con `executeJavaScript` (`window.__initFromHost`, `window.__applyPalette`) y el reader emite sentinelas por `console.log` que el shell escucha en `console-message` (`__clio_back__`, `__clio_rank__`, `__clio_prefs__`); los detalles están en [`07-flujo-webview.md`](./07-flujo-webview.md). El contenido se abre bajo demanda y se liberan recursos al cerrar el libro.
 
 ## 6. Plataformas y validación
 

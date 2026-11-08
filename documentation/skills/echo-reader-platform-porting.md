@@ -2,7 +2,7 @@
 
 ## Propósito
 
-`clio-reader-platform-porting` es un skill interno para planificar e implementar una versión de `clio_reader` en una plataforma adicional sin duplicar el dominio ni romper los contratos compartidos. Está versionado junto al proyecto en [`skills/clio-reader-platform-porting`](../../skills/clio-reader-platform-porting/).
+`clio-reader-platform-porting` es un skill interno para planificar e implementar una versión de `clio_reader` en una plataforma adicional sin duplicar el dominio ni romper los contratos compartidos. Está versionado junto al proyecto en [`skills/echo-reader-platform-porting`](../../skills/echo-reader-platform-porting/).
 
 > El skill guía el porting; no declara que una plataforma esté soportada. El soporte debe demostrarse con adaptadores funcionales, pruebas y validación del ciclo de vida.
 
@@ -25,9 +25,9 @@ No usarlo para añadir una feature puramente de dominio que no tenga impacto en 
 
 | Archivo                                                                                             | Uso                                                      |
 | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| [`SKILL.md`](../../skills/clio-reader-platform-porting/SKILL.md)                                    | Flujo principal, decisiones y guardrails                 |
-| [`platform-matrix.md`](../../skills/clio-reader-platform-porting/references/platform-matrix.md)     | Comparación de plataformas y riesgos                     |
-| [`project-contracts.md`](../../skills/clio-reader-platform-porting/references/project-contracts.md) | Contratos compartidos, límites actuales y pruebas        |
+| [`SKILL.md`](../../skills/echo-reader-platform-porting/SKILL.md)                                    | Flujo principal, decisiones y guardrails                 |
+| [`platform-matrix.md`](../../skills/echo-reader-platform-porting/references/platform-matrix.md)     | Comparación de plataformas y riesgos                     |
+| [`project-contracts.md`](../../skills/echo-reader-platform-porting/references/project-contracts.md) | Contratos compartidos, límites actuales y pruebas        |
 | [`06-skill-portabilidad-plataformas.md`](../features/06-skill-portabilidad-plataformas.md)          | Especificación de esta feature y criterios de aceptación |
 
 ## Resultado esperado

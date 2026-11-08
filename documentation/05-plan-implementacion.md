@@ -1,13 +1,17 @@
 # Plan de implementación por fases
 
-| Campo                             | Valor                                    |
-| --------------------------------- | ---------------------------------------- |
-| **Nombre**                        | clio_reader — Plan de implementación     |
-| **Autor**                         | Manus AI                                 |
-| **Fecha de creación**             | 28 de agosto de 2026                     |
-| **Fecha de última actualización** | 28 de agosto de 2026                     |
-| **Estado**                        | Plan aprobado para ejecución incremental |
-| **Versión del documento**         | 1.0.0                                    |
+| Campo                             | Valor                                      |
+| --------------------------------- | ------------------------------------------ |
+| **Nombre**                        | clio_reader — Plan de implementación       |
+| **Autor**                         | Manus AI                                   |
+| **Fecha de creación**             | 28 de agosto de 2026                       |
+| **Fecha de última actualización** | 7 de noviembre de 2026                     |
+| **Estado**                        | En ejecución — ver §5 para estado por fase |
+| **Versión del documento**         | 1.1.0                                      |
+
+> **Fuente de verdad de la numeración:** la numeración de este plan se alinea con
+> `AGENTS.md` §1 y el README: **Fase 9 = Mobile Android (MVP)**. Las fases
+> originales "UX/accesibilidad" y "Release" quedan como Fase 10 y Fase 11.
 
 ## 1. Propósito
 
@@ -33,7 +37,7 @@ Al terminar las fases obligatorias, el usuario podrá importar una cantidad de l
 
 ### 3.1 Separación de responsabilidades
 
-La UI no debe conocer detalles de PDF.js, epub.js, ZIP, SQLite o APIs del sistema. La pantalla invoca casos de uso; los casos de uso dependen de interfaces; y los adaptadores traducen APIs externas a esas interfaces.
+La UI no debe conocer detalles de PDF.js, el parser de EPUB, ZIP, SQLite o APIs del sistema. La pantalla invoca casos de uso; los casos de uso dependen de interfaces; y los adaptadores traducen APIs externas a esas interfaces.
 
 ```text
 UI → casos de uso → dominio/contratos → adaptadores → plataforma o biblioteca externa
@@ -60,30 +64,32 @@ Toda la funcionalidad del MVP debe funcionar sin red. No se añadirá una API re
 ```text
 apps/
   mobile/                 # Expo + React Native; Android primero, iOS posterior
-  desktop/                # Electron + React; Windows primero
+  desktop/                # Electron + React; Windows y Linux
 packages/
   domain/                 # Entidades y reglas puras
   reader-core/            # Contratos, eventos y ReaderFactory
-  reader-epub/            # Adaptador EPUB
+  reader-epub/            # Adaptador EPUB (parser propio con jszip)
   reader-pdf/             # Adaptador PDF
   reader-cbz/             # Adaptador CBZ
+  reader-md/              # Adaptador Markdown
+  reader-session/         # Sesión, progreso y settings
   library/                # Casos de uso de biblioteca
+  annotations/            # Notas, bookmarks y highlights
   storage/                # Repositorios locales y migraciones
-  ui/                     # Primitivas compartidas realmente portables
 documentation/
-  features/               # Especificaciones futuras
+  features/               # Especificaciones de features
   05-plan-implementacion.md
 ```
 
-El código de cada feature debe incluir sus pruebas cerca del módulo o en una estructura de tests coherente. Una convención posible es `src/feature.ts` junto a `src/feature.test.ts`, con pruebas de integración bajo `tests/integration/`.
+El código de cada feature debe incluir sus pruebas cerca del módulo o en una estructura de tests coherente. La convención usada es `src/feature.ts` junto a `src/feature.test.ts` (o `tests/` por paquete).
 
 ## 5. Fases de ejecución
 
-### Fase 0 — Preparación del repositorio y estándares
+### Fase 0 — Preparación del repositorio y estándares — **✅ Completa**
 
 **Objetivo:** dejar una base reproducible antes de implementar funcionalidades.
 
-Se deben configurar TypeScript estricto, formateador, linter, verificación de tipos, runner de pruebas, aliases, variables de entorno no sensibles y scripts de CI. También se debe definir la convención de commits, nombres de branches, plantilla de pull request y plantilla de especificación de feature.
+Se deben configurar TypeScript estricto, formateador, linter, verificación de tipos, runner de pruebas, aliases, variables de entorno no sensibles y scripts de CI (hoy `quality.yml` ejecuta `pnpm validate` en cada PR; `build-checks.yml` compila Linux y Windows en PRs del desktop). También se debe definir la convención de commits, nombres de branches, plantilla de pull request y plantilla de especificación de feature.
 
 **Entregables:** monorepo compilable, scripts `check`, `test`, `lint`, `format` y `build`, README de desarrollo y pipeline que ejecute validaciones.
 
@@ -91,7 +97,7 @@ Se deben configurar TypeScript estricto, formateador, linter, verificación de t
 
 **Salida:** cualquier colaborador puede clonar, instalar dependencias y ejecutar las validaciones con instrucciones documentadas.
 
-### Fase 1 — Spike de plataformas Windows y Android
+### Fase 1 — Spike de plataformas Windows y Android — **✅ Completa**
 
 **Objetivo:** validar las dos plataformas primarias antes de construir el lector.
 
@@ -103,7 +109,7 @@ Se creará una pantalla mínima en Electron para Windows y Expo/React Native par
 
 **Salida:** decisión registrada sobre el transporte de archivos, el WebView y el almacenamiento de cada shell. Si un supuesto falla, se actualiza la arquitectura antes de continuar.
 
-### Fase 2 — Dominio, contratos y máquina de estados
+### Fase 2 — Dominio, contratos y máquina de estados — **✅ Completa**
 
 **Objetivo:** crear la base que desacopla la UI de los formatos y de las plataformas.
 
@@ -113,7 +119,7 @@ Se implementarán `Book`, `BookFormat`, `ReadingProgress`, `ReaderPreferences`, 
 
 **Salida:** ningún componente de UI importa directamente un renderer; la aplicación puede ejecutar un flujo simulado con un adaptador fake.
 
-### Fase 3 — Biblioteca local y persistencia
+### Fase 3 — Biblioteca local y persistencia — **✅ Completa**
 
 **Objetivo:** importar, indexar y administrar libros sin red.
 
@@ -123,7 +129,7 @@ Se implementarán repositorios locales para libros, preferencias, progreso y ano
 
 **Salida:** la biblioteca conserva su catálogo y preferencias después de cerrar y abrir la aplicación, sin utilizar un servicio remoto.
 
-### Fase 4 — Renderer CBZ
+### Fase 4 — Renderer CBZ — **✅ Completa**
 
 **Objetivo:** implementar el formato más sencillo y validar el flujo real de lectura.
 
@@ -133,7 +139,7 @@ Se abrirá el contenedor ZIP, se filtrarán imágenes válidas, se ordenarán co
 
 **Salida:** un CBZ de prueba funciona en Windows y Android, y el usuario puede abandonar y reanudar la lectura.
 
-### Fase 5 — Renderer PDF
+### Fase 5 — Renderer PDF — **✅ Completa**
 
 **Objetivo:** renderizar PDF de forma eficiente y con controles de lectura básicos.
 
@@ -143,17 +149,17 @@ Se integrará PDF.js detrás de `PdfReaderAdapter`. Se configurará el worker co
 
 **Salida:** la aplicación muestra la primera página sin bloqueo permanente, navega un documento largo y conserva memoria dentro del presupuesto definido en el spike.
 
-### Fase 6 — Renderer EPUB
+### Fase 6 — Renderer EPUB — **✅ Completa**
 
 **Objetivo:** implementar lectura refluible y preferencias tipográficas.
 
-Se integrará epub.js dentro del renderer aislado. Se implementarán capítulos, tabla de contenido cuando esté disponible, paginación, tamaño de letra, fuente, interlineado, márgenes, temas y locator estable. El renderer no debe permitir navegación externa inesperada ni ejecutar contenido activo sin una política explícita.
+Se implementará el parser propio de EPUB con `jszip` dentro del adaptador aislado (`packages/reader-epub/src/epub-parser.ts`; no se usa `epub.js`). Se implementarán capítulos, tabla de contenido cuando esté disponible, paginación, tamaño de letra, fuente, interlineado, márgenes, temas y locator estable. El renderer no debe permitir navegación externa inesperada ni ejecutar contenido activo sin una política explícita.
 
 **Pruebas obligatorias:** EPUB válido, EPUB con portada, capítulos múltiples, imágenes, CSS complejo, maquetación fija, recursos ausentes, caracteres internacionales, cambio de fuente, cambio de tamaño y restauración del locator.
 
 **Salida:** un EPUB puede leerse y reanudarse después de cambiar tamaño de letra sin perder de forma injustificada la posición del usuario.
 
-### Fase 7 — Progreso, settings y ciclo de vida
+### Fase 7 — Progreso, settings y ciclo de vida — **⚠️ Parcial (falta settings por libro en UI y documentar rangos)**
 
 **Objetivo:** convertir el lector en una experiencia persistente.
 
@@ -163,7 +169,7 @@ Se conectarán los eventos del renderer con los repositorios. El progreso se gua
 
 **Salida:** reiniciar la aplicación no pierde preferencias ni la última posición válida.
 
-### Fase 8 — Marcadores, notas e índices locales
+### Fase 8 — Marcadores, notas e índices locales — **⚠️ Parcial (falta CRUD de marcadores desde el reader)**
 
 **Objetivo:** incorporar anotaciones sin nube.
 
@@ -173,7 +179,19 @@ Se implementarán crear, listar, abrir, editar y eliminar para notas; y crear, l
 
 **Salida:** el usuario puede recuperar sus anotaciones en el libro correcto sin conexión y sin perfiles.
 
-### Fase 9 — UX, accesibilidad y rendimiento
+### Fase 9 — Mobile Android (MVP) — **⚠️ Parcial**
+
+**Objetivo:** llevar el lector a Android sin duplicar el dominio.
+
+Spec: [`features/14-lector-mobile-android.md`](./features/14-lector-mobile-android.md).
+
+El shell Expo/React Native importa, abre, navega y persiste libros reutilizando el bundle del reader de desktop dentro de `react-native-webview`, con persistencia JSON sobre `expo-file-system` (`LocalRepository`). Se comparten dominio, casos de uso, adaptadores y contratos; solo cambian selector de archivos, almacenamiento, ciclo de vida y WebView.
+
+**Pruebas obligatorias:** type-check/lint de `@clio-reader/mobile`, smoke en emulador, apertura de cada formato, persistencia tras reinicio.
+
+**Salida:** importar/abrir/leer/reanudar en Android con los mismos datos de dominio.
+
+### Fase 10 — UX, accesibilidad y rendimiento
 
 **Objetivo:** estabilizar la experiencia en Windows y Android.
 
@@ -183,7 +201,7 @@ Se revisarán estados vacíos, carga, error, archivo perdido, feedback de accion
 
 **Salida:** no existen caminos muertos, controles sin acción ni errores de consola conocidos sin ticket.
 
-### Fase 10 — Release del MVP
+### Fase 11 — Release del MVP
 
 **Objetivo:** preparar una versión instalable y trazable.
 
@@ -234,7 +252,7 @@ La documentación de usuario debe explicar importar, abrir, eliminar, localizar 
 
 ## 10. Orden de ejecución resumido
 
-La secuencia recomendada es **fundación → spike Windows/Android → dominio → persistencia → CBZ → PDF → EPUB → progreso/settings → anotaciones → calidad → release**. Esta secuencia reduce incertidumbre temprano y evita construir una UI compleja antes de comprobar el acceso local a archivos y el rendimiento del renderer.
+La secuencia recomendada es **fundación → spike Windows/Android → dominio → persistencia → CBZ → PDF → EPUB/MD → progreso/settings → anotaciones → mobile → calidad → release**. Esta secuencia reduce incertidumbre temprano y evita construir una UI compleja antes de comprobar el acceso local a archivos y el rendimiento del renderer.
 
 ## 11. Documentos relacionados
 

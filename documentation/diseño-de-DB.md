@@ -15,13 +15,13 @@
 
 La BD vive en el directorio `userData` de Electron + la carpeta `clio-reader`. Se deriva de `app.getPath('userData')` en `apps/desktop/electron/main.ts` (funciones `getDataPath()` / `getDbPath()`):
 
-| Plataforma  | Ruta del archivo `clio.db`                                               |
-| ----------- | ------------------------------------------------------------------------ |
-| **Linux**   | `~/.config/@clio-reader/desktop/clio-reader/clio.db`                     |
-| **Windows** | `%APPDATA%\@clio-reader\desktop\clio-reader\clio.db`                     |
-| **macOS**   | `~/Library/Application Support/@clio-reader/desktop/clio-reader/clio.db` |
+| Plataforma  | Ruta del archivo `clio.db`                                      |
+| ----------- | --------------------------------------------------------------- |
+| **Linux**   | `~/.config/clio-reader/clio-reader/clio.db`                     |
+| **Windows** | `%APPDATA%\clio-reader\clio-reader\clio.db`                     |
+| **macOS**   | `~/Library/Application Support/clio-reader/clio-reader/clio.db` |
 
-En desarrollo (`app.isPackaged === false`) la app usa un `userData` propio con sufijo `-dev` (p. ej. `~/.config/@clio-reader/desktop-dev/clio-reader/clio.db`), fijado con `app.setPath('userData', ...)` antes del single-instance lock. Así la sesión de desarrollo no comparte DB ni lock con la build de producción.
+La app fija `app.setName('clio-reader')` en `apps/desktop/electron/main.ts`, por lo que el directorio `userData` se llama `clio-reader` (no el nombre del paquete `@clio-reader/desktop`). En desarrollo (`app.isPackaged === false`) la app usa un `userData` propio con sufijo `-dev` (p. ej. `~/.config/clio-reader-dev/clio-reader/clio.db`), fijado con `app.setPath('userData', ...)` antes del single-instance lock. Así la sesión de desarrollo no comparte DB ni lock con la build de producción.
 
 ```text
 <userData>/
@@ -197,7 +197,7 @@ CREATE TABLE reader_preferences (
   font_family TEXT NOT NULL DEFAULT 'system',
   font_scale REAL NOT NULL DEFAULT 1,
   line_height REAL NOT NULL DEFAULT 1.5,
-  margin TEXT NOT NULL DEFAULT 'comfortable',
+  margin TEXT NOT NULL DEFAULT '48',
   reading_direction TEXT NOT NULL DEFAULT 'ltr',
   updated_at INTEGER NOT NULL DEFAULT (unixepoch())
 );

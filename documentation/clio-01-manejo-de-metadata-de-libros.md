@@ -6,19 +6,19 @@ Corregir y completar la metadata que se muestra en los cards de libros: título 
 
 ## Estado Actual
 
-| Campo                 | Estado                        | Acción                   |
-| --------------------- | ----------------------------- | ------------------------ |
-| Tag estatus           | ✅ `Book.readingStatus`       | Ninguna                  |
-| Porcentaje de lectura | ✅ `ReadingProgress.percent`  | Consultar DB en BookCard |
-| Ruta archivo          | ✅ `Book.uri`                 | Ninguna                  |
-| Marcadores            | ✅ `Bookmark[]` CRUD completo | Ninguna                  |
-| Notas                 | ✅ `Note[]` CRUD completo     | Ninguna                  |
-| Última fecha apertura | ✅ `Book.lastOpenedAt`        | Ninguna                  |
-| Fecha agregado        | ✅ `Book.addedAt`             | Ninguna                  |
-| **Rank (rating)**     | ❌ No existe                  | **Crear**                |
-| **Cover image**       | ❌ No existe                  | **Crear**                |
-| **Título real EPUB**  | ⚠️ Usa filename               | **Corregir**             |
-| **Autor real EPUB**   | ⚠️ No se extrae               | **Corregir**             |
+| Campo                 | Estado                                 | Acción                   |
+| --------------------- | -------------------------------------- | ------------------------ |
+| Tag estatus           | ✅ `Book.readingStatus`                | Ninguna                  |
+| Porcentaje de lectura | ✅ `ReadingProgress.percent`           | Consultar DB en BookCard |
+| Ruta archivo          | ✅ `Book.uri`                          | Ninguna                  |
+| Marcadores            | ✅ `Bookmark[]` CRUD completo          | Ninguna                  |
+| Notas                 | ✅ `Note[]` CRUD completo              | Ninguna                  |
+| Última fecha apertura | ✅ `Book.lastOpenedAt`                 | Ninguna                  |
+| Fecha agregado        | ✅ `Book.addedAt`                      | Ninguna                  |
+| **Rank (rating)**     | ✅ `Book.rank` (0–5, 0.5)              | Ninguna (hecho)          |
+| **Cover image**       | ✅ `Book.coverImage` (data URI)        | Ninguna (hecho)          |
+| **Título real EPUB**  | ✅ Extraído del OPF (`epub-parser.ts`) | Ninguna (hecho)          |
+| **Autor real EPUB**   | ✅ Extraído del OPF (`epub-parser.ts`) | Ninguna (hecho)          |
 
 ## Decisiones de Diseño
 
@@ -166,7 +166,7 @@ Mismos cambios que desktop:
 
 ## Fase 7: Documentación de Optimización Futura
 
-**Archivo:** `docs/cover-image-optimization.md`
+**Archivo:** `documentation/features/cover-image-optimization.md`
 
 Documentar:
 
@@ -191,9 +191,9 @@ Documentar:
 
 ## Archivos a Crear
 
-| #   | Archivo                            | Contenido                            |
-| --- | ---------------------------------- | ------------------------------------ |
-| 1   | `docs/cover-image-optimization.md` | Documentación de optimización futura |
+| #   | Archivo                                              | Contenido                            |
+| --- | ---------------------------------------------------- | ------------------------------------ |
+| 1   | `documentation/features/cover-image-optimization.md` | Documentación de optimización futura |
 
 ---
 
@@ -207,5 +207,5 @@ Documentar:
 5. storage/index.ts       → migración schema
 6. LibraryView.tsx        → UI cover + rank + progress
 7. BookCard.tsx (mobile)  → UI cover + rank + progress
-8. docs/cover-image-optimization.md → documentación futura
+8. documentation/features/cover-image-optimization.md → documentación de optimización futura
 ```

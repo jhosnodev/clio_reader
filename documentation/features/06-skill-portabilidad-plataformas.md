@@ -1,13 +1,16 @@
-# F-006: Skill para portabilidad multiplataforma
+# F-009: Skill para portabilidad multiplataforma
 
-| Campo                             | Valor                                          |
-| --------------------------------- | ---------------------------------------------- |
-| **Nombre**                        | Skill de portabilidad multiplataforma          |
-| **Autor**                         | Manus AI                                       |
-| **Fecha de creación**             | 28 de agosto de 2026                           |
-| **Fecha de última actualización** | 28 de agosto de 2026                           |
-| **Estado**                        | Propuesta implementada como skill reutilizable |
-| **Versión del documento**         | 1.0.0                                          |
+| Campo                             | Valor                                   |
+| --------------------------------- | --------------------------------------- |
+| **Nombre**                        | Skill de portabilidad multiplataforma   |
+| **Autor**                         | Manus AI                                |
+| **Fecha de creación**             | 28 de agosto de 2026                    |
+| **Fecha de última actualización** | 7 de noviembre de 2026                  |
+| **Estado**                        | ✅ Implementado como skill reutilizable |
+| **Versión del documento**         | 1.1.0                                   |
+
+> **Nota de ID:** este documento era `F-006`, en colisión con `12-preferencias-por-libro.md`
+> (también F-006). Se renumera a `F-009`; `F-006` queda reservado para preferencias por libro.
 
 ## Objetivo
 
@@ -17,11 +20,11 @@ Proporcionar un procedimiento repetible para añadir iOS, macOS, Linux, web u ot
 
 La creación del skill es viable porque el repositorio ya separa las piezas principales: `packages/domain` contiene el modelo y validaciones; `packages/reader-core` contiene `ReaderAdapter` y `ReaderFactory`; `packages/storage` aísla el estado local detrás de `KeyValueStore` y `LocalRepository`; y las aplicaciones de escritorio y móvil están previstas como shells independientes [1] [2]. La documentación existente también establece explícitamente que dominio, casos de uso, locators, repositorios y contratos de lectores deben permanecer compartidos, mientras que selector de archivos, almacenamiento, ciclo de vida y shell son específicos de cada plataforma [3].
 
-El análisis identificó límites importantes: los shells todavía son esqueletos; no existen adaptadores reales para EPUB, PDF o CBZ; no hay contratos concretos para file picker, URI durable, lifecycle o bridges; y `md` aparece en el dominio pero no está registrado por sí mismo en `ReaderFactory`. Por ello, el skill debe impedir que una compilación exitosa se interprete como soporte de plataforma.
+El análisis inicial identificó límites que hoy ya están levantados: existen adaptadores reales para EPUB, PDF, CBZ y Markdown (`packages/reader-*`, registrados en `ReaderFactory`), los shells de desktop y mobile están implementados y hay contratos de puentes (`KeyValueStore`, sentinelas de `console.log`, `window.__initFromHost`). Persisten vacíos reales: contratos concretos de file picker, URI durable, lifecycle y bridges por plataforma. El skill debe seguir impidiendo que una compilación exitosa se interprete como soporte de plataforma.
 
 ## Decisión
 
-Crear el skill `clio-reader-platform-porting` fuera del repositorio de aplicación, con un `SKILL.md` breve y dos referencias progresivas:
+Crear el skill `echo-reader-platform-porting` versionado dentro del repositorio de aplicación en [`skills/echo-reader-platform-porting/`](../../skills/echo-reader-platform-porting/), con un `SKILL.md` breve y dos referencias progresivas:
 
 | Recurso                           | Propósito                                                                  |
 | --------------------------------- | -------------------------------------------------------------------------- |

@@ -38,7 +38,7 @@ Electron/Windows o Expo/Android
 | Adapter       | Convierte API de cada renderer en contrato común              |
 | Factory       | Construye adaptador según formato detectado                   |
 | Strategy      | EPUB, PDF y CBZ resuelven navegación distinto                 |
-| Repository    | Aísla SQLite, JSON o AsyncStorage                             |
+| Repository    | Aísla SQLite (desktop) o JSON/KeyValueStore (mobile)          |
 | State machine | Controla idle → opening → ready → navigating → error → closed |
 
 ### Architecture Decision Records
@@ -51,7 +51,7 @@ Electron/Windows o Expo/Android
 ## 3. Tech stack
 
 - **Runtime**: Node.js 22+
-- **Package manager**: pnpm 10.15.1
+- **Package manager**: pnpm 12.16.1
 - **Language**: TypeScript (modo estricto)
 - **Desktop**: Electron + React
 - **Mobile**: Expo + React Native
@@ -63,19 +63,19 @@ Electron/Windows o Expo/Android
 
 ```text
 apps/
-  desktop/          # Electron + React (Windows)
+  desktop/          # Electron + React (Windows/Linux)
   mobile/           # Expo + React Native (Android/iOS)
 packages/
   domain/           # Entidades y reglas puras (Book, Bookmark, Note, etc.)
   reader-core/      # Contratos abstractos, ReaderAdapter, ReaderFactory, eventos
-  reader-epub/      # Adaptador EPUB (epub.js)
+  reader-epub/      # Adaptador EPUB (parser propio con jszip)
   reader-pdf/       # Adaptador PDF (PDF.js)
   reader-cbz/       # Adaptador CBZ (ZIP + imágenes)
+  reader-md/        # Adaptador Markdown
   reader-session/   # Gestión de sesión de lectura
   storage/          # Repositorios locales y migraciones
   library/          # Casos de uso de biblioteca
   annotations/      # Gestión de anotaciones
-  ui/               # Primitivas compartidas
 ```
 
 ### Convenciones de paquetes
@@ -83,7 +83,6 @@ packages/
 - Nombre: `@clio-reader/<nombre>`
 - Cada paquete tiene `package.json`, `tsconfig.json` y `src/`
 - Tests junto al módulo: `src/feature.ts` + `src/feature.test.ts`
-- Tests de integración: `tests/integration/`
 
 ## 5. Modelo de dominio
 
@@ -190,11 +189,8 @@ const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
 ```typescript
 interface ReaderAdapter {
-  open(source: FileSource): Promise<ReaderDocument>;
-  close(doc: ReaderDocument): Promise<void>;
-  navigate(doc: ReaderDocument, locator: string): Promise<void>;
-  getCurrentLocator(doc: ReaderDocument): string;
-  getCapabilities(): ReaderCapabilities;
+  readonly format: BookFormat;
+  createDocument(source: FileSource): ReaderDocument;
 }
 ```
 
@@ -202,10 +198,26 @@ interface ReaderAdapter {
 
 ```typescript
 interface ReaderDocument {
-  format: BookFormat;
-  adapter: string;
-  metadata: DocumentMetadata;
-  currentLocator: string;
+  readonly format: BookFormat;
+  readonly capabilities: ReaderCapabilities;
+  open(preloadedData?: Uint8Array): Promise<void>;
+  close(): Promise<void>;
+  getLocator(): Promise<ReaderLocator>;
+  goNext(): Promise<ReaderLocator>;
+  goPrevious(): Promise<ReaderLocator>;
+  // Opcionales según formato
+  goToChapter?(idx: number): Promise<ReaderLocator>;
+  goToTocHref?(href: string): Promise<ReaderLocator>;
+  goToPage?(pageIndex: number): Promise<ReaderLocator>;
+  getCurrentChapterContent?(): Promise<string>;
+  getChapterCount?(): Promise<number>;
+  getCurrentChapterIndex?(): Promise<number>;
+  getTotalPages?(): Promise<number>;
+  getCurrentPageIndex?(): Promise<number>;
+  applyPreferences?(prefs: ReaderPreferences): Promise<string>;
+  resolveResources?(html: string): Promise<string>;
+  getImageData?(href: string): Promise<{ data: Uint8Array; mimeType: string } | null>;
+  getToc?(): Promise<TocTree>;
 }
 ```
 
@@ -213,30 +225,32 @@ interface ReaderDocument {
 
 ```typescript
 interface ReaderCapabilities {
-  supportsTextSelection: boolean;
-  supportsSearch: boolean;
-  supportsTOC: boolean;
-  supportsAnnotations: boolean;
+  readonly reflowable: boolean;
+  readonly supportsFontScale: boolean;
+  readonly supportsZoom: boolean;
+  readonly supportsAnnotations: boolean;
+  readonly supportsTOC?: boolean;
 }
 ```
 
 ### ReaderFactory
 
 ```typescript
-// Registra adaptadores por formato
-ReaderFactory.register('epub', new EpubAdapter());
-ReaderFactory.register('pdf', new PdfAdapter());
-ReaderFactory.register('cbz', new CbzAdapter());
+// Registra adaptadores (la factory usa format como clave)
+ReaderFactory.register(new EpubAdapter());
+ReaderFactory.register(new PdfAdapter());
+ReaderFactory.register(new CbzAdapter());
+ReaderFactory.register(new MarkdownAdapter());
 
-// Crea adaptador según formato detectado
-const adapter = ReaderFactory.create(book.format);
+// Crea el documento según fuente + formato detectado
+const doc = ReaderFactory.create(source, book.format);
 ```
 
 ### detectBookFormat
 
 ```typescript
-// Detección por extensión (prioridad) y MIME (fallback)
-function detectBookFormat(filename: string, mimeType?: string): BookFormat;
+// Detección por extensión (prioridad) y MIME (fallback); lanza UnsupportedBookFormatError
+function detectBookFormat(fileName: string, mimeType?: string): BookFormat;
 // Ejemplo: "libro.epub" → 'epub', "comic.cbz" → 'cbz'
 ```
 
@@ -310,7 +324,8 @@ Las transiciones inválidas lanzan `InvalidSessionTransitionError` en vez de ign
 
 ```typescript
 // Ejemplo: navegar desde idle es inválido
-transitionReaderSession('idle', 'NAVIGATE') → InvalidSessionTransitionError
+transitionReaderSession(INITIAL_READER_SESSION, { type: 'navigationStarted' });
+// → InvalidSessionTransitionError: Cannot apply navigationStarted while reader session is idle
 ```
 
 ## 9. Persistencia y migraciones
@@ -451,8 +466,10 @@ interface PersistenceState {
 pnpm build          # Build recursivo de todos los paquetes
 pnpm check          # Type-check completo
 pnpm format         # Formateo con Prettier
+pnpm format:check   # Verificación de formato (sin escribir)
 pnpm lint           # Linting con ESLint
 pnpm test           # Ejecutar tests con Vitest
+pnpm test:watch     # Tests en modo watch
 pnpm validate       # Validación completa (format + check + lint + test)
 ```
 
@@ -464,13 +481,27 @@ pnpm --filter @clio-reader/desktop build      # Build de producción
 pnpm --filter @clio-reader/desktop build:win        # Windows: NSIS; Linux/macOS: zip portable (prepara binarios win32)
 pnpm --filter @clio-reader/desktop build:win:nsis  # Instalador NSIS (requiere Windows o wine)
 pnpm --filter @clio-reader/desktop build:win:portable # Build portable Windows
+pnpm --filter @clio-reader/desktop build:linux        # AppImage + .deb
+pnpm --filter @clio-reader/desktop build:linux:appimage # Solo AppImage
+pnpm --filter @clio-reader/desktop build:reader-mobile  # Bundle del reader para mobile
+pnpm --filter @clio-reader/desktop preview     # Vista previa del build web
+pnpm --filter @clio-reader/desktop generate-icons
 ```
+
+### CI (GitHub Actions)
+
+| Workflow            | Trigger                         | Qué ejecuta                                   |
+| ------------------- | ------------------------------- | --------------------------------------------- |
+| `quality.yml`       | push a `main` + PR              | `pnpm validate`                               |
+| `build-checks.yml`  | PR (paths de `apps/desktop/**`) | `build:linux` + `build:win` (sin artefactos)  |
+| `windows-build.yml` | tags `v*` + manual              | `build:win` → artefacto `clio-reader-windows` |
+| `linux-build.yml`   | tags `v*` + manual              | `build:linux` → artefacto `clio-reader-linux` |
 
 ### Aplicación mobile (Android)
 
 El lector de mobile reutiliza el bundle del reader de desktop dentro de
 `react-native-webview`. El HTML autocontenido (`apps/mobile/assets/reader.html`)
-se genera desde `vite.reader.mobile.config.ts` y está en `.gitignore`; hay que
+se genera desde `apps/desktop/vite.reader.mobile.config.ts` y está en `.gitignore`; hay que
 construirlo antes de empaquetar.
 
 ```bash
@@ -478,6 +509,9 @@ pnpm build                                                # Requerido: dist de p
 pnpm --filter @clio-reader/mobile build:reader            # Genera assets/reader.html
 pnpm --filter @clio-reader/mobile start                   # Metro
 pnpm --filter @clio-reader/mobile android                 # Metro + dispositivo/emulador
+pnpm --filter @clio-reader/mobile ios                     # Metro + simulador iOS
+pnpm --filter @clio-reader/mobile check                   # Type-check
+pnpm --filter @clio-reader/mobile lint                    # Type-check sin emitir
 ```
 
 Notas:
@@ -495,7 +529,7 @@ Notas:
 ## 14. Estrategia de tests
 
 - **Unitarias**: Reglas puras y adaptadores aislados (`src/feature.test.ts` junto a `src/feature.ts`)
-- **Integración**: Flujos importar → abrir → leer → guardar → cerrar → reanudar (`tests/integration/`)
+- **Integración**: Flujos importar → abrir → leer → guardar → cerrar → reanudar (`tests/` de cada paquete, p. ej. `packages/library/tests/`)
 - **Contrato**: Todos los adaptadores cumplen `ReaderAdapter`
 - **End-to-end**: Flujos críticos en Windows y Android
 
@@ -558,7 +592,7 @@ test: add integration tests for progress persistence
 
 - Título descriptivo y conciso
 - Revisión obligatoria antes de merge
-- CI verde (lint + check + test)
+- CI verde: `quality.yml` (`pnpm validate`) y, para cambios en `apps/desktop/**`, `build-checks.yml` (builds Linux y Windows)
 - Documentar decisiones técnicas en ADR si aplica
 
 ## 17. Performance objetivo
@@ -583,14 +617,20 @@ test: add integration tests for progress persistence
 
 ### Documentos principales
 
-| Documento                                          | Descripción                        |
-| -------------------------------------------------- | ---------------------------------- |
-| `documentation/01-definicion-mvp.md`               | Definición del MVP                 |
-| `documentation/02-arquitectura-tecnica.md`         | Arquitectura técnica               |
-| `documentation/03-arquitectura-data-y-metadata.md` | Datos y metadata                   |
-| `documentation/04-features-futuros.md`             | Features futuros                   |
-| `documentation/05-plan-implementacion.md`          | Plan de implementación por fases   |
-| `documentation/STYLE-GUIDE.md`                     | Guía de estilos y tokens de diseño |
+| Documento                                          | Descripción                          |
+| -------------------------------------------------- | ------------------------------------ |
+| `documentation/01-definicion-mvp.md`               | Definición del MVP                   |
+| `documentation/02-arquitectura-tecnica.md`         | Arquitectura técnica                 |
+| `documentation/03-arquitectura-data-y-metadata.md` | Datos y metadata                     |
+| `documentation/04-features-futuros.md`             | Features futuros                     |
+| `documentation/05-plan-implementacion.md`          | Plan de implementación por fases     |
+| `documentation/06-desarrollo-local.md`             | Guía de desarrollo local             |
+| `documentation/07-flujo-webview.md`                | Flujo de comunicación con la WebView |
+| `documentation/STYLE-GUIDE.md`                     | Guía de estilos y tokens de diseño   |
+| `documentation/diseño-de-DB.md`                    | Esquema SQLite, FTS5 y rutas         |
+| `documentation/diseño-de-DB-uso.md`                | Guía para ampliar el esquema         |
+| `documentation/development/`                       | Guías de entorno (README, Windows)   |
+| `documentation/skills/`                            | Guías de uso de los skills           |
 
 ### Architecture Decision Records
 
@@ -598,23 +638,27 @@ test: add integration tests for progress persistence
 | -------------------------------------------------------- | ------------------------------------------------------------ |
 | `documentation/adr/0001-dominio-y-persistencia-local.md` | Dominio independiente, repositorio local, esquema versionado |
 | `documentation/adr/0002-reader-core-state-machine.md`    | ReaderFactory, detección de formatos, máquina de estados     |
+| `documentation/adr/0003-lector-sigue-paleta-app.md`      | El lector sigue la paleta activa de la app                   |
 
 ### Feature specifications
 
-| Feature             | Documento                                                     |
-| ------------------- | ------------------------------------------------------------- |
-| Compartir metadata  | `documentation/features/01-compartir-metadata-data.md`        |
-| Sincronización nube | `documentation/features/02-sincronizacion-nube.md`            |
-| Arquitectura SaaS   | `documentation/features/03-arquitectura-saas.md`              |
-| Otras plataformas   | `documentation/features/04-otras-plataformas.md`              |
-| Lectura Markdown    | `documentation/features/05-lectura-markdown.md`               |
-| Skill portabilidad  | `documentation/features/06-skill-portabilidad-plataformas.md` |
-| Library use cases   | `documentation/features/07-library-use-cases.md`              |
-| Plan notas          | `documentation/features/08-feature-notas-plan.md`             |
-| Release MVP         | `documentation/features/10-release-mvp.md`                    |
-| Paletas de color    | `documentation/features/11-paletas-color-customizacion.md`    |
-| Cover optimization  | `documentation/features/cover-image-optimization.md`          |
-| Lector mobile       | `documentation/features/14-lector-mobile-android.md`          |
+| Feature                       | Documento                                                         |
+| ----------------------------- | ----------------------------------------------------------------- |
+| Compartir metadata            | `documentation/features/01-compartir-metadata-data.md`            |
+| Sincronización nube           | `documentation/features/02-sincronizacion-nube.md`                |
+| Arquitectura SaaS             | `documentation/features/03-arquitectura-saas.md`                  |
+| Otras plataformas             | `documentation/features/04-otras-plataformas.md`                  |
+| Lectura Markdown              | `documentation/features/05-lectura-markdown.md`                   |
+| Skill portabilidad            | `documentation/features/06-skill-portabilidad-plataformas.md`     |
+| Library use cases             | `documentation/features/07-library-use-cases.md`                  |
+| Plan notas                    | `documentation/features/08-feature-notas-plan.md`                 |
+| Release MVP                   | `documentation/features/10-release-mvp.md`                        |
+| Paletas de color              | `documentation/features/11-paletas-color-customizacion.md`        |
+| Preferencias por libro        | `documentation/features/12-preferencias-por-libro.md`             |
+| Exportar/importar anotaciones | `documentation/features/13-exportar-notas-highlights-markdown.md` |
+| Lector mobile                 | `documentation/features/14-lector-mobile-android.md`              |
+| Testing/deploy Android        | `documentation/features/15-guia-android-testing-deploy.md`        |
+| Cover optimization            | `documentation/features/cover-image-optimization.md`              |
 
 ## 19. Plataformas objetivo
 
@@ -629,7 +673,7 @@ test: add integration tests for progress persistence
 ### Android (primaria)
 
 - **Runtime**: Expo + React Native
-- **Almacenamiento**: AsyncStorage + SQLite
+- **Almacenamiento**: JSON sobre `expo-file-system` (`LocalRepository` / `KeyValueStore`)
 - **WebView**: react-native-webview
 - **Input**: Gestos táctiles
 - **Selector de archivos**: expo-document-picker
@@ -645,16 +689,17 @@ test: add integration tests for progress persistence
 - WebView difiere entre Electron y React Native
 - File access: filesystem vs Content URI
 - Lifecycle: `beforeunload` (Electron) vs AppState (RN)
-- Storage: localStorage vs AsyncStorage
+- Storage: SQLite (desktop) vs JSON en `expo-file-system` (mobile)
 
 ## 20. Features pendientes
 
 ### Fase 7 — Completar
 
-- [ ] Conectar eventos del renderer con repositorios
-- [ ] Guardar progreso con debounce y al cerrar/suspender
-- [ ] Settings globales al iniciar, settings por libro
-- [ ] Documentar rangos válidos de colores, escalas, márgenes, tamaños
+- [x] Conectar eventos del renderer con repositorios
+- [x] Guardar progreso con debounce y al cerrar/suspender
+- [x] Settings globales al iniciar (carga + guardado)
+- [ ] Settings por libro desde la UI (infraestructura existe: `getBookPreferences`; falta pantalla de escritura)
+- [ ] Documentar rangos válidos de colores, escalas, márgenes, tamaños (viven en `AGENTS.md` §12; falta moverlos a `documentation/`)
 
 ### Fase 8 — Implementar
 
@@ -666,6 +711,7 @@ test: add integration tests for progress persistence
 - [x] Vista de anotaciones filtrada por libro (`LibraryView` → Notas y resaltados)
 - [x] Ordenamiento por posición o fecha
 - [x] Integrar `@clio-reader/annotations` en desktop (filtro/orden/búsqueda/export)
+- [x] Exportar/importar anotaciones por libro como Markdown (sección de notas)
 - [ ] Reemplazar el stub `setupBookmark()` del reader
 - [ ] Mobile (Android): notas (fuera de alcance desktop)
 
@@ -687,6 +733,7 @@ Spec: `documentation/features/14-lector-mobile-android.md`
 | F-002 | Sincronización nube         | `features/02-sincronizacion-nube.md`     |
 | F-003 | Arquitectura SaaS           | `features/03-arquitectura-saas.md`       |
 | F-004 | Otras plataformas           | `features/04-otras-plataformas.md`       |
-| F-005 | Lectura Markdown            | `features/05-lectura-markdown.md`        |
 | F-006 | Preferencias por libro      | `features/12-preferencias-por-libro.md`  |
 | F-007 | Resaltado en PDF            | `04-features-futuros.md`                 |
+
+> F-005 (lectura Markdown) y F-008 (exportar/importar anotaciones) ya están implementadas.

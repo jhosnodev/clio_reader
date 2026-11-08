@@ -5,9 +5,9 @@
 | **Nombre**                        | clio_reader — MVP de biblioteca local |
 | **Autor**                         | Manus AI                              |
 | **Fecha de creación**             | 28 de agosto de 2026                  |
-| **Fecha de última actualización** | 28 de agosto de 2026                  |
-| **Estado**                        | Propuesta aprobada para planificación |
-| **Versión del documento**         | 1.0.0                                 |
+| **Fecha de última actualización** | 7 de noviembre de 2026                |
+| **Estado**                        | En ejecución                          |
+| **Versión del documento**         | 1.1.0                                 |
 
 ## 1. Propósito
 
@@ -17,16 +17,16 @@ La aplicación no tendrá perfiles, autenticación, backend, sincronización ni 
 
 ## 2. Alcance funcional
 
-| Capacidad    | Alcance del MVP                                                    |
-| ------------ | ------------------------------------------------------------------ |
-| Biblioteca   | Importar, listar, abrir y eliminar libros locales                  |
-| Formatos     | EPUB, PDF, CBZ y Markdown                                          |
-| Lectura      | Navegación, progreso y reanudación                                 |
-| Preferencias | Tema, colores, tamaño de letra y controles aplicables al formato   |
-| Anotaciones  | Marcadores y notas locales asociados a una posición                |
-| Plataformas  | Windows y Android como prioridad; iOS posterior                    |
-| Operación    | Funcionalidad offline y datos almacenados localmente               |
-| Exportación  | No es requisito del primer corte; se documenta como feature futura |
+| Capacidad    | Alcance del MVP                                                                                                                                                |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Biblioteca   | Importar, listar, abrir y eliminar libros locales                                                                                                              |
+| Formatos     | EPUB, PDF, CBZ y Markdown                                                                                                                                      |
+| Lectura      | Navegación, progreso y reanudación                                                                                                                             |
+| Preferencias | Tema, colores, tamaño de letra y controles aplicables al formato                                                                                               |
+| Anotaciones  | Marcadores y notas locales asociados a una posición                                                                                                            |
+| Plataformas  | Windows y Android como prioridad; iOS posterior                                                                                                                |
+| Operación    | Funcionalidad offline y datos almacenados localmente                                                                                                           |
+| Exportación  | Exportar/importar anotaciones por libro en Markdown ya está disponible localmente; el formato completo `.echo.json`/metadata sigue como feature futura (F-001) |
 
 ## 3. Fuera del MVP
 
@@ -42,7 +42,7 @@ El MVP será aceptable cuando el usuario pueda importar al menos un archivo vál
 
 ## 6. Roadmap resumido
 
-El orden recomendado es: base de plataforma; dominio y almacenamiento local; renderer CBZ; renderer PDF; renderer EPUB; progreso, preferencias y anotaciones; rendimiento y calidad Windows/Android; preparación iOS; y, posteriormente, exportación e interoperabilidad.
+El orden recomendado es: base de plataforma; dominio y almacenamiento local; renderer CBZ; renderer PDF; renderer EPUB; progreso, preferencias y anotaciones; rendimiento y calidad Windows/Android; preparación iOS; y, posteriormente, la exportación completa de metadata (F-001); el corte acotado de notas/resaltados a Markdown ya está implementado.
 
 ## 7. Documentación relacionada
 

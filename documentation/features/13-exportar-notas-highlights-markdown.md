@@ -5,8 +5,8 @@
 | **Nombre**                        | Exportar e importar notas y resaltados como Markdown |
 | **Autor**                         | Manus AI                                             |
 | **Fecha de creación**             | 13 de octubre de 2026                                |
-| **Fecha de última actualización** | 13 de octubre de 2026                                |
-| **Estado**                        | Feature futura — fuera del MVP                       |
+| **Fecha de última actualización** | 7 de noviembre de 2026                               |
+| **Estado**                        | ✅ Implementada (paquete + UI desktop)               |
 | **Versión del documento**         | 1.0.0                                                |
 
 ## Objetivo
@@ -65,10 +65,12 @@ exportedAt: 2026-10-13T00:00:00Z
 
 ## Arquitectura
 
-1. Extender `packages/annotations/src/annotation-export.ts`: hoy `AnnotationExportData` incluye solo `bookmarks` y `notes`, **no highlights**. Este feature agrega `highlights` al payload y a `importAnnotations`.
-2. Nuevo módulo `packages/annotations/src/annotation-markdown.ts` con `exportAnnotationsToMarkdown(...)` y `importAnnotationsFromMarkdown(...)`, puros y testeables, reutilizando `listHighlightsManaged`, `listNotesManaged` y los validadores.
+1. `packages/annotations/src/annotation-export.ts` incluye `bookmarks`, `notes` y `highlights` en `AnnotationExportData` (el payload original de solo `bookmarks` y `notes` se extendió con highlights para este feature).
+2. Módulo `packages/annotations/src/annotation-markdown.ts` con `exportAnnotationsToMarkdown(...)` y `importAnnotationsFromMarkdown(...)`, puros y testeables, reutilizando `listHighlightsManaged`, `listNotesManaged` y los validadores.
 3. Reporte de resultados: `{ notesImported, highlightsImported, skipped, unresolved }`.
-4. UI desktop: botón "Exportar/Importar Markdown" en `LibraryView` → Notas y resaltados, usando `dialog` + `fs` de Electron. La generación de los bytes queda en el paquete para poder reutilizarse en mobile más adelante.
+4. UI desktop: botón "Exportar/Importar Markdown" en `LibraryView` → Notas y resaltados, usando `dialog` + `fs` de Electron (`NotesExportDialog.tsx`). La generación de los bytes queda en el paquete para poder reutilizarse en mobile más adelante.
+
+**Implementado** en `packages/annotations/src/annotation-markdown.ts` (+ tests) y en la UI desktop.
 
 ## Casos límite
 

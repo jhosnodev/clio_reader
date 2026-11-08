@@ -160,15 +160,34 @@ Four functions for global and per-book reader preferences:
 
 **Note body validation**: Enforced by `LocalRepository.saveNote()`. Empty bodies are rejected.
 
+---
+
+### 9. Manage Highlights (`highlights.ts`)
+
+| Function           | Input                                                                      | Output                 |
+| ------------------ | -------------------------------------------------------------------------- | ---------------------- |
+| `createHighlight_` | `{ bookId, locatorStart, locatorEnd, selectedText?, color, style, note? }` | `Highlight`            |
+| `listHighlights`   | `bookId`                                                                   | `readonly Highlight[]` |
+| `removeHighlight`  | `highlightId, bookId`                                                      | `void`                 |
+
+Highlights are also managed through `@clio-reader/annotations` (`highlight-manager.ts`) for the desktop UI flows.
+
+**Error scenarios**:
+
+- `BookNotFoundError` — Book doesn't exist (on create).
+- `HighlightNotFoundError` — Highlight doesn't exist (on remove).
+- `DomainValidationError` — Invalid style or colors.
+
 ## Error Classes
 
-| Error                   | Package | When                     |
-| ----------------------- | ------- | ------------------------ |
-| `BookNotFoundError`     | library | Book not found by id     |
-| `DuplicateBookError`    | library | Import with existing id  |
-| `BookmarkNotFoundError` | library | Bookmark not found by id |
-| `NoteNotFoundError`     | library | Note not found by id     |
-| `DomainValidationError` | domain  | Invalid entity data      |
+| Error                    | Package | When                      |
+| ------------------------ | ------- | ------------------------- |
+| `BookNotFoundError`      | library | Book not found by id      |
+| `DuplicateBookError`     | library | Import with existing id   |
+| `BookmarkNotFoundError`  | library | Bookmark not found by id  |
+| `NoteNotFoundError`      | library | Note not found by id      |
+| `HighlightNotFoundError` | library | Highlight not found by id |
+| `DomainValidationError`  | domain  | Invalid entity data       |
 
 ## Repository Interface
 
@@ -177,24 +196,32 @@ The `LibraryRepository` interface defines the contract between use cases and sto
 ```typescript
 interface LibraryRepository {
   listBooks(): Promise<readonly Book[]>;
+  getBook(bookId: string): Promise<Book | undefined>;
   upsertBook(book: Book): Promise<void>;
   removeBook(bookId: string): Promise<void>;
   getProgress(bookId: string): Promise<ReadingProgress | undefined>;
   saveProgress(progress: ReadingProgress): Promise<void>;
+  listAllProgress(): Promise<readonly ReadingProgress[]>;
   getGlobalPreferences(): Promise<ReaderPreferences>;
   saveGlobalPreferences(preferences: ReaderPreferences): Promise<void>;
   getBookPreferences(bookId: string): Promise<Partial<ReaderPreferences>>;
   saveBookPreferences(bookId: string, preferences: Partial<ReaderPreferences>): Promise<void>;
+  listAllBookmarks(): Promise<readonly Bookmark[]>;
   listBookmarks(bookId: string): Promise<readonly Bookmark[]>;
   saveBookmark(bookmark: Bookmark): Promise<void>;
   removeBookmark(bookmarkId: string): Promise<void>;
   listNotes(bookId: string): Promise<readonly Note[]>;
   saveNote(note: Note): Promise<void>;
   removeNote(noteId: string): Promise<void>;
+  listHighlights(bookId: string): Promise<readonly Highlight[]>;
+  saveHighlight(highlight: Highlight): Promise<void>;
+  removeHighlight(highlightId: string): Promise<void>;
+  getUserSettings(): Promise<UserSettings>;
+  saveUserSettings(settings: UserSettings): Promise<void>;
 }
 ```
 
-`LocalRepository` from `@clio-reader/storage` satisfies this interface structurally (duck typing).
+`DrizzleRepository` (desktop) and `LocalRepository` (mobile) satisfy this interface structurally (duck typing).
 
 ## Testing
 
