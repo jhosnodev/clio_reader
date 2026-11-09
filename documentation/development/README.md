@@ -95,6 +95,7 @@ Todos los scripts de build van con `--filter` (no existen en la raíz):
 ## Documentación
 
 - [Guía de setup en Windows (troubleshooting)](./windows-setup.md)
+- [Módulos nativos y ABI de Electron](./windows-native-abi.md)
 - [Definición del MVP](../01-definicion-mvp.md)
 - [Arquitectura técnica](../02-arquitectura-tecnica.md)
 - [Plan de implementación](../05-plan-implementacion.md)
