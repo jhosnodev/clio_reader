@@ -48,13 +48,11 @@ if (!electronBuilderCli || !existsSync(electronBuilderCli)) {
 }
 
 const builderArgs = ['--win', target];
-let backups = [];
+let restoreState = {};
 
 try {
-  if (!isWindowsHost) {
-    backups = prepareWindowsNative();
-    builderArgs.push('--config.npmRebuild=false');
-  }
+  restoreState = prepareWindowsNative();
+  builderArgs.push('--config.npmRebuild=false');
 
   console.log(`[build-win] Generando target "${target}" (host: ${process.platform})`);
   execFileSync(process.execPath, [electronBuilderCli, ...builderArgs], {
@@ -62,7 +60,7 @@ try {
     stdio: 'inherit',
   });
 } finally {
-  restoreHostNative(backups);
+  restoreHostNative(restoreState);
 }
 
 execFileSync(process.execPath, [join(scriptDir, 'verify-win-build.mjs')], {
