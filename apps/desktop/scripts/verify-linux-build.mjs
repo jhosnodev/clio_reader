@@ -1,6 +1,7 @@
 import { closeSync, existsSync, openSync, readdirSync, readSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { expectedElectronAbi, readNodeModuleAbi } from './native-abi.mjs';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const desktopDir = resolve(scriptDir, '..');
@@ -90,6 +91,27 @@ if (!existsSync(asar)) {
   process.exit(1);
 }
 
+const expectedAbi = expectedElectronAbi();
+const wrongAbi = [];
+for (const file of nativeModules) {
+  const abi = readNodeModuleAbi(file);
+  if (abi !== expectedAbi) wrongAbi.push({ file, abi });
+}
+
+if (wrongAbi.length > 0) {
+  console.error(
+    `[verify-linux] Módulos nativos compilados para otro ABI (se espera ${expectedAbi}):`,
+  );
+  for (const { file, abi } of wrongAbi) {
+    console.error(`  - ${file} (NODE_MODULE_VERSION ${abi ?? 'desconocido'})`);
+  }
+  console.error(
+    '[verify-linux] La app no arrancaría: el binario debe compilar para el ABI de Electron. ' +
+      'Revisa el postinstall ("ensure-native.mjs").',
+  );
+  process.exit(1);
+}
+
 const entries = readdirSync(outputDir);
 const appImages = entries.filter((entry) => entry.toLowerCase().endsWith('.appimage'));
 const debs = entries.filter((entry) => entry.endsWith('.deb'));
@@ -123,6 +145,6 @@ for (const entry of debs) {
 }
 
 console.log(
-  `[verify-linux] OK: ${nativeModules.length} módulos nativos ELF, app.asar, ` +
-    `${appImages.length} AppImage y ${debs.length} deb válidos.`,
+  `[verify-linux] OK: ${nativeModules.length} módulos nativos ELF (ABI ${expectedAbi}), ` +
+    `app.asar, ${appImages.length} AppImage y ${debs.length} deb válidos.`,
 );

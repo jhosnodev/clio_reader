@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { expectedElectronAbi, readNodeModuleAbi } from './native-abi.mjs';
 import { isWindowsBinary } from './win-native.mjs';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
@@ -49,6 +50,34 @@ if (!existsSync(asar)) {
   process.exit(1);
 }
 
+const expectedAbi = expectedElectronAbi();
+const wrongAbi = [];
+for (const file of nativeModules) {
+  const abi = readNodeModuleAbi(file);
+  if (abi !== expectedAbi) wrongAbi.push({ file, abi });
+}
+
+if (wrongAbi.length > 0) {
+  console.error(
+    `[verify-win] Módulos nativos compilados para otro ABI (se espera ${expectedAbi}):`,
+  );
+  for (const { file, abi } of wrongAbi) {
+    console.error(`  - ${file} (NODE_MODULE_VERSION ${abi ?? 'desconocido'})`);
+  }
+  console.error(
+    '[verify-win] La app no arrancaría en Windows: el binario debe compilar para el ABI ' +
+      'de Electron. Revisa "prepareWindowsNative" y que "npmRebuild" esté desactivado.',
+  );
+  process.exit(1);
+}
+
+const strayBackups = files.filter((file) => file.endsWith('.host-backup'));
+if (strayBackups.length > 0) {
+  console.error('[verify-win] Respaldos de binarios del host empaquetados en la app:');
+  for (const file of strayBackups) console.error(`  - ${file}`);
+  process.exit(1);
+}
+
 for (const entry of readdirSync(outputDir)) {
   if (!/setup|portable/i.test(entry) || !entry.toLowerCase().endsWith('.exe')) continue;
   const installer = join(outputDir, entry);
@@ -63,5 +92,6 @@ for (const entry of readdirSync(outputDir)) {
 }
 
 console.log(
-  `[verify-win] OK: ${nativeModules.length} módulos nativos Windows y app.asar presentes.`,
+  `[verify-win] OK: ${nativeModules.length} módulos nativos Windows (ABI ${expectedAbi}), ` +
+    'app.asar presente.',
 );

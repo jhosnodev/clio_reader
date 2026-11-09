@@ -3,6 +3,7 @@ import {
   closeSync,
   copyFileSync,
   existsSync,
+  mkdtempSync,
   openSync,
   readFileSync,
   readSync,
@@ -11,8 +12,9 @@ import {
   rmSync,
   statSync,
 } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
@@ -68,12 +70,13 @@ export function nativeBinaryPath(packageDir) {
   return join(packageDir, 'build', 'Release', 'better_sqlite3.node');
 }
 
-function fetchWindowsPrebuild(packageDir, electronVersion, arch) {
+export function fetchElectronPrebuild(packageDir, { platform, arch }) {
   const requireFromPackage = createRequire(join(packageDir, 'package.json'));
   const prebuildBin = requireFromPackage.resolve('prebuild-install/bin.js');
+  const electronVersion = resolveElectronVersion();
 
   console.log(
-    `[win-native] Descargando better-sqlite3 win32-${arch} para Electron ${electronVersion}`,
+    `[win-native] Descargando better-sqlite3 ${platform}-${arch} para Electron ${electronVersion}`,
   );
   execFileSync(
     process.execPath,
@@ -84,7 +87,7 @@ function fetchWindowsPrebuild(packageDir, electronVersion, arch) {
       '--target',
       electronVersion,
       '--platform',
-      'win32',
+      platform,
       '--arch',
       arch,
       '--tag-prefix',
@@ -97,6 +100,7 @@ function fetchWindowsPrebuild(packageDir, electronVersion, arch) {
 /**
  * Reemplaza temporalmente el binario nativo de better-sqlite3 por el de Windows
  * y devuelve los respaldos para poder restaurar el binario del host al terminar.
+ * Los respaldos viven en el directorio temporal para no empaquetarlos en la app.
  */
 export function prepareWindowsNative({ arch = 'x64' } = {}) {
   const packageDirs = findBetterSqlite3Dirs();
@@ -104,32 +108,33 @@ export function prepareWindowsNative({ arch = 'x64' } = {}) {
     throw new Error('No se encontró better-sqlite3 en el workspace');
   }
 
-  const electronVersion = resolveElectronVersion();
+  const backupDir = mkdtempSync(join(tmpdir(), 'clio-native-'));
   const backups = [];
 
-  for (const packageDir of packageDirs) {
+  for (const [index, packageDir] of packageDirs.entries()) {
     const binary = nativeBinaryPath(packageDir);
     if (existsSync(binary)) {
-      const backup = `${binary}.host-backup`;
+      const backup = join(backupDir, `${index}-${basename(binary)}`);
       copyFileSync(binary, backup);
       backups.push({ binary, backup });
     }
 
-    fetchWindowsPrebuild(packageDir, electronVersion, arch);
+    fetchElectronPrebuild(packageDir, { platform: 'win32', arch });
 
     if (!isWindowsBinary(binary)) {
       throw new Error(`better-sqlite3 no quedó compilado para Windows en ${packageDir}`);
     }
   }
 
-  return backups;
+  return { backups, backupDir };
 }
 
-export function restoreHostNative(backups) {
+export function restoreHostNative({ backups = [], backupDir } = {}) {
   for (const { binary, backup } of backups) {
     if (existsSync(backup)) {
       copyFileSync(backup, binary);
       rmSync(backup, { force: true });
     }
   }
+  if (backupDir && existsSync(backupDir)) rmSync(backupDir, { recursive: true, force: true });
 }

@@ -205,9 +205,15 @@ electron-builder necesita herramientas de Windows. Asegúrate de tener:
 
 ### El .exe no abre / hace clic y no ocurre nada
 
-Causa más común: el instalador se compiló desde Linux con el binario nativo de
-`better-sqlite3` de Linux (ELF). El proceso principal de Electron falla al
-cargar SQLite y se cierra antes de mostrar la ventana.
+Causas posibles, en orden de frecuencia:
+
+1. **ABI de `better-sqlite3` incorrecto** (la más común en builds de CI): el
+   binario nativo está compilado para Node 22 (`NODE_MODULE_VERSION 127`) en
+   vez de para Electron 28 (`119`). El proceso principal falla al cargar
+   SQLite y muere antes de mostrar la ventana. Diagnóstico completo y arreglo
+   en [Módulos nativos y ABI de Electron](./windows-native-abi.md).
+2. **Binario de la plataforma equivocada**: el instalador se compiló desde
+   Linux con el binario nativo ELF de `better-sqlite3`.
 
 Soluciones:
 
@@ -222,6 +228,9 @@ Verifica cualquier build con:
 ```bash
 pnpm --filter @clio-reader/desktop exec node scripts/verify-win-build.mjs
 ```
+
+La verificación comprueba la plataforma **y** el ABI de Electron de cada
+módulo nativo, y falla si alguno no coincide.
 
 También revisa el tamaño del `.exe` del instalador: si pesa menos de ~20 MB,
 no contiene la app (build interrumpido). Un build completo es de decenas de MB.

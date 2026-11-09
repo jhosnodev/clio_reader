@@ -20,7 +20,7 @@
     "check": "tsc -p tsconfig.json",
     "lint": "tsc -p tsconfig.json --noEmit",
     "generate-icons": "node scripts/generate-icons.js",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "node scripts/ensure-native.mjs"
   },
   "dependencies": {
     "@clio-reader/library": "workspace:*",
