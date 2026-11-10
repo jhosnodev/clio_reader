@@ -511,7 +511,7 @@ function Rail({
       </div>
 
       {/* Feedback */}
-      <button
+      {/*<button
         style={{
           ...S.navBtn,
           color: theme === 'dark' ? palette.dark['gold-dim'] : palette.dark.gold,
@@ -534,7 +534,7 @@ function Rail({
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </svg>
         {hovered === 'feedback' && <span style={S.tooltip}>Compartir feedback</span>}
-      </button>
+      </button>*/}
 
       {/* Theme toggle (dark/light) */}
       <button
