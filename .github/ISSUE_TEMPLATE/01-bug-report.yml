@@ -1,0 +1,41 @@
+name: Bug Report
+description: Reportar un problema de Clio Reader
+title: "[Bug]: "
+labels:
+  - feedback
+  - feedback:bug
+  - status:triage
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe el problema encontrado.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: ¿Qué ocurrió?
+      description: Describe el comportamiento inesperado.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: ¿Qué esperabas que ocurriera?
+    validations:
+      required: false
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Plataforma
+      options:
+        - Windows
+        - Linux
+        - macOS
+        - Android
+        - iOS
+    validations:
+      required: true

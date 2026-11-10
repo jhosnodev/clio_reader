@@ -1,0 +1,58 @@
+
+name: "💬 Feedback general"
+description: "Comparte tu experiencia, opinión o sugerencia sobre Clio Reader."
+title: "[Feedback]: "
+labels:
+  - feedback
+  - feedback:general
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ¡Gracias por compartir tu experiencia con Clio Reader!
+        Tu opinión nos ayuda a mejorar el producto.
+
+  - type: dropdown
+    id: feedback_type
+    attributes:
+      label: ¿Qué tipo de comentario quieres compartir?
+      options:
+        - Experiencia general
+        - Algo que me gusta
+        - Algo que podría mejorar
+        - Problema o dificultad
+        - Otro
+    validations:
+      required: true
+
+  - type: textarea
+    id: experience
+    attributes:
+      label: Cuéntanos tu experiencia
+      description: ¿Qué quieres compartir con nosotros?
+      placeholder: "Me gusta cómo funciona la biblioteca, pero..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: ¿Dónde utilizas Clio Reader?
+      options:
+        - Linux
+        - Windows
+        - Android
+        - macOS
+        - Otro
+        - Prefiero no decirlo
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Información adicional
+      description: Comparte cualquier detalle que pueda ayudarnos.
+      placeholder: "Opcional..."
+    validations:
+      required: false
