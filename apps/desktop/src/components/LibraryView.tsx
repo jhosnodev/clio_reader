@@ -27,6 +27,7 @@ import {
 } from '@clio-reader/annotations';
 import { bridgeExtras } from '../bridges/bridge-singleton';
 import { NotesExportDialog } from './NotesExportDialog';
+import { FeedbackPanel } from './FeedbackPanel';
 import type { ThemePalette } from '../themes';
 import { PALETTES } from '../themes';
 import { BrandIcon } from './BrandIcon';
@@ -151,6 +152,7 @@ export function LibraryView({
   const [colQuery, setColQuery] = useState('');
   const [homeSearch, setHomeSearch] = useState('');
   const [progressMap, setProgressMap] = useState<Map<string, ReadingProgress>>(new Map());
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   useEffect(() => {
     onLoadBooks();
@@ -261,6 +263,7 @@ export function LibraryView({
         palette={palette}
         onToggleTheme={onToggleTheme}
         onSetPalette={onSetPalette}
+        onOpenFeedback={() => setFeedbackOpen(true)}
       />
       <main style={S.stage}>
         {activeView === 'home' && (
@@ -310,6 +313,7 @@ export function LibraryView({
           <NotesView books={books} repository={repository} onOpen={onOpenBook} />
         )}
       </main>
+      <FeedbackPanel open={feedbackOpen} area="library" onClose={() => setFeedbackOpen(false)} />
     </div>
   );
 }
@@ -326,6 +330,7 @@ function Rail({
   palette,
   onToggleTheme,
   onSetPalette,
+  onOpenFeedback,
 }: {
   readonly active: ViewId;
   readonly onChange: (v: ViewId) => void;
@@ -334,6 +339,7 @@ function Rail({
   readonly palette: ThemePalette;
   readonly onToggleTheme: () => void;
   readonly onSetPalette: (id: string) => void;
+  readonly onOpenFeedback: () => void;
 }): JSX.Element {
   const [hovered, setHovered] = useState<string | null>(null);
   const [showPalettePicker, setShowPalettePicker] = useState(false);
@@ -503,6 +509,32 @@ function Rail({
           </div>
         )}
       </div>
+
+      {/* Feedback */}
+      <button
+        style={{
+          ...S.navBtn,
+          color: theme === 'dark' ? palette.dark['gold-dim'] : palette.dark.gold,
+        }}
+        onClick={onOpenFeedback}
+        onMouseEnter={() => setHovered('feedback')}
+        onMouseLeave={() => setHovered(null)}
+        aria-label="Compartir feedback"
+      >
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </svg>
+        {hovered === 'feedback' && <span style={S.tooltip}>Compartir feedback</span>}
+      </button>
 
       {/* Theme toggle (dark/light) */}
       <button

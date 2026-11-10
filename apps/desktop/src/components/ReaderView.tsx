@@ -19,9 +19,10 @@ import {
   listHighlightsManaged,
   removeHighlightManaged,
 } from '@clio-reader/annotations';
-import type { ReaderLocator, ReaderPreferences } from '@clio-reader/domain';
+import type { FeedbackDocumentFormat, ReaderLocator, ReaderPreferences } from '@clio-reader/domain';
 import { createDefaultPreferences } from '@clio-reader/domain';
 import { getPalette, LIGHT_DEFAULTS } from '../themes';
+import { FeedbackPanel } from './FeedbackPanel';
 import {
   getResumePositionOrder,
   getResumeScrollRatio,
@@ -122,6 +123,7 @@ export function ReaderView({
   const [isRelocating, setIsRelocating] = useState(false);
   const [webviewLoaded, setWebviewLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [loadKey, setLoadKey] = useState(0);
   const [sourceUri, setSourceUri] = useState(fileUri);
   const webviewRef = useRef<HTMLElement | null>(null);
@@ -755,7 +757,12 @@ export function ReaderView({
             partition="persist:reader"
           />
           {loadError ? (
-            <LoadErrorState message={loadError} onRetry={handleRetryLoad} onClose={onClose} />
+            <LoadErrorState
+              message={loadError}
+              onRetry={handleRetryLoad}
+              onClose={onClose}
+              onReport={() => setFeedbackOpen(true)}
+            />
           ) : (
             !webviewLoaded && (
               <div
@@ -771,8 +778,21 @@ export function ReaderView({
           )}
         </>
       )}
+      <FeedbackPanel
+        open={feedbackOpen}
+        area="reader"
+        initialCategory="bug"
+        documentFormat={toFeedbackDocumentFormat(format)}
+        onClose={() => setFeedbackOpen(false)}
+      />
     </div>
   );
+}
+
+function toFeedbackDocumentFormat(format: string): FeedbackDocumentFormat | undefined {
+  if (format === 'md') return 'markdown';
+  if (format === 'epub' || format === 'pdf' || format === 'cbz') return format;
+  return undefined;
 }
 
 /* ==========================================================================
@@ -833,9 +853,10 @@ interface LoadErrorStateProps {
   readonly message: string;
   readonly onRetry: () => void;
   readonly onClose: () => void;
+  readonly onReport: () => void;
 }
 
-function LoadErrorState({ message, onRetry, onClose }: LoadErrorStateProps): JSX.Element {
+function LoadErrorState({ message, onRetry, onClose, onReport }: LoadErrorStateProps): JSX.Element {
   return (
     <div style={styles.stateContainer} role="alert">
       <svg
@@ -858,6 +879,9 @@ function LoadErrorState({ message, onRetry, onClose }: LoadErrorStateProps): JSX
         </button>
         <button style={styles.secondaryButton} onClick={onClose}>
           Volver a la biblioteca
+        </button>
+        <button style={styles.secondaryButton} onClick={onReport}>
+          Reportar problema
         </button>
       </div>
     </div>

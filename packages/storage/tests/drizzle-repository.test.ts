@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
+import { createFeedback } from '@clio-reader/domain';
 import { DrizzleRepository } from '../src/drizzle.js';
 import { createInMemoryDatabase } from '../src/drizzle-test.js';
 import { readFileSync } from 'fs';
@@ -458,6 +459,70 @@ describe('DrizzleRepository', () => {
       const settings = await repository.getUserSettings();
       expect(settings.paletteId).toBe('clio-5');
       expect(settings.mode).toBe('light');
+    });
+  });
+
+  describe('Feedback', () => {
+    const makeFeedback = (overrides: Partial<Parameters<typeof createFeedback>[0]> = {}) =>
+      createFeedback({
+        id: 'fb-1',
+        reaction: 'positive',
+        message: 'Gran app',
+        category: 'praise',
+        installationId: 'install-1',
+        context: {
+          appVersion: '0.1.0',
+          platform: 'linux',
+          osVersion: '6.8.0',
+          area: 'library',
+          locale: 'es',
+        },
+        createdAt: 1_700_000_000_000,
+        ...overrides,
+      });
+
+    it('should save and retrieve feedback with context', async () => {
+      await repository.saveFeedback(makeFeedback());
+      const items = await repository.listFeedback();
+
+      expect(items).toHaveLength(1);
+      const item = items[0]!;
+      expect(item.id).toBe('fb-1');
+      expect(item.reaction).toBe('positive');
+      expect(item.message).toBe('Gran app');
+      expect(item.status).toBe('received');
+      expect(item.diagnosticsConsent).toBe(false);
+      expect(item.context.appVersion).toBe('0.1.0');
+      expect(item.context.platform).toBe('linux');
+      expect(item.context.osVersion).toBe('6.8.0');
+      expect(item.context.area).toBe('library');
+      expect(item.context.locale).toBe('es');
+      expect(item.createdAt).toBe(1_700_000_000_000);
+    });
+
+    it('should update feedback status and issue url', async () => {
+      await repository.saveFeedback(makeFeedback());
+      await repository.updateFeedbackStatus('fb-1', 'linked', 'https://example/issues/1');
+
+      const items = await repository.listFeedback();
+      expect(items[0]!.status).toBe('linked');
+      expect(items[0]!.githubIssueUrl).toBe('https://example/issues/1');
+    });
+
+    it('should count feedback by status', async () => {
+      await repository.saveFeedback(makeFeedback({ id: 'fb-1', reaction: 'positive' }));
+      await repository.saveFeedback(makeFeedback({ id: 'fb-2', reaction: 'negative' }));
+      await repository.updateFeedbackStatus('fb-2', 'reviewed');
+
+      expect(await repository.countFeedbackByStatus('received')).toBe(1);
+      expect(await repository.countFeedbackByStatus('reviewed')).toBe(1);
+    });
+
+    it('should remove feedback', async () => {
+      await repository.saveFeedback(makeFeedback());
+      await repository.removeFeedback('fb-1');
+
+      expect(await repository.listFeedback()).toHaveLength(0);
     });
   });
 });

@@ -63,6 +63,10 @@ const electronAPI = {
     ipcRenderer.removeAllListeners(channel);
   },
 
+  getAppInfo: (): Promise<{ version: string; platform: string; osVersion: string }> => {
+    return ipcRenderer.invoke('get-app-info');
+  },
+
   repo: {
     listBooks: (): Promise<readonly unknown[]> => {
       return ipcRenderer.invoke('repo:list-books');
@@ -154,6 +158,30 @@ const electronAPI = {
 
     saveUserSettings: (settings: unknown): Promise<void> => {
       return ipcRenderer.invoke('repo:save-user-settings', settings);
+    },
+
+    saveFeedback: (feedback: unknown): Promise<void> => {
+      return ipcRenderer.invoke('repo:save-feedback', feedback);
+    },
+
+    listFeedback: (): Promise<readonly unknown[]> => {
+      return ipcRenderer.invoke('repo:list-feedback');
+    },
+
+    countFeedbackByStatus: (status: string): Promise<number> => {
+      return ipcRenderer.invoke('repo:count-feedback-by-status', status);
+    },
+
+    updateFeedbackStatus: (
+      feedbackId: string,
+      status: string,
+      githubIssueUrl?: string,
+    ): Promise<void> => {
+      return ipcRenderer.invoke('repo:update-feedback-status', feedbackId, status, githubIssueUrl);
+    },
+
+    deleteFeedback: (feedbackId: string): Promise<void> => {
+      return ipcRenderer.invoke('repo:delete-feedback', feedbackId);
     },
   },
 };

@@ -113,6 +113,27 @@ CREATE TABLE IF NOT EXISTS `user_settings` (
   `updated_at` integer NOT NULL DEFAULT (unixepoch())
 );
 
+-- ==================== FEEDBACK ====================
+CREATE TABLE IF NOT EXISTS `feedback` (
+  `id` text PRIMARY KEY NOT NULL,
+  `installation_id` text,
+  `reaction` text,
+  `category` text,
+  `message` text,
+  `app_version` text NOT NULL,
+  `platform` text NOT NULL,
+  `os_version` text,
+  `area` text,
+  `document_format` text,
+  `event_name` text,
+  `locale` text,
+  `diagnostics_consent` integer NOT NULL DEFAULT 0,
+  `follow_up_consent` integer NOT NULL DEFAULT 0,
+  `status` text NOT NULL DEFAULT 'received',
+  `github_issue_url` text,
+  `created_at` integer NOT NULL DEFAULT (unixepoch())
+);
+
 -- ==================== INDEXES ====================
 CREATE INDEX IF NOT EXISTS `idx_books_status` ON `books` (`status`, `deleted_at`);
 CREATE INDEX IF NOT EXISTS `idx_books_reading_status` ON `books` (`reading_status`, `deleted_at`);
@@ -121,6 +142,7 @@ CREATE INDEX IF NOT EXISTS `idx_bookmarks_book` ON `bookmarks` (`book_id`, `dele
 CREATE INDEX IF NOT EXISTS `idx_notes_book` ON `notes` (`book_id`, `deleted_at`);
 CREATE INDEX IF NOT EXISTS `idx_highlights_book` ON `highlights` (`book_id`, `deleted_at`);
 CREATE INDEX IF NOT EXISTS `idx_highlights_color` ON `highlights` (`color`, `deleted_at`);
+CREATE INDEX IF NOT EXISTS `idx_feedback_status` ON `feedback` (`status`);
 
 -- ==================== FTS5 TABLES ====================
 CREATE VIRTUAL TABLE IF NOT EXISTS `notes_fts` USING fts5(

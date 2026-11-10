@@ -2,8 +2,9 @@ import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import { join, dirname, extname } from 'path';
 import { readFile, writeFile, mkdir, access, constants, readdir } from 'fs/promises';
 import { existsSync, readFileSync } from 'fs';
-import { tmpdir } from 'os';
+import { tmpdir, release } from 'os';
 import { randomUUID } from 'crypto';
+import type { FeedbackStatus } from '@clio-reader/domain';
 import {
   createDatabase,
   DrizzleRepository,
@@ -421,6 +422,42 @@ if (!gotTheLock) {
     ipcMain.handle('repo:save-user-settings', async (_event, settings) => {
       if (!repository) throw new Error('Database not initialized');
       await repository.saveUserSettings(settings);
+    });
+
+    ipcMain.handle('repo:save-feedback', async (_event, feedback) => {
+      if (!repository) throw new Error('Database not initialized');
+      await repository.saveFeedback(feedback);
+    });
+
+    ipcMain.handle('repo:list-feedback', async () => {
+      if (!repository) throw new Error('Database not initialized');
+      return repository.listFeedback();
+    });
+
+    ipcMain.handle('repo:count-feedback-by-status', async (_event, status: FeedbackStatus) => {
+      if (!repository) throw new Error('Database not initialized');
+      return repository.countFeedbackByStatus(status);
+    });
+
+    ipcMain.handle(
+      'repo:update-feedback-status',
+      async (_event, feedbackId: string, status: FeedbackStatus, githubIssueUrl?: string) => {
+        if (!repository) throw new Error('Database not initialized');
+        await repository.updateFeedbackStatus(feedbackId, status, githubIssueUrl);
+      },
+    );
+
+    ipcMain.handle('repo:delete-feedback', async (_event, feedbackId: string) => {
+      if (!repository) throw new Error('Database not initialized');
+      await repository.removeFeedback(feedbackId);
+    });
+
+    ipcMain.handle('get-app-info', () => {
+      return {
+        version: app.getVersion(),
+        platform: process.platform,
+        osVersion: release(),
+      };
     });
   }
 

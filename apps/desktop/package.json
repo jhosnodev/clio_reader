@@ -23,6 +23,8 @@
     "postinstall": "node scripts/ensure-native.mjs"
   },
   "dependencies": {
+    "@clio-reader/domain": "workspace:*",
+    "@clio-reader/feedback": "workspace:*",
     "@clio-reader/library": "workspace:*",
     "@clio-reader/reader-core": "workspace:*",
     "@clio-reader/reader-cbz": "workspace:*",
@@ -31,7 +33,6 @@
     "@clio-reader/reader-md": "workspace:*",
     "@clio-reader/reader-session": "workspace:*",
     "@clio-reader/storage": "workspace:*",
-    "@clio-reader/domain": "workspace:*",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "better-sqlite3": "^11.0.0",

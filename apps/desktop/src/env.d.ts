@@ -20,6 +20,7 @@ interface ElectronAPI {
     filters?: Array<{ name: string; extensions: string[] }>;
   }): Promise<{ filePath: string; content: string } | null>;
   removeAllListeners(channel: string): void;
+  getAppInfo(): Promise<{ version: string; platform: string; osVersion: string }>;
   repo: {
     listBooks(): Promise<readonly unknown[]>;
     getBook(bookId: string): Promise<unknown | undefined>;
@@ -44,6 +45,15 @@ interface ElectronAPI {
     removeHighlight(highlightId: string): Promise<void>;
     getUserSettings(): Promise<unknown>;
     saveUserSettings(settings: unknown): Promise<void>;
+    saveFeedback(feedback: unknown): Promise<void>;
+    listFeedback(): Promise<readonly unknown[]>;
+    countFeedbackByStatus(status: string): Promise<number>;
+    updateFeedbackStatus(
+      feedbackId: string,
+      status: string,
+      githubIssueUrl?: string,
+    ): Promise<void>;
+    deleteFeedback(feedbackId: string): Promise<void>;
   };
 }
 
