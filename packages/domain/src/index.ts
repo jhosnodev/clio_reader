@@ -149,6 +149,77 @@ export interface UserSettings {
   readonly mode: PaletteMode;
 }
 
+// ==================== FEEDBACK ====================
+
+export type FeedbackReaction =
+  'very_negative' | 'negative' | 'neutral' | 'positive' | 'very_positive';
+
+export type FeedbackCategory = 'bug' | 'idea' | 'praise' | 'general';
+
+export type FeedbackPlatform = 'windows' | 'linux' | 'macos' | 'android' | 'ios';
+
+export type FeedbackStatus = 'received' | 'queued' | 'reviewed' | 'linked' | 'closed';
+
+export type FeedbackArea = 'reader' | 'library' | 'annotations' | 'settings';
+
+export type FeedbackDocumentFormat = 'epub' | 'pdf' | 'markdown' | 'cbz';
+
+export const FEEDBACK_MESSAGE_MAX_LENGTH = 2000;
+
+export const FEEDBACK_REACTIONS: readonly FeedbackReaction[] = [
+  'very_negative',
+  'negative',
+  'neutral',
+  'positive',
+  'very_positive',
+];
+
+export const FEEDBACK_CATEGORIES: readonly FeedbackCategory[] = [
+  'bug',
+  'idea',
+  'praise',
+  'general',
+];
+
+export interface FeedbackContext {
+  readonly appVersion: string;
+  readonly platform: FeedbackPlatform;
+  readonly osVersion?: string | undefined;
+  readonly area?: FeedbackArea | undefined;
+  readonly documentFormat?: FeedbackDocumentFormat | undefined;
+  readonly eventName?: string | undefined;
+  readonly locale?: string | undefined;
+}
+
+export interface Feedback {
+  readonly id: string;
+  readonly installationId?: string | undefined;
+  readonly reaction?: FeedbackReaction | undefined;
+  readonly category?: FeedbackCategory | undefined;
+  readonly message?: string | undefined;
+  readonly context: FeedbackContext;
+  readonly diagnosticsConsent: boolean;
+  readonly followUpConsent: boolean;
+  readonly status: FeedbackStatus;
+  readonly githubIssueUrl?: string | undefined;
+  /** Epoch en milisegundos */
+  readonly createdAt: number;
+}
+
+export interface CreateFeedbackInput {
+  id: string;
+  installationId?: string | undefined;
+  reaction?: FeedbackReaction | undefined;
+  category?: FeedbackCategory | undefined;
+  message?: string | undefined;
+  context: FeedbackContext;
+  diagnosticsConsent?: boolean | undefined;
+  followUpConsent?: boolean | undefined;
+  status?: FeedbackStatus | undefined;
+  githubIssueUrl?: string | undefined;
+  createdAt?: number | undefined;
+}
+
 export const DEFAULT_USER_SETTINGS: UserSettings = {
   paletteId: 'clio-3',
   mode: 'dark',
@@ -292,6 +363,85 @@ export function validateHighlightStyle(style: string): void {
     throw new DomainValidationError(
       `Highlight style must be 'highlight' or 'underline', got '${style}'`,
     );
+  }
+}
+
+export function createFeedback(input: CreateFeedbackInput): Feedback {
+  const trimmedMessage = input.message?.trim();
+
+  const feedback: Feedback = {
+    id: input.id,
+    installationId: input.installationId,
+    reaction: input.reaction,
+    category: input.category,
+    message: trimmedMessage && trimmedMessage.length > 0 ? trimmedMessage : undefined,
+    context: input.context,
+    diagnosticsConsent: input.diagnosticsConsent ?? false,
+    followUpConsent: input.followUpConsent ?? false,
+    status: input.status ?? 'received',
+    githubIssueUrl: input.githubIssueUrl,
+    createdAt: input.createdAt ?? Date.now(),
+  };
+
+  assertNonEmpty(feedback.id, 'Feedback id');
+  validateFeedbackContext(feedback.context);
+
+  if (feedback.reaction === undefined && feedback.message === undefined) {
+    throw new DomainValidationError('Feedback must include a reaction or a message');
+  }
+
+  if (feedback.message !== undefined && feedback.message.length > FEEDBACK_MESSAGE_MAX_LENGTH) {
+    throw new DomainValidationError(
+      `Feedback message must not exceed ${FEEDBACK_MESSAGE_MAX_LENGTH} characters`,
+    );
+  }
+
+  return feedback;
+}
+
+export function validateFeedbackReaction(reaction: string): void {
+  if (!FEEDBACK_REACTIONS.includes(reaction as FeedbackReaction)) {
+    throw new DomainValidationError(`Invalid feedback reaction '${reaction}'`);
+  }
+}
+
+export function validateFeedbackCategory(category: string): void {
+  if (!FEEDBACK_CATEGORIES.includes(category as FeedbackCategory)) {
+    throw new DomainValidationError(`Invalid feedback category '${category}'`);
+  }
+}
+
+export function validateFeedbackContext(context: FeedbackContext): void {
+  assertNonEmpty(context.appVersion, 'Feedback context appVersion');
+  assertNonEmpty(context.platform, 'Feedback context platform');
+
+  const platforms: readonly FeedbackPlatform[] = ['windows', 'linux', 'macos', 'android', 'ios'];
+  if (!platforms.includes(context.platform)) {
+    throw new DomainValidationError(`Invalid feedback platform '${context.platform}'`);
+  }
+
+  if (context.area !== undefined) {
+    const areas: readonly FeedbackArea[] = ['reader', 'library', 'annotations', 'settings'];
+    if (!areas.includes(context.area)) {
+      throw new DomainValidationError(`Invalid feedback area '${context.area}'`);
+    }
+  }
+
+  if (context.documentFormat !== undefined) {
+    const formats: readonly FeedbackDocumentFormat[] = ['epub', 'pdf', 'markdown', 'cbz'];
+    if (!formats.includes(context.documentFormat)) {
+      throw new DomainValidationError(
+        `Invalid feedback document format '${context.documentFormat}'`,
+      );
+    }
+  }
+
+  if (context.eventName !== undefined && context.eventName.trim().length === 0) {
+    throw new DomainValidationError('Feedback context eventName must not be empty');
+  }
+
+  if (context.locale !== undefined && context.locale.trim().length === 0) {
+    throw new DomainValidationError('Feedback context locale must not be empty');
   }
 }
 

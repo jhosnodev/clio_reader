@@ -1,0 +1,22 @@
+name: Feature Request
+description: Proponer una funcionalidad
+title: "[Feature]: "
+labels:
+  - feedback
+  - feedback:idea
+  - status:triage
+
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: ¿Qué necesidad quieres resolver?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: ¿Cómo imaginas esta funcionalidad?
+    validations:
+      required: false

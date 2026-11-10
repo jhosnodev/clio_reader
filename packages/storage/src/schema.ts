@@ -142,3 +142,26 @@ export const userSettings = sqliteTable('user_settings', {
     .notNull()
     .default(sql`(unixepoch())`),
 });
+
+// ==================== FEEDBACK ====================
+export const feedback = sqliteTable('feedback', {
+  id: text('id').primaryKey(),
+  installationId: text('installation_id'),
+  reaction: text('reaction'), // 'very_negative' | 'negative' | 'neutral' | 'positive' | 'very_positive'
+  category: text('category'), // 'bug' | 'idea' | 'praise' | 'general'
+  message: text('message'),
+  appVersion: text('app_version').notNull(),
+  platform: text('platform').notNull(), // 'windows' | 'linux' | 'macos' | 'android' | 'ios'
+  osVersion: text('os_version'),
+  area: text('area'), // 'reader' | 'library' | 'annotations' | 'settings'
+  documentFormat: text('document_format'), // 'epub' | 'pdf' | 'markdown' | 'cbz'
+  eventName: text('event_name'),
+  locale: text('locale'),
+  diagnosticsConsent: integer('diagnostics_consent', { mode: 'boolean' }).notNull().default(false),
+  followUpConsent: integer('follow_up_consent', { mode: 'boolean' }).notNull().default(false),
+  status: text('status').notNull().default('received'),
+  githubIssueUrl: text('github_issue_url'),
+  createdAt: integer('created_at')
+    .notNull()
+    .default(sql`(unixepoch())`),
+});

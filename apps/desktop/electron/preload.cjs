@@ -61,6 +61,10 @@ const electronAPI = {
     ipcRenderer.removeAllListeners(channel);
   },
 
+  getAppInfo: () => {
+    return ipcRenderer.invoke('get-app-info');
+  },
+
   repo: {
     listBooks: () => {
       return ipcRenderer.invoke('repo:list-books');
@@ -152,6 +156,26 @@ const electronAPI = {
 
     saveUserSettings: (settings) => {
       return ipcRenderer.invoke('repo:save-user-settings', settings);
+    },
+
+    saveFeedback: (feedback) => {
+      return ipcRenderer.invoke('repo:save-feedback', feedback);
+    },
+
+    listFeedback: () => {
+      return ipcRenderer.invoke('repo:list-feedback');
+    },
+
+    countFeedbackByStatus: (status) => {
+      return ipcRenderer.invoke('repo:count-feedback-by-status', status);
+    },
+
+    updateFeedbackStatus: (feedbackId, status, githubIssueUrl) => {
+      return ipcRenderer.invoke('repo:update-feedback-status', feedbackId, status, githubIssueUrl);
+    },
+
+    deleteFeedback: (feedbackId) => {
+      return ipcRenderer.invoke('repo:delete-feedback', feedbackId);
     },
   },
 };

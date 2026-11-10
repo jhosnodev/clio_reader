@@ -1,10 +1,12 @@
-import { eq, and, isNull } from 'drizzle-orm';
+import { eq, and, isNull, sql } from 'drizzle-orm';
 import {
   Bookmark,
   Book,
   createDefaultPreferences,
   createDefaultUserSettings,
   DomainValidationError,
+  Feedback,
+  FeedbackStatus,
   Highlight,
   Note,
   normalizeReaderMargin,
@@ -23,6 +25,7 @@ import {
   notes as notesTable,
   highlights as highlightsTable,
   userSettings as userSettingsTable,
+  feedback as feedbackTable,
 } from './schema.js';
 
 export class DrizzleRepository {
@@ -455,6 +458,86 @@ export class DrizzleRepository {
     }
   }
 
+  // ==================== FEEDBACK ====================
+  async saveFeedback(item: Feedback): Promise<void> {
+    const existing = this.db
+      .select()
+      .from(feedbackTable)
+      .where(eq(feedbackTable.id, item.id))
+      .get();
+
+    if (existing) {
+      this.db
+        .update(feedbackTable)
+        .set({
+          reaction: item.reaction ?? null,
+          category: item.category ?? null,
+          message: item.message ?? null,
+          status: item.status,
+          githubIssueUrl: item.githubIssueUrl ?? null,
+        })
+        .where(eq(feedbackTable.id, item.id))
+        .run();
+      return;
+    }
+
+    this.db
+      .insert(feedbackTable)
+      .values({
+        id: item.id,
+        installationId: item.installationId ?? null,
+        reaction: item.reaction ?? null,
+        category: item.category ?? null,
+        message: item.message ?? null,
+        appVersion: item.context.appVersion,
+        platform: item.context.platform,
+        osVersion: item.context.osVersion ?? null,
+        area: item.context.area ?? null,
+        documentFormat: item.context.documentFormat ?? null,
+        eventName: item.context.eventName ?? null,
+        locale: item.context.locale ?? null,
+        diagnosticsConsent: item.diagnosticsConsent,
+        followUpConsent: item.followUpConsent,
+        status: item.status,
+        githubIssueUrl: item.githubIssueUrl ?? null,
+        createdAt: Math.floor(item.createdAt / 1000),
+      })
+      .run();
+  }
+
+  async listFeedback(): Promise<readonly Feedback[]> {
+    return this.db.select().from(feedbackTable).all().map(this.mapFeedbackFromDb);
+  }
+
+  async countFeedbackByStatus(status: FeedbackStatus): Promise<number> {
+    const result = this.db
+      .select({ total: sql<number>`count(*)` })
+      .from(feedbackTable)
+      .where(eq(feedbackTable.status, status))
+      .get();
+
+    return result?.total ?? 0;
+  }
+
+  async updateFeedbackStatus(
+    feedbackId: string,
+    status: FeedbackStatus,
+    githubIssueUrl?: string,
+  ): Promise<void> {
+    this.db
+      .update(feedbackTable)
+      .set({
+        status,
+        ...(githubIssueUrl !== undefined ? { githubIssueUrl } : {}),
+      })
+      .where(eq(feedbackTable.id, feedbackId))
+      .run();
+  }
+
+  async removeFeedback(feedbackId: string): Promise<void> {
+    this.db.delete(feedbackTable).where(eq(feedbackTable.id, feedbackId)).run();
+  }
+
   // ==================== MAPPING FUNCTIONS ====================
   private mapBookFromDb(row: typeof books.$inferSelect): Book {
     return {
@@ -615,5 +698,30 @@ export class DrizzleRepository {
       (highlight as { selectedText?: string }).selectedText = row.selectedText;
     if (row.note != null) (highlight as { note?: string }).note = row.note;
     return highlight;
+  }
+
+  private mapFeedbackFromDb(row: typeof feedbackTable.$inferSelect): Feedback {
+    const feedback: Feedback = {
+      id: row.id,
+      installationId: row.installationId ?? undefined,
+      reaction: (row.reaction as Feedback['reaction']) ?? undefined,
+      category: (row.category as Feedback['category']) ?? undefined,
+      message: row.message ?? undefined,
+      context: {
+        appVersion: row.appVersion,
+        platform: row.platform as Feedback['context']['platform'],
+        osVersion: row.osVersion ?? undefined,
+        area: (row.area as Feedback['context']['area']) ?? undefined,
+        documentFormat: (row.documentFormat as Feedback['context']['documentFormat']) ?? undefined,
+        eventName: row.eventName ?? undefined,
+        locale: row.locale ?? undefined,
+      },
+      diagnosticsConsent: row.diagnosticsConsent,
+      followUpConsent: row.followUpConsent,
+      status: row.status as FeedbackStatus,
+      githubIssueUrl: row.githubIssueUrl ?? undefined,
+      createdAt: row.createdAt * 1000,
+    };
+    return feedback;
   }
 }

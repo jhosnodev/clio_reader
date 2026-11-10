@@ -14,6 +14,7 @@
 | 7    | Progreso/settings       | ⚠️ Parcial  |
 | 8    | Marcadores/notas        | ⚠️ Parcial  |
 | 9    | Mobile Android (MVP)    | ⚠️ Parcial  |
+| 10   | Clio Feedback Core      | ⚠️ Parcial  |
 
 ## 2. Arquitectura
 
@@ -76,6 +77,7 @@ packages/
   storage/          # Repositorios locales y migraciones
   library/          # Casos de uso de biblioteca
   annotations/      # Gestión de anotaciones
+  feedback/         # Clio Feedback Core (contrato, servicio, contexto)
 ```
 
 ### Convenciones de paquetes
@@ -470,6 +472,7 @@ pnpm format:check   # Verificación de formato (sin escribir)
 pnpm lint           # Linting con ESLint
 pnpm test           # Ejecutar tests con Vitest
 pnpm test:watch     # Tests en modo watch
+pnpm next-version   # Siguiente tag de release único (ver features/17)
 pnpm validate       # Validación completa (format + check + lint + test)
 ```
 
@@ -658,6 +661,8 @@ test: add integration tests for progress persistence
 | Exportar/importar anotaciones | `documentation/features/13-exportar-notas-highlights-markdown.md` |
 | Lector mobile                 | `documentation/features/14-lector-mobile-android.md`              |
 | Testing/deploy Android        | `documentation/features/15-guia-android-testing-deploy.md`        |
+| Clio Feedback Core            | `documentation/features/16-clio-feedback-core.md`                 |
+| Continuous Release            | `documentation/features/17-continuous-release.md`                 |
 | Cover optimization            | `documentation/features/cover-image-optimization.md`              |
 
 ## 19. Plataformas objetivo
@@ -724,6 +729,23 @@ Spec: `documentation/features/14-lector-mobile-android.md`
 - [x] Progreso (locator + percent) y preferencias globales desde el reader
 - [x] Persistencia JSON sobre `expo-file-system` (`LocalRepository`)
 - [ ] Validar en dispositivo: worker PDF, memoria de archivos grandes, carga `file://` (ver riesgos en la spec)
+
+### Clio Feedback Core (Fase 10)
+
+Spec: `documentation/features/16-clio-feedback-core.md`
+
+- [x] Contrato y validación en `packages/domain` (`Feedback*`, `createFeedback`)
+- [x] Servicio y contexto en `packages/feedback` (`FeedbackService`, `collectFeedbackContext`)
+- [x] Cola local SQLite: tabla `feedback` + métodos en `DrizzleRepository`
+- [x] Bridge desktop (IPC `repo:*-feedback`, `get-app-info`, preload, `feedback-bridge.ts`)
+- [x] UI `FeedbackPanel` (reacciones, categoría, comentario, aviso de privacidad)
+- [x] Entradas: Rail "Compartir feedback" + "Reportar problema" en `LoadErrorState`
+- [x] Identificador de instalación aleatorio (`localStorage`)
+- [ ] Fase 1 en Mobile (UI + `LocalRepository`)
+- [ ] Fase 2: API de recepción + sincronización de la cola
+- [ ] Fase 3: revisión/grupos + GitHub Issues
+- [ ] Fase 4: dashboards y notificaciones de seguimiento
+- [ ] Decisiones pendientes: retención, backend, límites de frecuencia
 
 ### Features futuras (fuera del MVP)
 
