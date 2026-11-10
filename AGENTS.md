@@ -472,6 +472,7 @@ pnpm format:check   # Verificación de formato (sin escribir)
 pnpm lint           # Linting con ESLint
 pnpm test           # Ejecutar tests con Vitest
 pnpm test:watch     # Tests en modo watch
+pnpm next-version   # Siguiente tag de release único (ver features/17)
 pnpm validate       # Validación completa (format + check + lint + test)
 ```
 
@@ -661,6 +662,7 @@ test: add integration tests for progress persistence
 | Lector mobile                 | `documentation/features/14-lector-mobile-android.md`              |
 | Testing/deploy Android        | `documentation/features/15-guia-android-testing-deploy.md`        |
 | Clio Feedback Core            | `documentation/features/16-clio-feedback-core.md`                 |
+| Continuous Release            | `documentation/features/17-continuous-release.md`                 |
 | Cover optimization            | `documentation/features/cover-image-optimization.md`              |
 
 ## 19. Plataformas objetivo

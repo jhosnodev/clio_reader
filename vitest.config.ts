@@ -34,6 +34,7 @@ export default defineConfig({
       'packages/**/tests/**/*.test.ts',
       'apps/desktop/src/**/*.test.ts',
       'apps/mobile/tests/**/*.test.ts',
+      'scripts/**/*.test.ts',
     ],
     passWithNoTests: false,
     coverage: {

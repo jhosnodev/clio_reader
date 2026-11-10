@@ -12,6 +12,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "next-version": "node scripts/next-version.mjs",
     "validate": "pnpm format:check && pnpm check && pnpm lint && pnpm test"
   },
   "devDependencies": {
