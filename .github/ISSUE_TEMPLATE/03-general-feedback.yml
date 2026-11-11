@@ -1,7 +1,6 @@
-
-name: "💬 Feedback general"
-description: "Comparte tu experiencia, opinión o sugerencia sobre Clio Reader."
-title: "[Feedback]: "
+name: '💬 Feedback general'
+description: 'Comparte tu experiencia, opinión o sugerencia sobre Clio Reader.'
+title: '[Feedback]: '
 labels:
   - feedback
   - feedback:general
@@ -30,7 +29,7 @@ body:
     attributes:
       label: Cuéntanos tu experiencia
       description: ¿Qué quieres compartir con nosotros?
-      placeholder: "Me gusta cómo funciona la biblioteca, pero..."
+      placeholder: 'Me gusta cómo funciona la biblioteca, pero...'
     validations:
       required: true
 
@@ -53,6 +52,6 @@ body:
     attributes:
       label: Información adicional
       description: Comparte cualquier detalle que pueda ayudarnos.
-      placeholder: "Opcional..."
+      placeholder: 'Opcional...'
     validations:
       required: false

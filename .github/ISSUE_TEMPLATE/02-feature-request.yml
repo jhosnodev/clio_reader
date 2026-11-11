@@ -1,6 +1,6 @@
 name: Feature Request
 description: Proponer una funcionalidad
-title: "[Feature]: "
+title: '[Feature]: '
 labels:
   - feedback
   - feedback:idea

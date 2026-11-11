@@ -1,6 +1,6 @@
 name: Bug Report
 description: Reportar un problema de Clio Reader
-title: "[Bug]: "
+title: '[Bug]: '
 labels:
   - feedback
   - feedback:bug
