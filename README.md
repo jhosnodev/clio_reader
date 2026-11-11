@@ -2,6 +2,18 @@
 
 **Clio Reader** es un lector y gestor de biblioteca local para libros y cómics digitales. Diseñado para funcionar sin conexión, sin cuentas y sin backend. Tu biblioteca, tu dispositivo.
 
+## Visión y roadmap
+
+Clio Reader es la base de **Knowledge Core**: un ecosistema local-first de lectura y notas privadas, exportables en formatos abiertos. El orden de desarrollo es deliberado y por etapas:
+
+| Etapa | Nombre               | Objetivo                 | Criterio de salida                                                                            |
+| ----- | -------------------- | ------------------------ | --------------------------------------------------------------------------------------------- |
+| 1     | **Desktop** (actual) | Consolidar el producto   | Instalar, importar, leer, anotar, exportar y recuperar el conocimiento sin servicios externos |
+| 2     | Plugin de Obsidian   | Distribución y comunidad | Un usuario de Obsidian lo adopta sin perder autonomía ni cambiar sus hábitos                  |
+| 3     | Android              | Expandir el ecosistema   | Continuidad de lectura y anotaciones entre dispositivos sin sacrificar local-first            |
+
+**Regla:** no se desarrolla sincronización entre dispositivos hasta validar una necesidad real; SQLite local y exportación portátil son suficientes. La fuente de verdad completa está en [`documentation/00-vision-roadmap.md`](./documentation/00-vision-roadmap.md).
+
 ## Características
 
 - **Local-first**: Todo se almacena en tu dispositivo, sin dependencia de servicios externos
@@ -15,6 +27,8 @@
 - **Sin DRM**: Acceso completo a tus archivos sin restricciones
 
 > Los **marcadores** (bookmark) están implementados en dominio/persistencia pero deshabilitados en la UI hasta completar su CRUD desde el lector.
+
+> **Pendiente (Etapa 1)**: exportación/importación completa de biblioteca y conocimiento como **JSON** (F-001); hoy existe el corte de notas/resaltados a Markdown.
 
 ## Formatos soportados
 
@@ -156,7 +170,7 @@ start "apps/desktop/release/Clio Reader Setup 0.1.0.exe"
 ./apps/desktop/release/Clio\ Reader-0.1.0.AppImage
 ```
 
-## Aplicación mobile (Android)
+## Aplicación mobile (Android) — Etapa 3 (base construida)
 
 ```bash
 # Genera apps/mobile/assets/reader.html desde el bundle del reader (requiere pnpm build previo)
@@ -255,6 +269,7 @@ pnpm test:watch
 
 La documentación completa se encuentra en [`documentation/`](./documentation/):
 
+- [Visión y roadmap](./documentation/00-vision-roadmap.md)
 - [Definición del MVP](./documentation/01-definicion-mvp.md)
 - [Arquitectura técnica](./documentation/02-arquitectura-tecnica.md)
 - [Arquitectura de datos y metadata](./documentation/03-arquitectura-data-y-metadata.md)
@@ -270,25 +285,30 @@ La documentación completa se encuentra en [`documentation/`](./documentation/):
 
 ## Estado del proyecto
 
-| Fase                             | Estado      |
-| -------------------------------- | ----------- |
-| Fase 0 — Preparación repo        | ✅ Completa |
-| Fase 1 — Spike Windows           | ✅ Completa |
-| Fase 2 — Dominio/contratos       | ✅ Completa |
-| Fase 3 — Biblioteca/persistencia | ✅ Completa |
-| Fase 4 — Renderer CBZ            | ✅ Completa |
-| Fase 5 — Renderer PDF            | ✅ Completa |
-| Fase 6 — Renderer EPUB/MD        | ✅ Completa |
-| Fase 7 — Progreso/settings       | ⚠️ Parcial  |
-| Fase 8 — Marcadores/notas        | ⚠️ Parcial  |
-| Fase 9 — Mobile Android (MVP)    | ⚠️ Parcial  |
+| Fase                             | Estado                |
+| -------------------------------- | --------------------- |
+| Fase 0 — Preparación repo        | ✅ Completa           |
+| Fase 1 — Spike Windows           | ✅ Completa           |
+| Fase 2 — Dominio/contratos       | ✅ Completa           |
+| Fase 3 — Biblioteca/persistencia | ✅ Completa           |
+| Fase 4 — Renderer CBZ            | ✅ Completa           |
+| Fase 5 — Renderer PDF            | ✅ Completa           |
+| Fase 6 — Renderer EPUB/MD        | ✅ Completa           |
+| Fase 7 — Progreso/settings       | ✅ En beta (feedback pendiente) |
+| Fase 8 — Marcadores/notas        | ✅ En beta (feedback pendiente) |
+| Fase 9 — Android (base lista)    | ⏸️ Etapa 3 (diferida) |
+| Plugin de Obsidian (F-010)       | 🔜 Etapa 2  |
+
+> **Beta lanzada:** Fases 7 y 8 están entregadas en la beta; a la espera de feedback de beta testers. Las mejoras pendientes viven en el roadmap (GitHub Projects).
+
+Ver [Visión y roadmap](./documentation/00-vision-roadmap.md) para el orden completo de etapas.
 
 ## Plataformas objetivo
 
-- **Windows**: Versión desktop completa (Electron)
-- **Linux**: AppImage + .deb (Electron)
-- **Android**: Versión mobile en desarrollo (Expo)
-- **iOS**: Preparada pero no prioridad para el MVP
+- **Windows / Linux** (Etapa 1 — actual): versión desktop completa (Electron)
+- **Obsidian** (Etapa 2): plugin de notas y deep links
+- **Android** (Etapa 3): base Expo construida, se retoma tras la Etapa 2
+- **iOS**: posterior a Android (F-004)
 
 ## Autor
 

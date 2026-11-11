@@ -5,13 +5,13 @@
 | **Nombre**                        | clio_reader — Arquitectura técnica |
 | **Autor**                         | Manus AI                           |
 | **Fecha de creación**             | 28 de agosto de 2026               |
-| **Fecha de última actualización** | 7 de noviembre de 2026             |
+| **Fecha de última actualización** | 10 de noviembre de 2026            |
 | **Estado**                        | Implementada (en uso)              |
-| **Versión del documento**         | 1.1.0                              |
+| **Versión del documento**         | 1.2.0                              |
 
 ## 1. Decisión arquitectónica
 
-El proyecto usará React y TypeScript con un núcleo compartido y shells específicos por plataforma. Windows será atendido inicialmente con Electron + React y Android con Expo + React Native. iOS quedará preparado, pero no será una plataforma primaria del primer lanzamiento.
+El proyecto usará React y TypeScript con un núcleo compartido y shells específicos por plataforma. **Windows y Linux** (Electron + React) son la plataforma primaria de la Etapa 1; Android con Expo + React Native queda como Etapa 3 del [roadmap](./00-vision-roadmap.md). iOS quedará preparado, pero no será una plataforma primaria del primer lanzamiento.
 
 La razón es separar lo que realmente puede compartirse —dominio, casos de uso, modelos, persistencia abstracta y contratos de lectores— de lo que necesita integración específica —selector de archivos, ciclo de vida, almacenamiento y ventana—.
 
@@ -65,7 +65,7 @@ EPUB se implementa con un parser propio (`packages/reader-epub`, basado en `jszi
 
 ## 6. Plataformas y validación
 
-La primera matriz de aceptación cubrirá Windows y Android. Se probarán selector de archivos, permisos, archivos grandes, teclado/ratón en Windows, gestos en Android, suspensión y reanudación. La compatibilidad iOS se validará después sin modificar el dominio ni los contratos.
+La primera matriz de aceptación cubre Windows y Linux: selector de archivos, permisos, archivos grandes, teclado/ratón, suspensión y reanudación. Android entra en la matriz en la Etapa 3 y la compatibilidad iOS se validará después (F-004), sin modificar el dominio ni los contratos.
 
 ## 7. Calidad
 

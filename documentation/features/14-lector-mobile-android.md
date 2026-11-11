@@ -1,5 +1,9 @@
 # Lector mobile Android (MVP A–D)
 
+> **Estado:** base construida; **Etapa 3** del [roadmap](../00-vision-roadmap.md)
+> (Fase 9 ⏸️ diferida). Los hitos A–D de este documento se retoman cuando el
+> dominio y los contratos de exportación (F-001) estén maduros.
+
 ## Objetivo
 
 Reutilizar el bundle del lector de escritorio dentro de `react-native-webview`

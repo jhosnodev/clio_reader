@@ -10,10 +10,10 @@ Pipeline de release sin intervención manual: cada push a `main` valida, compila
 | ---- | ---------------------------------------------------- | -------------------------------- |
 | 1    | Preparación: compilación reproducible                | ✅ Verificada en local           |
 | 2    | Estrategia de versiones (`scripts/next-version.mjs`) | ✅ Implementada                  |
-| 3    | CI (`.github/workflows/ci.yml`)                      | ⏳ Pendiente                     |
-| 4    | Workflow de Release (`release.yml`)                  | ⏳ Pendiente                     |
-| 5    | Seguridad y confiabilidad                            | ⏳ Pendiente (aplica con Fase 4) |
-| 6    | Página de descargas (GitHub Pages)                   | ⏳ Pendiente                     |
+| 3    | CI (`.github/workflows/ci.yml`)                      | ✅ Implementada                  |
+| 4    | Workflow de Release (`release.yml`)                  | ✅ Implementada (releases v0.1.x con SHA256SUMS.txt) |
+| 5    | Seguridad y confiabilidad                            | ✅ Implementada (permisos mínimos, publish único) |
+| 6    | Página de descargas (GitHub Pages)                   | ✅ Implementada (`pages.yml` → jhosnodev.github.io/clio_reader) |
 
 ## Fase 1 — Compilación reproducible (verificada)
 

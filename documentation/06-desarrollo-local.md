@@ -11,7 +11,7 @@
 
 ## Requisitos
 
-Se requiere Node.js 22+, pnpm 12.16.1 y Git. Windows y Linux son las plataformas de escritorio del MVP (builds con `build:win` / `build:linux`), y Android es la plataforma mobile (Expo).
+Se requiere Node.js 22+, pnpm 12.16.1 y Git. Windows y Linux son las plataformas de escritorio del MVP (builds con `build:win` / `build:linux`); Android (Expo) es la Etapa 3 del [roadmap](./00-vision-roadmap.md).
 
 ## Instalación
 

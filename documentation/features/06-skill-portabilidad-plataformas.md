@@ -51,7 +51,7 @@ El skill cubre el análisis del repositorio, la clasificación `shared`/`adapter
 
 ## Plan de aplicación futura
 
-Para portar una plataforma real, comenzar con un spike del shell y de la retención de archivos. Después definir contratos, implementar el selector y almacenamiento, integrar los adaptadores de formato, conectar la UI compartida y cerrar con pruebas de suspensión, accesibilidad, archivos grandes y distribución. La prioridad recomendada por el proyecto es iOS después de estabilizar Windows y Android; macOS y Linux pueden compartir Electron, mientras que web requiere una decisión explícita sobre persistencia y acceso a archivos [4].
+Para portar una plataforma real, comenzar con un spike del shell y de la retención de archivos. Después definir contratos, implementar el selector y almacenamiento, integrar los adaptadores de formato, conectar la UI compartida y cerrar con pruebas de suspensión, accesibilidad, archivos grandes y distribución. La prioridad recomendada por el proyecto es seguir el [roadmap](../00-vision-roadmap.md): consolidar Desktop (Windows/Linux) y Obsidian primero, retomar Android en la Etapa 3 y evaluar iOS después; macOS y Linux de escritorio pueden compartir Electron, mientras que web requiere una decisión explícita sobre persistencia y acceso a archivos [4].
 
 ## Referencias
 
