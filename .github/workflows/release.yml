@@ -186,6 +186,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Fijar versión
+        shell: bash
         env:
           VERSION: ${{ needs.prepare.outputs.version }}
         run: node scripts/next-version.mjs --set "$VERSION" --write
