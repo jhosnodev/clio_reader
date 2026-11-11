@@ -21,7 +21,8 @@
       "@clio-reader/reader-session": ["../../packages/reader-session/src"],
       "@clio-reader/storage": ["../../packages/storage/src"],
       "@clio-reader/library": ["../../packages/library/src"],
-      "@clio-reader/annotations": ["../../packages/annotations/src"]
+      "@clio-reader/annotations": ["../../packages/annotations/src"],
+      "@clio-reader/feedback": ["../../packages/feedback/src"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],

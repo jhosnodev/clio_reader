@@ -81,6 +81,7 @@ export default defineConfig({
               '@clio-reader/storage': resolve(__dirname, '../../packages/storage/src'),
               '@clio-reader/library': resolve(__dirname, '../../packages/library/src'),
               '@clio-reader/annotations': resolve(__dirname, '../../packages/annotations/src'),
+              '@clio-reader/feedback': resolve(__dirname, '../../packages/feedback/src'),
               '@clio-reader/reader-core': resolve(__dirname, '../../packages/reader-core/src'),
             },
           },
@@ -101,6 +102,7 @@ export default defineConfig({
       '@clio-reader/storage': resolve(__dirname, '../../packages/storage/src'),
       '@clio-reader/library': resolve(__dirname, '../../packages/library/src'),
       '@clio-reader/annotations': resolve(__dirname, '../../packages/annotations/src'),
+      '@clio-reader/feedback': resolve(__dirname, '../../packages/feedback/src'),
     },
   },
 });
