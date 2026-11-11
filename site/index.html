@@ -1,70 +1,291 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Clio Reader — Descargas</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Clio Reader — Downloads</title>
     <meta
       name="description"
-      content="Descarga Clio Reader para Linux y Windows. Biblioteca local para leer EPUB, PDF, CBZ y Markdown."
+      content="Download Clio Reader for Windows and Linux. A local library to read EPUB, PDF, CBZ and Markdown, with notes you export as Markdown for Obsidian."
+    />
+    <meta name="theme-color" content="#1a1a1a" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@600;800&family=Martian+Mono:wght@400;500;700&family=Instrument+Sans:wght@400;500&display=swap"
     />
     <link rel="stylesheet" href="styles.css" />
+    <script defer src="js/i18n.js"></script>
+    <script defer src="js/markdown.js"></script>
+    <script defer src="js/releases.js"></script>
+    <script defer src="js/book.js"></script>
+    <script defer src="js/ui.js"></script>
+    <script defer src="js/main.js"></script>
   </head>
   <body>
-    <header class="site-header">
-      <div class="container header-inner">
-        <span class="brand" aria-hidden="true">◆</span>
-        <div>
-          <h1>Clio Reader</h1>
-          <p class="tagline">Tu biblioteca, tu dispositivo. Sin cuentas, sin nube.</p>
+    <a class="skip" href="#main" data-i18n="skip">Skip to content</a>
+    <div class="grain" aria-hidden="true"></div>
+
+    <header class="ribbon">
+      <div class="ribbon__bar gut mono">
+        <a class="mark" href="#top" aria-label="Clio Reader"
+          ><svg
+            class="mark__icon"
+            aria-hidden="true"
+            focusable="false"
+            viewBox="0 0 64 64"
+            shape-rendering="crispEdges"
+          >
+            <path
+              fill="currentColor"
+              d="M11 12h3v1h-3zM25 12h2v1h-2zM39 12h2v1h-2zM9 13h7v1h-7zM23 13h5v1h-5zM37 13h6v1h-6zM8 14h10v1h-10zM21 14h10v1h-10zM36 14h8v1h-8zM7 15h12v1h-12zM20 15h5v1h-5zM27 15h5v1h-5zM35 15h10v1h-10zM6 16h6v1h-6zM14 16h9v1h-9zM28 16h10v1h-10zM41 16h4v1h-4zM6 17h4v1h-4zM16 17h6v1h-6zM30 17h7v1h-7zM42 17h3v1h-3zM5 18h4v1h-4zM17 18h5v1h-5zM31 18h5v1h-5zM42 18h3v1h-3zM51 18h1v1h-1zM53 18h1v1h-1zM5 19h4v1h-4zM18 19h3v1h-3zM31 19h3v1h-3zM42 19h3v1h-3zM50 19h1v1h-1zM52 19h1v1h-1zM54 19h1v1h-1zM5 20h4v1h-4zM18 20h3v1h-3zM31 20h3v1h-3zM42 20h3v1h-3zM49 20h1v1h-1zM51 20h1v1h-1zM53 20h1v1h-1zM55 20h1v1h-1zM5 21h4v1h-4zM18 21h3v1h-3zM31 21h3v1h-3zM42 21h3v1h-3zM48 21h1v1h-1zM50 21h1v1h-1zM52 21h1v1h-1zM54 21h1v1h-1zM56 21h1v1h-1zM5 22h5v1h-5zM18 22h3v1h-3zM31 22h3v1h-3zM42 22h3v1h-3zM47 22h1v1h-1zM49 22h1v1h-1zM51 22h1v1h-1zM53 22h1v1h-1zM55 22h1v1h-1zM57 22h1v1h-1zM6 23h3v1h-3zM10 23h2v1h-2zM18 23h3v1h-3zM31 23h3v1h-3zM42 23h3v1h-3zM46 23h1v1h-1zM48 23h1v1h-1zM50 23h1v1h-1zM54 23h1v1h-1zM56 23h1v1h-1zM58 23h1v1h-1zM7 24h1v1h-1zM10 24h2v1h-2zM18 24h3v1h-3zM31 24h3v1h-3zM42 24h4v1h-4zM47 24h1v1h-1zM49 24h1v1h-1zM55 24h1v1h-1zM57 24h1v1h-1zM8 25h2v1h-2zM12 25h2v1h-2zM18 25h3v1h-3zM31 25h3v1h-3zM42 25h3v1h-3zM46 25h1v1h-1zM48 25h1v1h-1zM56 25h1v1h-1zM58 25h1v1h-1zM8 26h2v1h-2zM12 26h2v1h-2zM18 26h3v1h-3zM31 26h3v1h-3zM42 26h4v1h-4zM47 26h1v1h-1zM57 26h1v1h-1zM59 26h1v1h-1zM10 27h2v1h-2zM18 27h3v1h-3zM31 27h3v1h-3zM42 27h3v1h-3zM46 27h1v1h-1zM56 27h1v1h-1zM58 27h1v1h-1zM10 28h2v1h-2zM18 28h3v1h-3zM30 28h5v1h-5zM42 28h4v1h-4zM57 28h1v1h-1zM59 28h1v1h-1zM18 29h3v1h-3zM29 29h7v1h-7zM42 29h3v1h-3zM56 29h1v1h-1zM58 29h1v1h-1zM18 30h3v1h-3zM30 30h5v1h-5zM42 30h3v1h-3zM55 30h1v1h-1zM57 30h1v1h-1zM59 30h1v1h-1zM18 31h3v1h-3zM31 31h3v1h-3zM42 31h3v1h-3zM56 31h1v1h-1zM58 31h1v1h-1zM18 32h3v1h-3zM31 32h3v1h-3zM42 32h3v1h-3zM55 32h1v1h-1zM57 32h1v1h-1zM59 32h1v1h-1zM18 33h3v1h-3zM31 33h3v1h-3zM42 33h3v1h-3zM54 33h1v1h-1zM56 33h1v1h-1zM58 33h1v1h-1zM18 34h3v1h-3zM31 34h3v1h-3zM42 34h3v1h-3zM53 34h1v1h-1zM55 34h1v1h-1zM57 34h1v1h-1zM18 35h3v1h-3zM31 35h3v1h-3zM42 35h3v1h-3zM52 35h1v1h-1zM54 35h1v1h-1zM56 35h1v1h-1zM18 36h3v1h-3zM31 36h3v1h-3zM42 36h3v1h-3zM51 36h1v1h-1zM53 36h1v1h-1zM55 36h1v1h-1zM18 37h3v1h-3zM31 37h3v1h-3zM42 37h2v1h-2zM50 37h1v1h-1zM52 37h1v1h-1zM54 37h1v1h-1zM18 38h3v1h-3zM31 38h3v1h-3zM42 38h3v1h-3zM47 38h1v1h-1zM49 38h1v1h-1zM51 38h1v1h-1zM53 38h1v1h-1zM18 39h3v1h-3zM31 39h3v1h-3zM42 39h3v1h-3zM48 39h1v1h-1zM50 39h1v1h-1zM52 39h1v1h-1zM18 40h3v1h-3zM31 40h3v1h-3zM41 40h2v1h-2zM44 40h2v1h-2zM47 40h1v1h-1zM49 40h1v1h-1zM51 40h1v1h-1zM18 41h3v1h-3zM31 41h3v1h-3zM41 41h2v1h-2zM46 41h1v1h-1zM48 41h1v1h-1zM50 41h1v1h-1zM18 42h3v1h-3zM31 42h3v1h-3zM39 42h2v1h-2zM43 42h2v1h-2zM47 42h1v1h-1zM49 42h1v1h-1zM18 43h3v1h-3zM31 43h3v1h-3zM39 43h2v1h-2zM43 43h1v1h-1zM45 43h2v1h-2zM48 43h1v1h-1zM17 44h1v1h-1zM19 44h1v1h-1zM21 44h1v1h-1zM31 44h3v1h-3zM41 44h2v1h-2zM44 44h1v1h-1zM46 44h1v1h-1zM48 44h1v1h-1zM18 45h1v1h-1zM20 45h1v1h-1zM30 45h1v1h-1zM32 45h1v1h-1zM34 45h1v1h-1zM39 45h1v1h-1zM41 45h2v1h-2zM45 45h1v1h-1zM47 45h1v1h-1zM19 46h1v1h-1zM29 46h1v1h-1zM32 46h1v1h-1zM35 46h1v1h-1zM43 46h1v1h-1zM46 46h1v1h-1zM48 46h1v1h-1zM19 47h1v1h-1zM28 47h1v1h-1zM30 47h2v1h-2zM33 47h2v1h-2zM36 47h1v1h-1zM42 47h1v1h-1zM47 47h1v1h-1zM49 47h1v1h-1zM51 47h2v1h-2zM29 48h1v1h-1zM32 48h1v1h-1zM35 48h1v1h-1zM48 48h1v1h-1zM50 48h3v1h-3zM30 49h1v1h-1zM32 49h1v1h-1zM34 49h1v1h-1zM49 49h2v1h-2zM53 49h2v1h-2zM31 50h1v1h-1zM33 50h1v1h-1zM49 50h2v1h-2zM53 50h2v1h-2zM56 50h1v1h-1zM32 51h1v1h-1zM51 51h2v1h-2zM55 51h1v1h-1zM51 52h3v1h-3zM57 52h1v1h-1zM54 53h1v1h-1z"
+            />
+          </svg>
+          <span class="mark__name">clio</span></a
+        >
+        <nav class="nav" aria-label="Sections">
+          <a href="#files" data-i18n="n1">files</a>
+          <a href="#notes" data-i18n="n2">what's new</a>
+          <a href="#install" data-i18n="n3">install</a>
+          <a href="#verify" data-i18n="n4">verify</a>
+        </nav>
+        <div class="aside">
+          <button class="lang" id="langBtn" type="button" aria-label="Cambiar a español">ES</button>
+          <span class="live"><i></i><span data-i18n="live">latest</span></span>
+          <a class="hbtn" id="hdrWin" href="#files" data-platform="windows-exe">windows</a>
+          <a class="hbtn" id="hdrLinux" href="#files" data-platform="linux-appimage">linux</a>
+          <span class="readout" id="readout">—</span>
         </div>
-        <a class="gh-link" href="https://github.com/jhosnodev/clio_reader" rel="noopener">
-          Ver en GitHub
-        </a>
       </div>
+      <div class="ticker mono">
+        <div class="ticker__track">
+          <div class="ticker__group" data-i18n-html="ticker">
+            <span>no account <em>✳</em></span
+            ><span>works offline <em>✳</em></span
+            ><span>epub · pdf · markdown · cbz <em>✳</em></span
+            ><span>notes anchored to the text <em>✳</em></span
+            ><span>highlights in 6 colors <em>✳</em></span
+            ><span>markdown export, ready for obsidian <em>✳</em></span
+            ><span>windows · linux <em>✳</em></span
+            ><span>obsidian plugin in the works <em>✳</em></span>
+          </div>
+          <div class="ticker__group" aria-hidden="true"></div>
+        </div>
+      </div>
+      <div class="rail"><i id="progress"></i></div>
     </header>
 
-    <main class="container">
-      <section id="status" class="status status--loading" role="status" aria-live="polite">
-        Consultando releases…
-      </section>
-
-      <section id="latest" class="panel" hidden>
-        <div class="panel-head">
-          <h2 id="latest-version">—</h2>
-          <span id="latest-date" class="muted"></span>
+    <main id="main">
+      <section class="hero" id="top">
+        <div class="hero__inner gut">
+          <div>
+            <div class="eyebrow"><span data-i18n="eb">downloads</span><b>windows · linux</b></div>
+            <h1 class="h1">
+              <span data-i18n="h1a">Your library.</span>
+              <span class="g" id="glitch" data-text="Your device." data-i18n="h1b"
+                >Your device.</span
+              >
+            </h1>
+            <p class="lead" data-i18n="lead">
+              No accounts, no cloud. Read EPUB, PDF, CBZ and Markdown, and export your notes as
+              Markdown, ready for Obsidian.
+            </p>
+            <div class="ctas">
+              <a class="btn" id="heroBtn" href="#files"
+                ><span aria-hidden="true">↓</span
+                ><span id="heroBtnText" data-i18n="cta1">see the downloads</span></a
+              >
+              <a
+                class="btn btn--ghost"
+                href="https://github.com/jhosnodev/clio_reader"
+                rel="noopener"
+                ><span data-i18n="cta2">view on github</span><span aria-hidden="true">↗</span></a
+              >
+            </div>
+            <div class="hero__status" id="heroStatus" aria-live="polite">
+              <span data-i18n="loading">checking releases…</span>
+            </div>
+            <p class="hero__note" id="osNote" hidden></p>
+          </div>
+          <div
+            class="stage"
+            role="img"
+            aria-label="An open book drawn in ASCII characters, its pages slowly turning."
+          >
+            <pre id="book" aria-hidden="true"></pre>
+            <span class="note note--a">signal / <i id="pageNo">001</i></span>
+            <span class="note note--b" data-i18n-html="noteb"
+              >local library<br />no cloud required</span
+            >
+          </div>
         </div>
-        <div id="latest-notes" class="notes"></div>
-        <div id="platforms" class="platforms"></div>
-        <p id="checksum-line" class="checksum" hidden>
-          <a id="checksum-link" href="#" download>SHA256SUMS.txt</a>
-          <span class="muted"> — verifica la integridad de los archivos</span>
-        </p>
+      </section>
+      <div class="strip gut mono">
+        <span>epub · pdf · cbz · markdown</span>
+        <span data-i18n-html="strip2">open source <em>✳</em> local first <em>✳</em> no drm</span>
+      </div>
+      <div class="banner banner--demo gut" id="demoBanner" hidden>
+        <i></i><span data-i18n="demo">sample data · this is not a real release</span>
+      </div>
+
+      <!-- 01 FILES -->
+      <section class="sec gut" id="files" aria-labelledby="filesHead">
+        <h2 class="sechead" id="filesHead">
+          <span data-i18n="s1a">01 — pick your file</span
+          ><span id="filesSub" data-i18n="s1b">latest release</span>
+        </h2>
+
+        <div class="plats" id="plats"></div>
+        <div class="sums" id="sums" hidden>
+          <span data-i18n="sumsTxt">every release ships with a checksum file</span>
+          <a id="sumsLink" href="#" rel="noopener">SHA256SUMS.txt ↓</a>
+        </div>
+        <p class="nomac" data-i18n="nomac">No macOS build yet.</p>
+
+        <div class="unav" id="unav" hidden>
+          <h3 data-i18n="u1">Download not available yet</h3>
+          <p data-i18n="u2">
+            There is no published release of Clio Reader yet, or GitHub could not be reached. The
+            release history is always on GitHub.
+          </p>
+          <a class="btn" href="https://github.com/jhosnodev/clio_reader/releases" rel="noopener"
+            ><span data-i18n="u3">open github releases</span><span aria-hidden="true">↗</span></a
+          >
+        </div>
       </section>
 
-      <section id="unavailable" class="panel panel--muted" hidden>
-        <h2>Descarga no disponible</h2>
-        <p class="muted">
-          Todavía no hay una release publicada de Clio Reader, o no se pudo consultar el historial.
-        </p>
-        <p>
-          <a href="https://github.com/jhosnodev/clio_reader/releases">Ver el historial en GitHub</a>
-        </p>
+      <!-- 02 NOTES -->
+      <div class="band gut" id="notesBand">
+        <span data-i18n="bn">what's new</span><i class="dot">✳</i>
+      </div>
+      <section class="sec gut" id="notes" aria-labelledby="notesHead">
+        <h2 class="sechead" id="notesHead">
+          <span data-i18n="s2a">02 — release notes</span
+          ><span data-i18n="s2b">from github releases</span>
+        </h2>
+        <div class="notes-grid">
+          <div class="relhead">
+            <b id="relTag">—</b>
+            <span id="relDate"></span>
+            <a
+              id="relLink"
+              href="https://github.com/jhosnodev/clio_reader/releases"
+              rel="noopener"
+              data-i18n="relLink"
+              >read it on github ↗</a
+            >
+          </div>
+          <div class="md" id="relBody"></div>
+        </div>
       </section>
 
-      <section id="history" class="history" hidden>
-        <h2>Historial de versiones</h2>
-        <ol id="history-list"></ol>
+      <!-- 03 INSTALL -->
+      <div class="band band--acid gut">
+        <span data-i18n="bi1">download</span><i class="dot">→</i><span data-i18n="bi2">install</span
+        ><i class="dot">→</i><span data-i18n="bi3">read</span>
+      </div>
+      <section class="sec gut" id="install" aria-labelledby="instHead">
+        <h2 class="sechead" id="instHead">
+          <span data-i18n="s3a">03 — install</span
+          ><span data-i18n="s3b">one minute, no account</span>
+        </h2>
+        <div class="steps">
+          <article class="step">
+            <h3>Windows</h3>
+            <div class="code">
+              <div class="code__head"><span data-i18n="exe">nsis installer</span></div>
+              <pre><i data-i18n="w1"># run the installer and follow the steps</i>
+<b>.\</b><span data-asset="windows-exe">Clio-Reader-Setup.exe</span></pre>
+            </div>
+            <p data-i18n="w2">Run it and follow the installer’s steps. No account needed.</p>
+          </article>
+          <article class="step">
+            <h3>AppImage</h3>
+            <div class="code">
+              <div class="code__head">
+                <span data-i18n="ai">any linux · x64</span
+                ><button type="button" data-copy="ai" data-i18n="copy">copy</button>
+              </div>
+              <pre
+                id="cp-ai"
+              ><b>chmod</b> +x <span data-asset="linux-appimage">Clio-Reader.AppImage</span>
+<b>./</b><span data-asset="linux-appimage">Clio-Reader.AppImage</span></pre>
+            </div>
+            <p data-i18n="ai2">Nothing to install: make it executable and run it.</p>
+          </article>
+          <article class="step">
+            <h3>DEB</h3>
+            <div class="code">
+              <div class="code__head">
+                <span data-i18n="deb">debian · ubuntu · x64</span
+                ><button type="button" data-copy="deb" data-i18n="copy">copy</button>
+              </div>
+              <pre
+                id="cp-deb"
+              ><b>sudo</b> apt install <b>./</b><span data-asset="linux-deb">clio-reader.deb</span></pre>
+            </div>
+            <p data-i18n="deb2">Installs it with your system’s package manager.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- 04 VERIFY -->
+      <section class="sec gut" id="verify" aria-labelledby="verHead">
+        <h2 class="sechead" id="verHead">
+          <span data-i18n="s4a">04 — verify</span><span data-i18n="s4b">optional, recommended</span>
+        </h2>
+        <div class="verify">
+          <div>
+            <p class="statement" data-i18n-html="vst">
+              Check that the file you got <em>is the file that was published.</em>
+            </p>
+            <p class="prose prose--lead" data-i18n-html="vp">
+              Download <strong>SHA256SUMS.txt</strong> into the same folder as the file, then run
+              the command for your system. If the hash matches, the file is intact.
+            </p>
+          </div>
+          <div class="stack">
+            <div class="code">
+              <div class="code__head">
+                <span>linux</span
+                ><button type="button" data-copy="vl" data-i18n="copy">copy</button>
+              </div>
+              <pre id="cp-vl"><b>sha256sum</b> -c SHA256SUMS.txt --ignore-missing</pre>
+            </div>
+            <div class="code">
+              <div class="code__head">
+                <span>windows · powershell</span
+                ><button type="button" data-copy="vw" data-i18n="copy">copy</button>
+              </div>
+              <pre
+                id="cp-vw"
+              ><b>Get-FileHash</b> <b>.\</b><span data-asset="windows-exe">Clio-Reader-Setup.exe</span> -Algorithm SHA256</pre>
+            </div>
+            <p class="prose prose--small" data-i18n="vw2">
+              On Windows, compare the hash it prints with the line for the same file in
+              SHA256SUMS.txt.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 05 HISTORY -->
+      <section class="sec gut" id="history" aria-labelledby="histHead" hidden>
+        <h2 class="sechead" id="histHead">
+          <span data-i18n="s5a">05 — earlier versions</span
+          ><span data-i18n="s5b">every file, every release</span>
+        </h2>
+        <ol class="hist" id="hist"></ol>
       </section>
     </main>
 
-    <footer class="site-footer">
-      <div class="container muted">
-        Clio Reader es una aplicación local-first de código abierto.
-        <a href="https://github.com/jhosnodev/clio_reader" rel="noopener">GitHub</a>
-      </div>
+    <footer class="foot gut">
+      <span data-i18n="ft">Clio Reader is open source and local-first.</span>
+      <nav>
+        <a href="https://github.com/jhosnodev/clio_reader" rel="noopener">github ↗</a
+        ><a href="https://jhosno.dev/" rel="noopener" data-i18n="lab">a jhosno lab ↗</a>
+      </nav>
     </footer>
-
-    <script src="app.js"></script>
   </body>
 </html>
