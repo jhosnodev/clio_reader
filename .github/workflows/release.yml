@@ -281,6 +281,12 @@ jobs:
           done
           (
             cd dist
+            for file in *.AppImage *.deb *.exe; do
+              normalized=${file// /\.}
+              if [ "$file" != "$normalized" ]; then
+                mv -- "$file" "$normalized"
+              fi
+            done
             sha256sum ./*.AppImage ./*.deb ./*.exe | sed 's| \./| |' > SHA256SUMS.txt
             cat SHA256SUMS.txt
           )
