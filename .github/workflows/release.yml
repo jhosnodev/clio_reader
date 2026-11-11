@@ -1,0 +1,303 @@
+name: release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    uses: ./.github/workflows/ci.yml
+
+  prepare:
+    name: Prepare release
+    needs: [validate]
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Determinar siguiente versión
+        id: version
+        run: |
+          set -euo pipefail
+          node scripts/next-version.mjs --remote --json \
+            | jq -r '"tag=\(.tag)\nversion=\(.version)"' >> "$GITHUB_OUTPUT"
+
+      - name: Generar notas de publicación
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          SUBJECTS="$RUNNER_TEMP/subjects.txt"
+          PREV="$(git tag -l 'v*' --sort=-version:refname | grep -vx "$TAG" | head -n1 || true)"
+          if [ -n "$PREV" ]; then RANGE="$PREV..$SHA"; else RANGE="$SHA"; fi
+          git log --no-merges --pretty=%s "$RANGE" > "$SUBJECTS"
+
+          {
+            echo "## Clio Reader $TAG"
+            echo
+            echo "**Commit:** \`$SHA\`"
+            if [ -n "$PREV" ]; then
+              echo
+              echo "**Versión anterior:** \`$PREV\`"
+            fi
+            echo
+
+            emit_group() {
+              local title="$1" pattern="$2"
+              local out
+              out="$(grep -E "$pattern" "$SUBJECTS" || true)"
+              if [ -n "$out" ]; then
+                printf '### %s\n\n' "$title"
+                printf '%s\n' "$out" | sed 's/^/- /'
+                printf '\n'
+              fi
+            }
+
+            if [ ! -s "$SUBJECTS" ]; then
+              echo "Sin cambios registrados desde la versión anterior."
+            else
+              emit_group 'Novedades' '^feat[:( ]'
+              emit_group 'Correcciones' '^fix[:( ]'
+              OUT="$(grep -Ev '^(feat|fix)[:( ]' "$SUBJECTS" || true)"
+              if [ -n "$OUT" ]; then
+                printf '### Otros cambios\n\n'
+                printf '%s\n' "$OUT" | sed 's/^/- /'
+                printf '\n'
+              fi
+            fi
+
+            echo "### Instaladores"
+            echo
+            echo "- Linux: AppImage y paquete \`.deb\` (x64)"
+            echo "- Windows: instalador NSIS \`.exe\` (x64)"
+            echo "- \`SHA256SUMS.txt\` con el hash de cada archivo"
+          } > RELEASE_NOTES.md
+
+          cat RELEASE_NOTES.md
+
+      - name: Subir notas
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-notes
+          path: RELEASE_NOTES.md
+          if-no-files-found: error
+
+  build-linux:
+    name: Build Linux
+    needs: [validate, prepare]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Fijar versión
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: node scripts/next-version.mjs --set "$VERSION" --write
+
+      - name: Build Linux packages
+        run: pnpm --filter @clio-reader/desktop build:linux
+
+      - name: Comprobar artefactos
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          appimages=(apps/desktop/release/*.AppImage)
+          debs=(apps/desktop/release/*.deb)
+          if [ ${#appimages[@]} -eq 0 ] || [ ${#debs[@]} -eq 0 ]; then
+            echo "Faltan artefactos Linux:"
+            ls -la apps/desktop/release
+            exit 1
+          fi
+          for file in "${appimages[@]}" "${debs[@]}"; do
+            if [ ! -s "$file" ]; then
+              echo "Artefacto vacío: $file"
+              exit 1
+            fi
+          done
+          echo "OK: ${#appimages[@]} AppImage y ${#debs[@]} deb"
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: clio-reader-linux
+          path: |
+            apps/desktop/release/*.AppImage
+            apps/desktop/release/*.deb
+          if-no-files-found: error
+
+  build-windows:
+    name: Build Windows
+    needs: [validate, prepare]
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Fijar versión
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: node scripts/next-version.mjs --set "$VERSION" --write
+
+      - name: Build Windows installer
+        run: pnpm --filter @clio-reader/desktop build:win
+
+      - name: Comprobar instalador
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          installers=(apps/desktop/release/*.exe)
+          if [ ${#installers[@]} -eq 0 ]; then
+            echo "No se generó ningún instalador .exe:"
+            ls -la apps/desktop/release
+            exit 1
+          fi
+          for file in "${installers[@]}"; do
+            if [ ! -s "$file" ]; then
+              echo "Artefacto vacío: $file"
+              exit 1
+            fi
+          done
+          echo "OK: ${#installers[@]} instalador(es)"
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v7
+        with:
+          name: clio-reader-windows
+          path: apps/desktop/release/*.exe
+          if-no-files-found: error
+
+  publish:
+    name: Publish release
+    needs: [validate, prepare, build-linux, build-windows]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Descargar notas
+        uses: actions/download-artifact@v7
+        with:
+          name: release-notes
+          path: notes
+
+      - name: Descargar instaladores
+        uses: actions/download-artifact@v7
+        with:
+          pattern: clio-reader-*
+          path: dist
+          merge-multiple: true
+
+      - name: Verificar que tag y release no existen
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" > /dev/null 2>&1; then
+            echo "El tag $TAG ya existe; no se sobrescriben releases."
+            exit 1
+          fi
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "La release $TAG ya existe; no se sobrescriben releases."
+            exit 1
+          fi
+          test -s notes/RELEASE_NOTES.md
+
+      - name: Calcular checksums
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(dist/*.AppImage dist/*.deb dist/*.exe)
+          if [ ${#files[@]} -lt 3 ]; then
+            echo "Se esperaban AppImage, deb y exe; hay ${#files[@]}:"
+            ls -la dist
+            exit 1
+          fi
+          for file in "${files[@]}"; do
+            size=$(stat -c%s "$file")
+            if [ "$size" -lt 1000000 ]; then
+              echo "Artefacto sospechosamente pequeño ($size bytes): $file"
+              exit 1
+            fi
+          done
+          (
+            cd dist
+            sha256sum ./*.AppImage ./*.deb ./*.exe | sed 's| \./| |' > SHA256SUMS.txt
+            cat SHA256SUMS.txt
+          )
+
+      - name: Crear tag
+        env:
+          TAG: ${{ needs.prepare.outputs.tag }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" "$SHA" -m "Clio Reader $TAG"
+          git push origin "$TAG"
+
+      - name: Crear GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          set -euo pipefail
+          gh release create "$TAG" \
+            dist/*.AppImage dist/*.deb dist/*.exe dist/SHA256SUMS.txt \
+            --verify-tag \
+            --title "Clio Reader $TAG" \
+            --notes-file notes/RELEASE_NOTES.md
