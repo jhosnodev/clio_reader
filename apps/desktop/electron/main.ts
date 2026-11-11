@@ -108,6 +108,7 @@ if (!gotTheLock) {
       minHeight: 600,
       title: 'Clio Reader',
       show: false,
+      ...(isDev ? { icon: join(__dirname, '../resources/icon.png') } : {}),
       webPreferences: {
         preload: join(__dirname, 'preload.cjs'),
         contextIsolation: true,
