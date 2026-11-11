@@ -28,4 +28,13 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    files: ['site/**'],
+    languageOptions: {
+      globals: {
+        document: 'readonly',
+        fetch: 'readonly',
+      },
+    },
+  },
 );

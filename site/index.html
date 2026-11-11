@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Clio Reader — Descargas</title>
+    <meta
+      name="description"
+      content="Descarga Clio Reader para Linux y Windows. Biblioteca local para leer EPUB, PDF, CBZ y Markdown."
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container header-inner">
+        <span class="brand" aria-hidden="true">◆</span>
+        <div>
+          <h1>Clio Reader</h1>
+          <p class="tagline">Tu biblioteca, tu dispositivo. Sin cuentas, sin nube.</p>
+        </div>
+        <a class="gh-link" href="https://github.com/jhosnodev/echo_reader" rel="noopener">
+          Ver en GitHub
+        </a>
+      </div>
+    </header>
+
+    <main class="container">
+      <section id="status" class="status status--loading" role="status" aria-live="polite">
+        Consultando releases…
+      </section>
+
+      <section id="latest" class="panel" hidden>
+        <div class="panel-head">
+          <h2 id="latest-version">—</h2>
+          <span id="latest-date" class="muted"></span>
+        </div>
+        <div id="latest-notes" class="notes"></div>
+        <div id="platforms" class="platforms"></div>
+        <p id="checksum-line" class="checksum" hidden>
+          <a id="checksum-link" href="#" download>SHA256SUMS.txt</a>
+          <span class="muted"> — verifica la integridad de los archivos</span>
+        </p>
+      </section>
+
+      <section id="unavailable" class="panel panel--muted" hidden>
+        <h2>Descarga no disponible</h2>
+        <p class="muted">
+          Todavía no hay una release publicada de Clio Reader, o no se pudo consultar el historial.
+        </p>
+        <p>
+          <a href="https://github.com/jhosnodev/echo_reader/releases">Ver el historial en GitHub</a>
+        </p>
+      </section>
+
+      <section id="history" class="history" hidden>
+        <h2>Historial de versiones</h2>
+        <ol id="history-list"></ol>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container muted">
+        Clio Reader es una aplicación local-first de código abierto.
+        <a href="https://github.com/jhosnodev/echo_reader" rel="noopener">GitHub</a>
+      </div>
+    </footer>
+
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -25,6 +25,18 @@
 | `.cbz`  | Cómics comprimidos (imágenes ZIP) |
 | `.md`   | Documentos Markdown               |
 
+## Descargas
+
+| Plataforma | Archivo                   |
+| ---------- | ------------------------- |
+| Linux      | AppImage y paquete `.deb` |
+| Windows    | Instalador NSIS `.exe`    |
+
+- Página de descargas: <https://jhosnodev.github.io/echo_reader/>
+- Historial y notas de cada versión: [GitHub Releases](https://github.com/jhosnodev/echo_reader/releases)
+
+La página muestra siempre la versión publicada de forma dinámica; cada release incluye `SHA256SUMS.txt` para verificar los archivos.
+
 ## Requisitos previos
 
 | Requisito | Versión                    |
@@ -158,14 +170,14 @@ La spec completa está en [`documentation/features/14-lector-mobile-android.md`]
 
 ## CI / GitHub Actions
 
-| Workflow            | Trigger                                    | Qué ejecuta                                           | Artefactos            |
-| ------------------- | ------------------------------------------ | ----------------------------------------------------- | --------------------- |
-| `quality.yml`       | push a `main` + PR                         | `pnpm validate` (format + check + lint + test)        | —                     |
-| `build-checks.yml`  | PR (paths de `apps/desktop/**` y lockfile) | `build:linux` y `build:win` (verificación, sin subir) | —                     |
-| `windows-build.yml` | tags `v*` + manual                         | `build:win`                                           | `clio-reader-windows` |
-| `linux-build.yml`   | tags `v*` + manual                         | `build:linux`                                         | `clio-reader-linux`   |
+| Workflow           | Trigger                                    | Qué ejecuta                                               | Artefactos                                 |
+| ------------------ | ------------------------------------------ | --------------------------------------------------------- | ------------------------------------------ |
+| `ci.yml`           | push a `main` + PR + `workflow_call`       | format + lint + type-check + test (pasos separados)       | —                                          |
+| `release.yml`      | push a `main` + manual                     | valida, compila Linux/Windows y publica la GitHub Release | `clio-reader-linux`, `clio-reader-windows` |
+| `build-checks.yml` | PR (paths de `apps/desktop/**` y lockfile) | `build:linux` y `build:win` (verificación, sin subir)     | —                                          |
+| `pages.yml`        | push a `main` (paths de `site/**`)         | Publica la web de descargas en GitHub Pages               | —                                          |
 
-Todo PR pasa por `quality.yml`; los PRs que tocan el desktop además compilan de verdad en Linux y Windows con `build-checks.yml`.
+Todo PR pasa por `ci.yml`; un push a `main` ejecuta `ci.yml` y, si todo está en verde, `release.yml` publica una release nueva. Los PRs que tocan el desktop además compilan de verdad en Linux y Windows con `build-checks.yml`.
 
 ## Scripts disponibles
 
@@ -180,6 +192,7 @@ Todo PR pasa por `quality.yml`; los PRs que tocan el desktop además compilan de
 | `pnpm lint`         | Linting con ESLint                                 |
 | `pnpm test`         | Ejecutar tests con Vitest                          |
 | `pnpm test:watch`   | Tests en modo watch                                |
+| `pnpm next-version` | Siguiente tag de release único                     |
 | `pnpm validate`     | Validación completa (format + check + lint + test) |
 
 ### Aplicación desktop
