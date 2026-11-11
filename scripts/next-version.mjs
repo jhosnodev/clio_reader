@@ -90,6 +90,7 @@ function parseArgs(argv) {
     remote: false,
     json: false,
     base: null,
+    set: null,
     help: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
@@ -102,6 +103,9 @@ function parseArgs(argv) {
     else if (arg === '--base') {
       i += 1;
       options.base = argv[i] ?? null;
+    } else if (arg === '--set') {
+      i += 1;
+      options.set = argv[i] ?? null;
     } else {
       throw new Error(`Argumento desconocido: ${arg}`);
     }
@@ -117,6 +121,7 @@ function usage() {
     '',
     'Opciones:',
     '  --base <v>   Versión base cuando no hay tags (default: apps/desktop/package.json)',
+    '  --set <v>    Usa esta versión en lugar de calcularla (no consulta tags)',
     '  --remote     Consulta los tags de origin (git ls-remote) en vez de los locales',
     '  --write      Escribe la versión en package.json (raíz) y apps/desktop/package.json',
     '  --dry-run    No escribe nada (útil con --write)',
@@ -133,8 +138,11 @@ function main(argv) {
   }
 
   const base = options.base ?? readPackageVersion();
-  const tags = options.remote ? listRemoteTags() : listLocalTags();
-  const tag = computeNextVersion(tags, base);
+  const tags = options.set ? [] : options.remote ? listRemoteTags() : listLocalTags();
+  const target = options.set ?? computeNextVersion(tags, base);
+  const parsedTarget = parseVersion(target);
+  if (!parsedTarget) throw new Error(`Versión a fijar inválida: "${target}"`);
+  const tag = formatVersion(parsedTarget);
   const version = tag.slice(1);
 
   if (options.write && !options.dryRun) {
@@ -147,7 +155,9 @@ function main(argv) {
   }
 
   console.error(
-    `[next-version] base=${base} tags=${tags.length} -> ${tag}${options.remote ? ' (remoto)' : ''}`,
+    options.set
+      ? `[next-version] fijada=${tag}`
+      : `[next-version] base=${base} tags=${tags.length} -> ${tag}${options.remote ? ' (remoto)' : ''}`,
   );
 
   if (options.json) console.log(JSON.stringify({ tag, version }));
