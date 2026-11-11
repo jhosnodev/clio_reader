@@ -51,17 +51,21 @@ export function listLocalTags() {
     .filter(Boolean);
 }
 
-export function listRemoteTags() {
-  const output = execFileSync('git', ['ls-remote', '--tags', 'origin'], { encoding: 'utf8' });
+export function parseRemoteTags(output) {
   const tags = [];
-  for (const line of output.split('\n')) {
-    const [ref] = line.split('\t');
+  for (const line of String(output).split('\n')) {
+    const [, ref] = line.split('\t');
     if (!ref || !ref.startsWith(TAG_PREFIX)) continue;
     const name = ref.slice(TAG_PREFIX.length);
     if (name.endsWith('^{}')) continue;
     tags.push(name);
   }
   return tags;
+}
+
+export function listRemoteTags() {
+  const output = execFileSync('git', ['ls-remote', '--tags', 'origin'], { encoding: 'utf8' });
+  return parseRemoteTags(output);
 }
 
 export function repoRoot() {

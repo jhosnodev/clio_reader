@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { computeNextVersion, formatVersion, parseVersion } from './next-version.mjs';
+import {
+  computeNextVersion,
+  formatVersion,
+  parseRemoteTags,
+  parseVersion,
+} from './next-version.mjs';
 
 describe('parseVersion', () => {
   it('acepta tags con y sin prefijo v', () => {
@@ -51,5 +56,20 @@ describe('computeNextVersion', () => {
 describe('formatVersion', () => {
   it('normaliza a prefijo v', () => {
     expect(formatVersion({ major: 1, minor: 0, patch: 0 })).toBe('v1.0.0');
+  });
+});
+
+describe('parseRemoteTags', () => {
+  it('lee la columna de ref de git ls-remote (no el sha)', () => {
+    const output = [
+      '4c371b68d927e5894ede377e9722008f1a89790a\trefs/tags/v0.1.1',
+      'fcf1f3da89f61a43acde3cad6a2b59044111ba02\trefs/tags/v0.1.1^{}',
+      '5ec518a78caab2fba8398c9d7b7046d839676b24\trefs/tags/v0.1.0',
+    ].join('\n');
+    expect(parseRemoteTags(output)).toEqual(['v0.1.1', 'v0.1.0']);
+  });
+
+  it('ignora líneas sin ref de tag', () => {
+    expect(parseRemoteTags('abc\trefs/heads/main\n\n')).toEqual([]);
   });
 });
