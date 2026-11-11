@@ -1,4 +1,4 @@
-const REPO = 'jhosnodev/echo_reader';
+const REPO = 'jhosnodev/clio_reader';
 const API_URL = `https://api.github.com/repos/${REPO}/releases?per_page=30`;
 
 const PLATFORMS = [

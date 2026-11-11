@@ -32,8 +32,8 @@
 | Linux      | AppImage y paquete `.deb` |
 | Windows    | Instalador NSIS `.exe`    |
 
-- Página de descargas: <https://jhosnodev.github.io/echo_reader/>
-- Historial y notas de cada versión: [GitHub Releases](https://github.com/jhosnodev/echo_reader/releases)
+- Página de descargas: <https://jhosnodev.github.io/clio_reader/>
+- Historial y notas de cada versión: [GitHub Releases](https://github.com/jhosnodev/clio_reader/releases)
 
 La página muestra siempre la versión publicada de forma dinámica; cada release incluye `SHA256SUMS.txt` para verificar los archivos.
 
@@ -53,7 +53,7 @@ La página muestra siempre la versión publicada de forma dinámica; cada releas
 
 ```bash
 git clone <url-del-repo>
-cd echo_reader
+cd clio_reader
 ```
 
 ### Instalar dependencias
@@ -222,7 +222,7 @@ Todos van con `--filter @clio-reader/desktop`:
 ## Estructura del proyecto
 
 ```
-echo_reader/
+clio_reader/
 ├── apps/
 │   ├── desktop/          # Aplicación Electron + React (Windows/Linux)
 │   └── mobile/           # Aplicación Expo + React Native (Android/iOS)

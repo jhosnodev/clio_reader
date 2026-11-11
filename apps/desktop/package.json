@@ -2,7 +2,7 @@
   "name": "@clio-reader/desktop",
   "version": "0.1.0",
   "description": "Local-first digital book library manager and reader",
-  "homepage": "https://github.com/jhosnodev/echo_reader",
+  "homepage": "https://github.com/jhosnodev/clio_reader",
   "author": "jhosno.dev",
   "private": true,
   "type": "module",
