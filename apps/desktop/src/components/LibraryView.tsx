@@ -330,7 +330,6 @@ function Rail({
   palette,
   onToggleTheme,
   onSetPalette,
-  onOpenFeedback,
 }: {
   readonly active: ViewId;
   readonly onChange: (v: ViewId) => void;
