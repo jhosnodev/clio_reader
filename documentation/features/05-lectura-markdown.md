@@ -48,4 +48,4 @@ La feature debe incluir pruebas para Markdown vacío, headings anidados, listas,
 
 ## Criterios de aceptación
 
-El usuario puede agregar un `.md`, leerlo en Windows y Android, navegar por sus headings, cambiar preferencias, guardar la última posición y utilizar marcadores y notas. El contenido HTML peligroso no se ejecuta y los recursos fuera del directorio permitido no se cargan automáticamente.
+El usuario puede agregar un `.md`, leerlo en Desktop, navegar por sus headings, cambiar preferencias, guardar la última posición y utilizar marcadores y notas. El contenido HTML peligroso no se ejecuta y los recursos fuera del directorio permitido no se cargan automáticamente.

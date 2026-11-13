@@ -5,17 +5,24 @@
 | **Nombre**                        | clio_reader — Plan de implementación       |
 | **Autor**                         | Manus AI                                   |
 | **Fecha de creación**             | 28 de agosto de 2026                       |
-| **Fecha de última actualización** | 7 de noviembre de 2026                     |
+| **Fecha de última actualización** | 10 de noviembre de 2026                    |
 | **Estado**                        | En ejecución — ver §5 para estado por fase |
-| **Versión del documento**         | 1.1.0                                      |
+| **Versión del documento**         | 1.2.0                                      |
+
+> **Reordenación por visión (2026-11-10):** el orden de etapas es
+> **Desktop → Plugin de Obsidian → Android**, definido en
+> [`00-vision-roadmap.md`](./00-vision-roadmap.md). El MVP es **solo Desktop
+> (Windows y Linux)**; la Fase 9 (Android) queda **⏸️ diferida a la Etapa 3**
+> con su base ya construida. Las fases 0–8, 10 y 11 corresponden a la Etapa 1;
+> el plugin de Obsidian (F-010) abre la Etapa 2.
 
 > **Fuente de verdad de la numeración:** la numeración de este plan se alinea con
-> `AGENTS.md` §1 y el README: **Fase 9 = Mobile Android (MVP)**. Las fases
+> `AGENTS.md` §1 y el README: **Fase 9 = Android (base lista, Etapa 3)**. Las fases
 > originales "UX/accesibilidad" y "Release" quedan como Fase 10 y Fase 11.
 
 ## 1. Propósito
 
-Este documento define cómo implementar clio_reader de forma incremental. Es complementario a la definición del MVP y a la arquitectura técnica; no reemplaza esos documentos. El producto inicial será una biblioteca local offline para EPUB, PDF y CBZ, con Windows y Android como plataformas primarias. No se implementarán perfiles, backend, nube ni sincronización durante estas fases.
+Este documento define cómo implementar clio_reader de forma incremental. Es complementario a la definición del MVP y a la arquitectura técnica; no reemplaza esos documentos. El producto inicial será una biblioteca local offline para EPUB, PDF, CBZ y Markdown en **Desktop (Windows y Linux)** como plataforma primaria de la Etapa 1; Android es la Etapa 3 (ver [`00-vision-roadmap.md`](./00-vision-roadmap.md)). No se implementarán perfiles, backend, nube ni sincronización durante estas fases.
 
 El plan prioriza un código limpio, modular, testeable y documentado. Cada feature debe terminar con pruebas, documentación de uso o decisión técnica cuando la complejidad lo justifique, y una demostración ejecutable en las plataformas correspondientes.
 
@@ -25,7 +32,7 @@ Al terminar las fases obligatorias, el usuario podrá importar una cantidad de l
 
 | Área         | Resultado esperado                                                    |
 | ------------ | --------------------------------------------------------------------- |
-| Plataforma   | Aplicación funcional en Windows y Android                             |
+| Plataforma   | Aplicación funcional en Desktop (Windows y Linux)                     |
 | Datos        | Persistencia local sin cuentas ni servicios remotos                   |
 | Formatos     | EPUB, PDF, CBZ y Markdown                                             |
 | Lectura      | Apertura, navegación, progreso y reanudación                          |
@@ -99,7 +106,7 @@ Se deben configurar TypeScript estricto, formateador, linter, verificación de t
 
 ### Fase 1 — Spike de plataformas Windows y Android — **✅ Completa**
 
-**Objetivo:** validar las dos plataformas primarias antes de construir el lector.
+**Objetivo:** validar las dos plataformas del spike (Windows y Android) antes de construir el lector. Esta fase quedó como validación temprana; bajo el [roadmap actual](./00-vision-roadmap.md) el MVP es Desktop y Android pasa a la Etapa 3.
 
 Se creará una pantalla mínima en Electron para Windows y Expo/React Native para Android. Se validarán selector de archivos, permisos, ciclo de vida, almacenamiento de prueba, WebView, teclado/ratón, gestos y navegación básica.
 
@@ -159,7 +166,7 @@ Se implementará el parser propio de EPUB con `jszip` dentro del adaptador aisla
 
 **Salida:** un EPUB puede leerse y reanudarse después de cambiar tamaño de letra sin perder de forma injustificada la posición del usuario.
 
-### Fase 7 — Progreso, settings y ciclo de vida — **⚠️ Parcial (falta settings por libro en UI y documentar rangos)**
+### Fase 7 — Progreso, settings y ciclo de vida — **✅ Completa (en beta, a la espera de feedback)**
 
 **Objetivo:** convertir el lector en una experiencia persistente.
 
@@ -169,7 +176,7 @@ Se conectarán los eventos del renderer con los repositorios. El progreso se gua
 
 **Salida:** reiniciar la aplicación no pierde preferencias ni la última posición válida.
 
-### Fase 8 — Marcadores, notas e índices locales — **⚠️ Parcial (falta CRUD de marcadores desde el reader)**
+### Fase 8 — Marcadores, notas e índices locales — **✅ Completa (en beta, a la espera de feedback)**
 
 **Objetivo:** incorporar anotaciones sin nube.
 
@@ -179,13 +186,17 @@ Se implementarán crear, listar, abrir, editar y eliminar para notas; y crear, l
 
 **Salida:** el usuario puede recuperar sus anotaciones en el libro correcto sin conexión y sin perfiles.
 
-### Fase 9 — Mobile Android (MVP) — **⚠️ Parcial**
+### Fase 9 — Android (base construida, Etapa 3) — **⏸️ Diferida**
 
-**Objetivo:** llevar el lector a Android sin duplicar el dominio.
+**Objetivo:** llevar el lector a Android sin duplicar el dominio. **Esta fase
+queda diferida a la Etapa 3** (ver [`00-vision-roadmap.md`](./00-vision-roadmap.md));
+el trabajo hecho se conserva y no se descarta.
 
 Spec: [`features/14-lector-mobile-android.md`](./features/14-lector-mobile-android.md).
 
 El shell Expo/React Native importa, abre, navega y persiste libros reutilizando el bundle del reader de desktop dentro de `react-native-webview`, con persistencia JSON sobre `expo-file-system` (`LocalRepository`). Se comparten dominio, casos de uso, adaptadores y contratos; solo cambian selector de archivos, almacenamiento, ciclo de vida y WebView.
+
+**Retomar cuando:** dominio, repositorios y contratos de exportación (F-001) estén maduros y la Etapa 2 (Obsidian) haya validado comunidad.
 
 **Pruebas obligatorias:** type-check/lint de `@clio-reader/mobile`, smoke en emulador, apertura de cada formato, persistencia tras reinicio.
 
@@ -193,7 +204,7 @@ El shell Expo/React Native importa, abre, navega y persiste libros reutilizando 
 
 ### Fase 10 — UX, accesibilidad y rendimiento
 
-**Objetivo:** estabilizar la experiencia en Windows y Android.
+**Objetivo:** estabilizar la experiencia en Desktop (Windows y Linux).
 
 Se revisarán estados vacíos, carga, error, archivo perdido, feedback de acciones, navegación con teclado, targets táctiles, contraste, etiquetas, foco, orientación y gestos. Se medirán tiempo a primera página, memoria, scroll, zoom y tiempo de importación.
 
@@ -205,7 +216,7 @@ Se revisarán estados vacíos, carga, error, archivo perdido, feedback de accion
 
 **Objetivo:** preparar una versión instalable y trazable.
 
-Se crearán builds de Windows y Android, configuración de nombre/icono, permisos mínimos, notas de versión, guía de instalación, política de datos locales y procedimiento de rollback. La distribución deberá conservar los datos locales durante una actualización compatible.
+Se crearán builds de Windows y Linux, configuración de nombre/icono, permisos mínimos, notas de versión, guía de instalación, política de datos locales y procedimiento de rollback. La distribución deberá conservar los datos locales durante una actualización compatible. Los builds de Android corresponden a la Etapa 3.
 
 **Pruebas obligatorias:** instalación limpia, actualización sobre datos existentes, desinstalación, importación desde ubicaciones comunes, recuperación de base local y verificación de que no se envían documentos a la red.
 
@@ -230,7 +241,7 @@ Una feature no se considerará terminada solo porque funcione en el caso feliz. 
 
 Las pruebas unitarias validarán reglas puras y adaptadores aislados. Las pruebas de integración recorrerán casos como importar → abrir → leer → guardar → cerrar → reanudar. Las pruebas de contrato comprobarán que todos los adaptadores cumplen `ReaderAdapter` y que los mensajes del bridge son válidos.
 
-Las pruebas end-to-end se reservarán para flujos críticos: añadir libro, abrir cada formato, cambiar settings, crear nota, crear marcador, volver a la biblioteca y reanudar. Windows y Android son obligatorios para el MVP. iOS se incorporará a la matriz en la fase posterior de soporte de plataformas.
+Las pruebas end-to-end se reservarán para flujos críticos: añadir libro, abrir cada formato, cambiar settings, crear nota, crear marcador, volver a la biblioteca y reanudar. Windows y Linux son obligatorios para el MVP de la Etapa 1. Android entra en la matriz en la Etapa 3 y iOS después (F-004).
 
 ## 8. Documentación requerida durante la implementación
 
@@ -248,16 +259,18 @@ La documentación de usuario debe explicar importar, abrir, eliminar, localizar 
 | Módulo no compatible con Windows   | Adaptadores y spike temprano; no acoplar el dominio          |
 | Datos corruptos por cierre abrupto | Transacciones, debounce y recuperación de migraciones        |
 | Crecimiento de alcance por nube    | Mantener nube, perfiles y SaaS en `documentation/features`   |
-| Regresiones entre plataformas      | CI más matriz manual Windows/Android por release             |
+| Regresiones entre plataformas      | CI más matriz manual Windows/Linux por release               |
 
 ## 10. Orden de ejecución resumido
 
-La secuencia recomendada es **fundación → spike Windows/Android → dominio → persistencia → CBZ → PDF → EPUB/MD → progreso/settings → anotaciones → mobile → calidad → release**. Esta secuencia reduce incertidumbre temprano y evita construir una UI compleja antes de comprobar el acceso local a archivos y el rendimiento del renderer.
+La secuencia de la Etapa 1 es **fundación → spike Windows/Android → dominio → persistencia → CBZ → PDF → EPUB/MD → progreso/settings → anotaciones → calidad → release → exportación completa (F-001)**. El spike de Android de la Fase 1 se mantuvo como validación temprana de plataforma, pero Android **no** entra en la secuencia del MVP: se retoma en la Etapa 3. Después, la Etapa 2 abre con el plugin de Obsidian (F-010). Esta secuencia reduce incertidumbre temprano y evita construir una UI compleja antes de comprobar el acceso local a archivos y el rendimiento del renderer.
 
 ## 11. Documentos relacionados
 
+- [`00-vision-roadmap.md`](./00-vision-roadmap.md)
 - [`01-definicion-mvp.md`](./01-definicion-mvp.md)
 - [`02-arquitectura-tecnica.md`](./02-arquitectura-tecnica.md)
 - [`03-arquitectura-data-y-metadata.md`](./03-arquitectura-data-y-metadata.md)
 - [`04-features-futuros.md`](./04-features-futuros.md)
+- [`features/18-plugin-obsidian.md`](./features/18-plugin-obsidian.md)
 - [`features/`](./features/)

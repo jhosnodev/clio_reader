@@ -405,7 +405,7 @@ necesitarás una keystore de release propia y configuración en
 ## 8. Comandos rápidos
 
 > Nota: en este documento "Paso" se refiere a los pasos de esta guía, no a las
-> fases del plan de implementación (Fase 9 = Mobile Android).
+> fases del plan de implementación (Fase 9 = Android, Etapa 3 del roadmap).
 
 ```bash
 # Preparación

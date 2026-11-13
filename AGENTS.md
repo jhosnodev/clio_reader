@@ -11,10 +11,18 @@
 | 4    | Renderer CBZ            | ✅ Completa |
 | 5    | Renderer PDF            | ✅ Completa |
 | 6    | Renderer EPUB           | ✅ Completa |
-| 7    | Progreso/settings       | ⚠️ Parcial  |
-| 8    | Marcadores/notas        | ⚠️ Parcial  |
-| 9    | Mobile Android (MVP)    | ⚠️ Parcial  |
+| 7    | Progreso/settings       | ✅ En beta  |
+| 8    | Marcadores/notas        | ✅ En beta  |
+| 9    | Android (Etapa 3)       | ⏸️ Diferida |
 | 10   | Clio Feedback Core      | ⚠️ Parcial  |
+
+> **Beta lanzada:** Fases 7 y 8 entregadas en beta; a la espera de feedback de
+> beta testers. Las mejoras pendientes de ambas están como issues en el roadmap.
+
+> **Orden de etapas** (fuente: [`documentation/00-vision-roadmap.md`](documentation/00-vision-roadmap.md)):
+> **Etapa 1 Desktop (actual)** → **Etapa 2 Plugin Obsidian (F-010)** → **Etapa 3 Android**
+> (Fase 9, base construida). MVP solo Desktop (Windows/Linux); sin sincronización
+> hasta validar necesidad.
 
 ## 2. Arquitectura
 
@@ -534,7 +542,7 @@ Notas:
 - **Unitarias**: Reglas puras y adaptadores aislados (`src/feature.test.ts` junto a `src/feature.ts`)
 - **Integración**: Flujos importar → abrir → leer → guardar → cerrar → reanudar (`tests/` de cada paquete, p. ej. `packages/library/tests/`)
 - **Contrato**: Todos los adaptadores cumplen `ReaderAdapter`
-- **End-to-end**: Flujos críticos en Windows y Android
+- **End-to-end**: Flujos críticos en Windows/Linux (Etapa 1); Android en Etapa 3
 
 ### Test doubles
 
@@ -622,6 +630,7 @@ test: add integration tests for progress persistence
 
 | Documento                                          | Descripción                          |
 | -------------------------------------------------- | ------------------------------------ |
+| `documentation/00-vision-roadmap.md`               | Visión y roadmap (fuente de verdad)  |
 | `documentation/01-definicion-mvp.md`               | Definición del MVP                   |
 | `documentation/02-arquitectura-tecnica.md`         | Arquitectura técnica                 |
 | `documentation/03-arquitectura-data-y-metadata.md` | Datos y metadata                     |
@@ -663,11 +672,15 @@ test: add integration tests for progress persistence
 | Testing/deploy Android        | `documentation/features/15-guia-android-testing-deploy.md`        |
 | Clio Feedback Core            | `documentation/features/16-clio-feedback-core.md`                 |
 | Continuous Release            | `documentation/features/17-continuous-release.md`                 |
+| Plugin Obsidian (F-010)       | `documentation/features/18-plugin-obsidian.md`                    |
 | Cover optimization            | `documentation/features/cover-image-optimization.md`              |
 
 ## 19. Plataformas objetivo
 
-### Windows (primaria)
+> Orden de etapas: Desktop (actual) → Plugin Obsidian → Android. Ver
+> [`documentation/00-vision-roadmap.md`](documentation/00-vision-roadmap.md).
+
+### Windows/Linux (primaria — Etapa 1)
 
 - **Runtime**: Electron
 - **Almacenamiento**: better-sqlite3, filesystem
@@ -675,7 +688,13 @@ test: add integration tests for progress persistence
 - **Input**: Teclado + ratón
 - **Selector de archivos**: Electron dialog
 
-### Android (primaria)
+### Obsidian (Etapa 2)
+
+- **Runtime**: plugin de Obsidian (Desktop), F-010
+- **Alcanza**: notas/resaltados al vault, deep links, IDs estables
+- **Spec**: `documentation/features/18-plugin-obsidian.md`
+
+### Android (Etapa 3, base construida)
 
 - **Runtime**: Expo + React Native
 - **Almacenamiento**: JSON sobre `expo-file-system` (`LocalRepository` / `KeyValueStore`)
@@ -684,7 +703,7 @@ test: add integration tests for progress persistence
 - **Selector de archivos**: expo-document-picker
 - **Permisos**: Lectura de almacenamiento
 
-### iOS (preparada, no prioridad MVP)
+### iOS (posterior a Android, F-004)
 
 - Misma base que Android via Expo
 - Validar diferencias en ciclo de vida y permisos
@@ -698,7 +717,7 @@ test: add integration tests for progress persistence
 
 ## 20. Features pendientes
 
-### Fase 7 — Completar
+### Fase 7 — En beta (feedback pendiente; mejoras siguientes)
 
 - [x] Conectar eventos del renderer con repositorios
 - [x] Guardar progreso con debounce y al cerrar/suspender
@@ -706,7 +725,7 @@ test: add integration tests for progress persistence
 - [ ] Settings por libro desde la UI (infraestructura existe: `getBookPreferences`; falta pantalla de escritura)
 - [ ] Documentar rangos válidos de colores, escalas, márgenes, tamaños (viven en `AGENTS.md` §12; falta moverlos a `documentation/`)
 
-### Fase 8 — Implementar
+### Fase 8 — En beta (feedback pendiente; mejoras siguientes)
 
 - [x] CRUD de notas en el reader (crear/listar/editar/eliminar)
 - [ ] CRUD de marcadores: crear desde el reader (resto del CRUD ya existe). **Pendiente: no funcional.** Icono de marcadores comentado en `LibraryView.tsx` (rail) y en `reader.html` (`r-mark`) hasta completar el CRUD.
@@ -720,7 +739,7 @@ test: add integration tests for progress persistence
 - [ ] Reemplazar el stub `setupBookmark()` del reader
 - [ ] Mobile (Android): notas (fuera de alcance desktop)
 
-### Fase 9 — Mobile Android (MVP A–D)
+### Fase 9 — Android (base construida, Etapa 3 — ⏸️ diferida)
 
 Spec: `documentation/features/14-lector-mobile-android.md`
 
@@ -729,6 +748,7 @@ Spec: `documentation/features/14-lector-mobile-android.md`
 - [x] Progreso (locator + percent) y preferencias globales desde el reader
 - [x] Persistencia JSON sobre `expo-file-system` (`LocalRepository`)
 - [ ] Validar en dispositivo: worker PDF, memoria de archivos grandes, carga `file://` (ver riesgos en la spec)
+- [ ] Retomar en la Etapa 3 cuando dominio y contratos de exportación (F-001) estén maduros
 
 ### Clio Feedback Core (Fase 10)
 
@@ -757,5 +777,7 @@ Spec: `documentation/features/16-clio-feedback-core.md`
 | F-004 | Otras plataformas           | `features/04-otras-plataformas.md`       |
 | F-006 | Preferencias por libro      | `features/12-preferencias-por-libro.md`  |
 | F-007 | Resaltado en PDF            | `04-features-futuros.md`                 |
+| F-010 | Plugin Obsidian (Etapa 2)   | `features/18-plugin-obsidian.md`         |
+| F-011 | IA sobre las notas          | `04-features-futuros.md` (horizonte)     |
 
 > F-005 (lectura Markdown) y F-008 (exportar/importar anotaciones) ya están implementadas.
