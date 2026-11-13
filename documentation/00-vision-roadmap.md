@@ -140,7 +140,7 @@ secuencia es:
 
 | Fuente                      | Contenido                                                  |
 | --------------------------- | ---------------------------------------------------------- |
-| `05-plan-implementacion.md`   | Fases 0–8 ✅ (en beta), Fase 10 (UX), Fase 11 (Release)         |
+| `05-plan-implementacion.md` | Fases 0–8 ✅ (en beta), Fase 10 (UX), Fase 11 (Release)    |
 | `04-features-futuros.md`    | F-001 (export JSON), F-006 (UI preferencias), F-008 ✅     |
 | `features/16`               | Feedback Core (Fase 1 desktop ✅)                          |
 | `features/17`               | Continuous Release                                         |

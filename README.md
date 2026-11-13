@@ -285,19 +285,19 @@ La documentación completa se encuentra en [`documentation/`](./documentation/):
 
 ## Estado del proyecto
 
-| Fase                             | Estado                |
-| -------------------------------- | --------------------- |
-| Fase 0 — Preparación repo        | ✅ Completa           |
-| Fase 1 — Spike Windows           | ✅ Completa           |
-| Fase 2 — Dominio/contratos       | ✅ Completa           |
-| Fase 3 — Biblioteca/persistencia | ✅ Completa           |
-| Fase 4 — Renderer CBZ            | ✅ Completa           |
-| Fase 5 — Renderer PDF            | ✅ Completa           |
-| Fase 6 — Renderer EPUB/MD        | ✅ Completa           |
+| Fase                             | Estado                          |
+| -------------------------------- | ------------------------------- |
+| Fase 0 — Preparación repo        | ✅ Completa                     |
+| Fase 1 — Spike Windows           | ✅ Completa                     |
+| Fase 2 — Dominio/contratos       | ✅ Completa                     |
+| Fase 3 — Biblioteca/persistencia | ✅ Completa                     |
+| Fase 4 — Renderer CBZ            | ✅ Completa                     |
+| Fase 5 — Renderer PDF            | ✅ Completa                     |
+| Fase 6 — Renderer EPUB/MD        | ✅ Completa                     |
 | Fase 7 — Progreso/settings       | ✅ En beta (feedback pendiente) |
 | Fase 8 — Marcadores/notas        | ✅ En beta (feedback pendiente) |
-| Fase 9 — Android (base lista)    | ⏸️ Etapa 3 (diferida) |
-| Plugin de Obsidian (F-010)       | 🔜 Etapa 2  |
+| Fase 9 — Android (base lista)    | ⏸️ Etapa 3 (diferida)           |
+| Plugin de Obsidian (F-010)       | 🔜 Etapa 2                      |
 
 > **Beta lanzada:** Fases 7 y 8 están entregadas en la beta; a la espera de feedback de beta testers. Las mejoras pendientes viven en el roadmap (GitHub Projects).
 
