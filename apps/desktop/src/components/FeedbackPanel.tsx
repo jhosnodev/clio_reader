@@ -9,8 +9,10 @@ import {
 } from '@clio-reader/domain';
 
 import { fetchAppInfo } from '../bridges/feedback-bridge';
+import { canSubmitFeedback, buildSubmissionFields } from '../feedback/panel-model';
 import { getInstallationId } from '../feedback/installation-id';
 import { getFeedbackService } from '../feedback/service';
+import { triggerFeedbackSync } from '../feedback/sync';
 import { useT } from '../i18n';
 import type { MessageKey } from '@clio-reader/i18n';
 
@@ -61,7 +63,7 @@ export function FeedbackPanel({
 
   if (!open) return null;
 
-  const canSubmit = !sending && (reaction !== null || message.trim().length > 0);
+  const canSubmit = canSubmitFeedback({ sending, reaction, message });
 
   const handleSend = async () => {
     if (!canSubmit) return;
@@ -70,12 +72,15 @@ export function FeedbackPanel({
     try {
       const appInfo = await fetchAppInfo();
       const service = getFeedbackService();
+      const fields = buildSubmissionFields({
+        reaction,
+        category,
+        message,
+      });
       await service.submitFeedback({
         appInfo,
         installationId: getInstallationId(),
-        reaction: reaction ?? undefined,
-        category: category ?? undefined,
-        message: message.trim().length > 0 ? message.trim() : undefined,
+        ...fields,
         area,
         documentFormat,
         locale,
@@ -85,6 +90,7 @@ export function FeedbackPanel({
       setCategory(initialCategory ?? null);
       setMessage('');
       setDone(true);
+      void triggerFeedbackSync();
     } catch (err) {
       console.error('Error guardando feedback:', err);
       setError(t('feedback.saveFailed'));

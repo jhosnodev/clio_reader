@@ -159,7 +159,7 @@ export type FeedbackCategory = 'bug' | 'idea' | 'praise' | 'general';
 
 export type FeedbackPlatform = 'windows' | 'linux' | 'macos' | 'android' | 'ios';
 
-export type FeedbackStatus = 'received' | 'queued' | 'reviewed' | 'linked' | 'closed';
+export type FeedbackStatus = 'received' | 'queued' | 'sent' | 'reviewed' | 'linked' | 'closed';
 
 export type FeedbackArea = 'reader' | 'library' | 'annotations' | 'settings';
 

@@ -36,7 +36,8 @@ El lector depende de una interfaz `ReaderAdapter`, no de PDF.js, el parser EPUB 
 ```text
 apps/mobile/                 # Expo + React Native (Android/iOS)
 apps/desktop/                # Electron + React (Windows/Linux)
-packages/domain/             # Book, progreso, settings y anotaciones
+apps/worker/                 # Cloudflare Worker: API de recepción de feedback (D1)
+packages/domain/             # Book, progreso, settings, anotaciones y feedback
 packages/reader-core/        # ReaderAdapter, ReaderFactory, eventos y máquina de estados
 packages/reader-epub/        # EPUB (parser propio con jszip)
 packages/reader-pdf/         # PDF.js
@@ -44,8 +45,10 @@ packages/reader-cbz/         # ZIP, orden natural e imágenes
 packages/reader-md/          # Markdown (parser propio, refluible)
 packages/reader-session/     # Sesión, progreso con debounce y settings
 packages/annotations/        # Notas, bookmarks y highlights
+packages/feedback/           # Clio Feedback Core (servicio, contexto, transporte, sync)
 packages/library/            # Casos de uso de biblioteca local
 packages/storage/            # Repositorios locales (SQLite/Drizzle + JSON) y migraciones
+packages/i18n/               # Localización EN/ES
 documentation/               # Decisiones y especificaciones
 ```
 

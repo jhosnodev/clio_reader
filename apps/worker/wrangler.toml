@@ -1,0 +1,12 @@
+name = "clio-feedback"
+main = "src/index.ts"
+compatibility_date = "2026-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "clio-feedback"
+database_id = "REPLACE_WITH_D1_ID"
+
+[vars]
+FEEDBACK_RATE_LIMIT_PER_INSTALLATION = "10"
+FEEDBACK_RATE_LIMIT_WINDOW_MINUTES = "10"

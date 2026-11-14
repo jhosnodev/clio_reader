@@ -345,6 +345,7 @@ function Rail({
   onToggleTheme,
   onSetPalette,
   onSetLocale,
+  onOpenFeedback,
 }: {
   readonly active: ViewId;
   readonly onChange: (v: ViewId) => void;
@@ -529,7 +530,7 @@ function Rail({
       </div>
 
       {/* Feedback */}
-      {/*<button
+      <button
         style={{
           ...S.navBtn,
           color: theme === 'dark' ? palette.dark['gold-dim'] : palette.dark.gold,
@@ -537,7 +538,7 @@ function Rail({
         onClick={onOpenFeedback}
         onMouseEnter={() => setHovered('feedback')}
         onMouseLeave={() => setHovered(null)}
-        aria-label="Compartir feedback"
+        aria-label={t('feedback.title')}
       >
         <svg
           width="22"
@@ -551,8 +552,8 @@ function Rail({
         >
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </svg>
-        {hovered === 'feedback' && <span style={S.tooltip}>Compartir feedback</span>}
-      </button>*/}
+        {hovered === 'feedback' && <span style={S.tooltip}>{t('feedback.title')}</span>}
+      </button>
 
       {/* Theme toggle (dark/light) */}
       <button

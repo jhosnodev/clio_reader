@@ -23,6 +23,7 @@ import { MarkdownReaderDocument } from '@clio-reader/reader-md';
 import { applyTheme, savePalettePreference, loadPalettePreference, getPalette } from './themes';
 import { coerceLocale, getLocale, setLocale, type Locale } from '@clio-reader/i18n';
 import { persistLocale, useT } from './i18n';
+import { scheduleInitialSync } from './feedback/sync';
 
 /* ==========================================================================
    Dependencias — DIP: se crean una vez y se inyectan
@@ -81,6 +82,10 @@ export function App(): JSX.Element {
   useEffect(() => {
     document.documentElement.lang = locale;
   }, [locale]);
+
+  useEffect(() => {
+    scheduleInitialSync();
+  }, []);
 
   // Hydrate locale from the database (source of truth for native dialogs)
   useEffect(() => {
