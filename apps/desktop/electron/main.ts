@@ -11,6 +11,7 @@ import {
   migrateJsonToSqlite,
 } from '@clio-reader/storage/drizzle';
 import Database from 'better-sqlite3';
+import { coerceLocale, detectLocale, translate, type Locale } from '@clio-reader/i18n';
 
 const __dirname = globalThis.__dirname ?? dirname(process.argv[1] ?? '');
 const isDev = !app.isPackaged;
@@ -28,6 +29,7 @@ if (!gotTheLock) {
 } else {
   let mainWindow: BrowserWindow | null = null;
   let repository: DrizzleRepository | null = null;
+  let dialogLocale: Locale = 'es';
 
   function getDataPath(): string {
     const userDataPath = app.getPath('userData');
@@ -67,6 +69,12 @@ if (!gotTheLock) {
       sqlite.pragma('foreign_keys = ON');
       const migrationSQL = readFileSync(migrationPath, 'utf-8');
       sqlite.exec(migrationSQL);
+      const userSettingsColumns = sqlite
+        .prepare('PRAGMA table_info(user_settings)')
+        .all() as Array<{ name: string }>;
+      if (!userSettingsColumns.some((column) => column.name === 'locale')) {
+        sqlite.exec('ALTER TABLE user_settings ADD COLUMN locale TEXT');
+      }
       sqlite.close();
     }
 
@@ -143,9 +151,12 @@ if (!gotTheLock) {
           return null;
         }
         const result = await dialog.showOpenDialog(mainWindow, {
-          title: 'Select a book',
+          title: translate(dialogLocale, 'native.selectBook'),
           filters: [
-            { name: 'Books', extensions: ['epub', 'pdf', 'cbz', 'md'] },
+            {
+              name: translate(dialogLocale, 'native.books'),
+              extensions: ['epub', 'pdf', 'cbz', 'md'],
+            },
             { name: 'EPUB', extensions: ['epub'] },
             { name: 'PDF', extensions: ['pdf'] },
             { name: 'CBZ', extensions: ['cbz'] },
@@ -179,7 +190,7 @@ if (!gotTheLock) {
           return null;
         }
         const result = await dialog.showOpenDialog(mainWindow, {
-          title: 'Select a folder with books',
+          title: translate(dialogLocale, 'native.selectFolder'),
           properties: ['openDirectory'],
         });
 
@@ -287,7 +298,7 @@ if (!gotTheLock) {
         defaultPath: data.defaultPath,
         filters: [
           { name: 'Markdown', extensions: ['md'] },
-          { name: 'All Files', extensions: ['*'] },
+          { name: translate(dialogLocale, 'native.allFiles'), extensions: ['*'] },
         ],
       });
       if (result.canceled || !result.filePath) return null;
@@ -423,6 +434,8 @@ if (!gotTheLock) {
     ipcMain.handle('repo:save-user-settings', async (_event, settings) => {
       if (!repository) throw new Error('Database not initialized');
       await repository.saveUserSettings(settings);
+      const savedLocale = coerceLocale((settings as { locale?: string } | undefined)?.locale);
+      if (savedLocale) dialogLocale = savedLocale;
     });
 
     ipcMain.handle('repo:save-feedback', async (_event, feedback) => {
@@ -472,6 +485,14 @@ if (!gotTheLock) {
   app.whenReady().then(async () => {
     await ensureDataDir();
     repository = initDatabase();
+
+    dialogLocale = detectLocale(app.getLocale());
+    try {
+      const storedLocale = coerceLocale((await repository.getUserSettings()).locale);
+      if (storedLocale) dialogLocale = storedLocale;
+    } catch (err) {
+      console.warn('[main] no se pudo leer el ajuste de idioma:', err);
+    }
 
     // Reenvía la consola de cualquier webContents (incluido el <webview> del lector)
     // al proceso principal para ver los errores del lector en la terminal.

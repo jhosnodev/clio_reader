@@ -86,6 +86,7 @@ packages/
   library/          # Casos de uso de biblioteca
   annotations/      # Gestión de anotaciones
   feedback/         # Clio Feedback Core (contrato, servicio, contexto)
+  i18n/             # Localización EN/ES (diccionarios, store, fechas, data-i18n)
 ```
 
 ### Convenciones de paquetes
@@ -181,6 +182,7 @@ interface Highlight {
 interface UserSettings {
   paletteId: string;
   mode: PaletteMode;
+  locale?: string;
 }
 ```
 
@@ -418,6 +420,7 @@ interface PersistenceState {
 // En SQLite: tabla user_settings (singleton, id=1)
 // En JSON (mobile): dentro de PersistenceState.userSettings
 // Default: { paletteId: 'clio-3', mode: 'dark' }
+// locale (opcional): 'en' | 'es' — si falta, se detecta de navigator.language/app.getLocale()
 ```
 
 ## 10. Error handling
@@ -781,3 +784,44 @@ Spec: `documentation/features/16-clio-feedback-core.md`
 | F-011 | IA sobre las notas          | `04-features-futuros.md` (horizonte)     |
 
 > F-005 (lectura Markdown) y F-008 (exportar/importar anotaciones) ya están implementadas.
+
+## 21. Internacionalización (i18n)
+
+Paquete propio `@clio-reader/i18n` (sin dependencias), idiomas `en` y `es`.
+
+### Diccionarios
+
+- `packages/i18n/src/en.ts` es la fuente de verdad: `MessageKey = keyof typeof en`.
+- `es.ts` es `Record<MessageKey, string>` → la completitud la garantiza el type-check
+  más un test runtime de paridad (`packages/i18n/tests/completeness.test.ts`).
+- Namespace keys: `app.*`, `library.*`, `reader.*`, `feedback.*`, `export.*`, `native.*`.
+- Plurales: claves `.one`/`.other` resueltas con `Intl.PluralRules` vía `tp(baseKey, count)`.
+
+### API
+
+```typescript
+translate(locale, key, params?)   // parámetros {name} en la plantilla
+tp(baseKey, count, params?)       // plural
+getLocale()/setLocale(l)/t(key)   // store en memoria
+detectLocale(navigatorLanguage?)  // fallback: DEFAULT_LOCALE ('es')
+formatDate(ts, locale) / formatRelativeDate(ts, locale)
+applyStaticTranslations(document) // nodos data-i18n / -title / -placeholder / -aria
+```
+
+### Flujo de locale (desktop)
+
+1. `main.tsx` llama `bootstrapLocale()` antes del render (localStorage `clio-lang` → `navigator.language`).
+2. `App.tsx` hidrata desde SQLite (`UserSettings.locale`, fuente de verdad) al arrancar.
+3. Cambio de idioma (Rail de `LibraryView`): `setLocale` + `persistLocale` + `saveUserSettings`.
+4. El lector (webview) recibe `locale` en `__initFromHost` (`ReaderView`) y lo aplica en
+   `reader-entry.ts` con `setLocale` + `applyStaticTranslations`; sin host (mobile), usa
+   `detectLocale(navigator.language)`.
+5. Diálogos nativos de Electron usan `translate(dialogLocale, 'native.*')`; `dialogLocale`
+   se hidrata en `app.whenReady()` y se actualiza en `repo:save-user-settings`.
+
+### Reglas
+
+- No añadir strings literales al UI: siempre `t('key')` (React con hook `useT`) o atributos `data-i18n`.
+- `packages/reader-core` no importa i18n: el formateo localizado del progreso lo aporta
+  `reader-entry` (`formatLabel` con `t()`), no `formatProgressLabel`.
+- Nuevas keys: añadir en `en.ts` y `es.ts` juntos (el test de paridad falla si falta una).

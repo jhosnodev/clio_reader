@@ -3,14 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lector — Clio</title>
+    <title data-i18n="reader.documentTitle">Lector — Clio</title>
     <link rel="stylesheet" href="/src/reader.css" />
   </head>
   <body>
     <section class="reader" id="reader" data-theme="paper" data-font="serif" aria-hidden="true">
       <!-- toolbar -->
       <header class="r-bar" id="r-bar">
-        <button class="r-btn" id="r-back" title="Volver a la biblioteca">
+        <button
+          class="r-btn"
+          id="r-back"
+          title="Volver a la biblioteca"
+          data-i18n-title="reader.back"
+        >
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -22,10 +27,18 @@
             <path d="M15 6l-6 6 6 6" />
           </svg>
         </button>
-        <div class="r-title" id="r-title">Título<small id="r-author">Autor</small></div>
+        <div class="r-title" id="r-title">
+          <span data-i18n="reader.titlePlaceholder">Título</span
+          ><small id="r-author" data-i18n="reader.authorPlaceholder">Autor</small>
+        </div>
         <div style="flex: 1"></div>
         <div class="r-tools">
-          <button class="r-btn" data-panel="info" title="Información">
+          <button
+            class="r-btn"
+            data-panel="info"
+            title="Información"
+            data-i18n-title="reader.panel.info"
+          >
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -38,7 +51,7 @@
               <path d="M12 11v5M12 8h.01" />
             </svg>
           </button>
-          <button class="r-btn" data-panel="toc" title="Índice">
+          <button class="r-btn" data-panel="toc" title="Índice" data-i18n-title="reader.panel.toc">
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -51,7 +64,12 @@
               <path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01" />
             </svg>
           </button>
-          <button class="r-btn" data-panel="search" title="Buscar en el documento">
+          <button
+            class="r-btn"
+            data-panel="search"
+            title="Buscar en el documento"
+            data-i18n-title="reader.panel.searchDoc"
+          >
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -63,7 +81,12 @@
               <path d="m20 20-3.5-3.5" />
             </svg>
           </button>
-          <button class="r-btn" data-panel="notes" title="Notas">
+          <button
+            class="r-btn"
+            data-panel="notes"
+            title="Notas"
+            data-i18n-title="reader.panel.notes"
+          >
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -93,7 +116,12 @@
           -->
 
           <span class="r-sep"></span>
-          <button class="r-btn" data-panel="settings" title="Ajustes de lectura">
+          <button
+            class="r-btn"
+            data-panel="settings"
+            title="Ajustes de lectura"
+            data-i18n-title="reader.panel.settings"
+          >
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -107,7 +135,7 @@
               <circle cx="8" cy="17" r="2.3" />
             </svg>
           </button>
-          <button class="r-btn" id="r-zen" title="Modo Zen">
+          <button class="r-btn" id="r-zen" title="Modo Zen" data-i18n-title="reader.zen">
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -126,7 +154,12 @@
 
       <!-- zona de lectura -->
       <div class="r-scroll" id="r-scroll">
-        <button class="zen-exit" id="zen-exit" title="Salir de Zen">
+        <button
+          class="zen-exit"
+          id="zen-exit"
+          title="Salir de Zen"
+          data-i18n-title="reader.zenExit"
+        >
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -153,7 +186,7 @@
             stroke-linejoin="round"
           >
             <path d="M15 6l-6 6 6 6" /></svg
-          >Anterior
+          ><span data-i18n="reader.prev">Anterior</span>
         </button>
         <div class="r-progress">
           <div
@@ -162,6 +195,7 @@
             role="slider"
             tabindex="0"
             aria-label="Progreso de lectura"
+            data-i18n-aria="reader.progressAria"
             aria-valuemin="0"
             aria-valuemax="100"
             aria-valuenow="0"
@@ -172,7 +206,7 @@
           <span class="pct" id="pct">Cap. 1</span>
         </div>
         <button class="pg-btn" id="next-page">
-          Siguiente
+          <span data-i18n="reader.next">Siguiente</span>
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -193,6 +227,7 @@
         hidden
         role="toolbar"
         aria-label="Acciones sobre el texto seleccionado"
+        data-i18n-aria="reader.selectionAria"
       >
         <div class="sel-colors" id="sel-colors">
           <button
@@ -200,25 +235,57 @@
             data-color="#facc15"
             title="Amarillo"
             aria-label="Amarillo"
+            data-i18n-title="reader.color.yellow"
+            data-i18n-aria="reader.color.yellow"
           ></button>
-          <button class="sel-color" data-color="#4ade80" title="Verde" aria-label="Verde"></button>
-          <button class="sel-color" data-color="#38bdf8" title="Azul" aria-label="Azul"></button>
-          <button class="sel-color" data-color="#f472b6" title="Rosa" aria-label="Rosa"></button>
+          <button
+            class="sel-color"
+            data-color="#4ade80"
+            title="Verde"
+            aria-label="Verde"
+            data-i18n-title="reader.color.green"
+            data-i18n-aria="reader.color.green"
+          ></button>
+          <button
+            class="sel-color"
+            data-color="#38bdf8"
+            title="Azul"
+            aria-label="Azul"
+            data-i18n-title="reader.color.blue"
+            data-i18n-aria="reader.color.blue"
+          ></button>
+          <button
+            class="sel-color"
+            data-color="#f472b6"
+            title="Rosa"
+            aria-label="Rosa"
+            data-i18n-title="reader.color.pink"
+            data-i18n-aria="reader.color.pink"
+          ></button>
           <button
             class="sel-color"
             data-color="#fb923c"
             title="Naranja"
             aria-label="Naranja"
+            data-i18n-title="reader.color.orange"
+            data-i18n-aria="reader.color.orange"
           ></button>
           <button
             class="sel-color"
             data-color="#c084fc"
             title="Morado"
             aria-label="Morado"
+            data-i18n-title="reader.color.purple"
+            data-i18n-aria="reader.color.purple"
           ></button>
         </div>
         <span class="sel-sep" aria-hidden="true"></span>
-        <button class="sel-act" id="sel-note" title="Añadir una nota">
+        <button
+          class="sel-act"
+          id="sel-note"
+          title="Añadir una nota"
+          data-i18n-title="reader.addNote"
+        >
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -231,7 +298,13 @@
             <path d="M13.5 6.5l3 3" />
           </svg>
         </button>
-        <button class="sel-act sel-danger" id="sel-delete" title="Eliminar resaltado" hidden>
+        <button
+          class="sel-act sel-danger"
+          id="sel-delete"
+          title="Eliminar resaltado"
+          data-i18n-title="reader.deleteHighlight"
+          hidden
+        >
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -248,14 +321,14 @@
       <!-- toast -->
       <div class="toast" id="toast">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12v18l-6-4-6 4z" /></svg>
-        <span id="toast-tx">Marcador añadido</span>
+        <span id="toast-tx" data-i18n="reader.bookmark.added">Marcador añadido</span>
       </div>
 
       <!-- drawer -->
       <div class="drawer-scrim" id="scrim"></div>
       <aside class="drawer" id="drawer">
         <div class="drawer-head">
-          <h3 id="drawer-title">Índice</h3>
+          <h3 id="drawer-title" data-i18n="reader.panel.toc">Índice</h3>
           <button class="x" id="drawer-x">
             <svg
               viewBox="0 0 24 24"
@@ -284,7 +357,11 @@
                 <circle cx="11" cy="11" r="7" />
                 <path d="m20 20-3.5-3.5" />
               </svg>
-              <input id="doc-search" placeholder="Buscar palabra o frase…" />
+              <input
+                id="doc-search"
+                placeholder="Buscar palabra o frase…"
+                data-i18n-placeholder="reader.searchPlaceholder"
+              />
             </div>
             <div id="doc-results"></div>
           </div>
@@ -295,8 +372,11 @@
               class="note-add"
               id="note-input"
               placeholder="Selecciona un texto para anclar la nota, o escribe una nota de página…"
+              data-i18n-placeholder="reader.notePlaceholder"
             ></textarea>
-            <button class="note-save" id="note-save">Guardar nota</button>
+            <button class="note-save" id="note-save" data-i18n="reader.saveNote">
+              Guardar nota
+            </button>
             <div id="notes-list"></div>
           </div>
           <!-- info -->
@@ -304,22 +384,37 @@
           <!-- ajustes de lectura -->
           <div class="panel" id="panel-settings">
             <div class="set-group">
-              <label>Tema</label>
+              <label data-i18n="reader.settings.theme">Tema</label>
               <div class="swatches" id="sw-theme">
-                <button class="sw sel" data-t="paper" title="Papel"></button>
-                <button class="sw" data-t="sepia" title="Sepia"></button>
-                <button class="sw" data-t="night" title="Noche"></button>
+                <button
+                  class="sw sel"
+                  data-t="paper"
+                  title="Papel"
+                  data-i18n-title="reader.settings.paper"
+                ></button>
+                <button
+                  class="sw"
+                  data-t="sepia"
+                  title="Sepia"
+                  data-i18n-title="reader.settings.sepia"
+                ></button>
+                <button
+                  class="sw"
+                  data-t="night"
+                  title="Noche"
+                  data-i18n-title="reader.settings.night"
+                ></button>
               </div>
             </div>
             <div class="set-group">
-              <label>Tipografía</label>
+              <label data-i18n="reader.settings.typography">Tipografía</label>
               <div class="seg" id="sw-font">
                 <button class="sel" data-f="serif">Serif</button>
                 <button data-f="sans">Sans</button>
               </div>
             </div>
             <div class="set-group">
-              <label>Tamaño de letra</label>
+              <label data-i18n="reader.settings.fontSize">Tamaño de letra</label>
               <div class="stepper">
                 <button id="size-down">−</button>
                 <span class="val" id="size-val">19 px</span>
@@ -327,19 +422,22 @@
               </div>
             </div>
             <div class="set-group">
-              <label>Interlineado</label>
+              <label data-i18n="reader.settings.lineHeight">Interlineado</label>
               <div class="seg" id="sw-lh">
-                <button data-lh="1.55">Compacto</button>
-                <button class="sel" data-lh="1.75">Normal</button>
-                <button data-lh="2">Amplio</button>
+                <button data-lh="1.55" data-i18n="reader.settings.compact">Compacto</button>
+                <button class="sel" data-lh="1.75" data-i18n="reader.settings.normal">
+                  Normal
+                </button>
+                <button data-lh="2" data-i18n="reader.settings.wide">Amplio</button>
               </div>
             </div>
             <div class="set-group">
               <label for="margin-range">
-                Márgenes <span class="val" id="margin-val">48 px</span>
+                <span data-i18n="reader.settings.margins">Márgenes</span>
+                <span class="val" id="margin-val">48 px</span>
               </label>
               <div class="margin-control">
-                <span>Angostos</span>
+                <span data-i18n="reader.settings.narrow">Angostos</span>
                 <input
                   type="range"
                   id="margin-range"
@@ -348,8 +446,9 @@
                   step="2"
                   value="48"
                   aria-label="Margen de lectura"
+                  data-i18n-aria="reader.settings.marginAria"
                 />
-                <span>Amplios</span>
+                <span data-i18n="reader.settings.broad">Amplios</span>
               </div>
             </div>
           </div>
@@ -359,13 +458,17 @@
       <!-- loading / error (overlay dentro del reader) -->
       <div class="reader-overlay" id="reader-loading">
         <div class="spinner" aria-hidden="true"></div>
-        <p>Cargando libro…</p>
+        <p data-i18n="reader.loading">Cargando libro…</p>
       </div>
       <div class="reader-overlay" id="reader-error" style="display: none" role="alert">
         <p id="reader-error-message"></p>
         <div class="reader-error-actions">
-          <button id="reader-error-retry" class="r-action-btn">Reintentar</button>
-          <button id="reader-error-back" class="r-action-btn">Volver a la biblioteca</button>
+          <button id="reader-error-retry" class="r-action-btn" data-i18n="reader.retry">
+            Reintentar
+          </button>
+          <button id="reader-error-back" class="r-action-btn" data-i18n="reader.backToLibrary">
+            Volver a la biblioteca
+          </button>
         </div>
       </div>
     </section>

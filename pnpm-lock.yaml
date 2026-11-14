@@ -196,6 +196,9 @@ importers:
       '@clio-reader/feedback':
         specifier: workspace:*
         version: link:../../packages/feedback
+      '@clio-reader/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@clio-reader/library':
         specifier: workspace:*
         version: link:../../packages/library
@@ -354,6 +357,8 @@ importers:
       '@clio-reader/domain':
         specifier: workspace:*
         version: link:../domain
+
+  packages/i18n: {}
 
   packages/library:
     dependencies:

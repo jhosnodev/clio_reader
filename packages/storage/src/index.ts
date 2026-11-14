@@ -322,6 +322,10 @@ export function migrateState(input: unknown): PersistenceState {
         rawUserSettings.mode === 'dark' || rawUserSettings.mode === 'light'
           ? rawUserSettings.mode
           : initial.userSettings.mode,
+      ...(typeof rawUserSettings.locale === 'string' &&
+        rawUserSettings.locale.length > 0 && {
+          locale: rawUserSettings.locale,
+        }),
     },
   };
 }

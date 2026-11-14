@@ -21,6 +21,8 @@ import { PdfReaderDocument } from '@clio-reader/reader-pdf';
 import { CbzReaderDocument } from '@clio-reader/reader-cbz';
 import { MarkdownReaderDocument } from '@clio-reader/reader-md';
 import { applyTheme, savePalettePreference, loadPalettePreference, getPalette } from './themes';
+import { coerceLocale, getLocale, setLocale, type Locale } from '@clio-reader/i18n';
+import { persistLocale, useT } from './i18n';
 
 /* ==========================================================================
    Dependencias — DIP: se crean una vez y se inyectan
@@ -51,6 +53,7 @@ export interface ImportProgress {
 }
 
 export function App(): JSX.Element {
+  const { t, locale } = useT();
   const [openBook, setOpenBook] = useState<OpenBook | null>(null);
   const [books, setBooks] = useState<readonly Book[]>([]);
   const [importProgress, setImportProgress] = useState<ImportProgress | null>(null);
@@ -74,6 +77,42 @@ export function App(): JSX.Element {
     applyTheme(paletteId, theme);
     savePalettePreference(paletteId, theme);
   }, [paletteId, theme]);
+
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+
+  // Hydrate locale from the database (source of truth for native dialogs)
+  useEffect(() => {
+    let cancelled = false;
+    repository
+      .getUserSettings()
+      .then((settings) => {
+        if (cancelled) return;
+        const stored = coerceLocale(settings.locale);
+        if (stored && stored !== getLocale()) {
+          setLocale(stored);
+          persistLocale(stored);
+        }
+      })
+      .catch((err) => {
+        console.warn('[locale] no se pudo leer el ajuste desde la base de datos:', err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleSetLocale = useCallback(async (next: Locale) => {
+    setLocale(next);
+    persistLocale(next);
+    try {
+      const settings = await repository.getUserSettings();
+      await repository.saveUserSettings({ ...settings, locale: next });
+    } catch (err) {
+      console.warn('[locale] no se pudo guardar el ajuste en la base de datos:', err);
+    }
+  }, []);
 
   const toggleTheme = useCallback(() => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
@@ -559,7 +598,7 @@ export function App(): JSX.Element {
   /* ----- Eliminar libro ----- */
   const handleRemoveBook = useCallback(
     async (bookId: string, bookTitle: string) => {
-      const confirmed = window.confirm(`¿Estás seguro de que quieres eliminar "${bookTitle}"?`);
+      const confirmed = window.confirm(t('app.deleteBookConfirm', { title: bookTitle }));
       if (!confirmed) return;
 
       try {
@@ -571,7 +610,7 @@ export function App(): JSX.Element {
         console.error('[removeBook] error:', err);
       }
     },
-    [loadBooks],
+    [t, loadBooks],
   );
 
   /* ----- Renderizado ----- */
@@ -603,8 +642,10 @@ export function App(): JSX.Element {
       palette={getPalette(paletteId)}
       repository={repository}
       importProgress={importProgress}
+      locale={locale}
       onToggleTheme={toggleTheme}
       onSetPalette={setPalette}
+      onSetLocale={handleSetLocale}
       onOpenBook={handleOpenBook}
       onImportBook={handleImportBook}
       onImportFiles={handleImportFiles}

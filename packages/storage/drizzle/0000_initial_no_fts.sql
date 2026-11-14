@@ -110,6 +110,7 @@ CREATE TABLE IF NOT EXISTS `user_settings` (
   `id` integer PRIMARY KEY DEFAULT 1,
   `palette_id` text NOT NULL DEFAULT 'clio-3',
   `mode` text NOT NULL DEFAULT 'dark',
+  `locale` text,
   `updated_at` integer NOT NULL DEFAULT (unixepoch())
 );
 

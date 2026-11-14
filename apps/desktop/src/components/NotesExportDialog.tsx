@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useT } from '../i18n';
 
 interface NotesExportDialogProps {
   readonly open: boolean;
@@ -15,6 +16,7 @@ export function NotesExportDialog({
   onImportMarkdown,
   onClose,
 }: NotesExportDialogProps): JSX.Element | null {
+  const { t } = useT();
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
 
@@ -43,20 +45,19 @@ export function NotesExportDialog({
   return (
     <div style={backdropStyle}>
       <div style={dialogStyle} role="dialog" aria-modal="true">
-        <h2 style={titleStyle}>Exportar / Importar anotaciones</h2>
+        <h2 style={titleStyle}>{t('export.title')}</h2>
         <p style={descStyle}>
-          Exportar notas, resaltados y marcadores de <strong>{bookTitle}</strong> como archivo
-          Markdown. Al reimportarlo, se restaurarán las anotaciones para este libro.
+          {t('export.descPrefix')} <strong>{bookTitle}</strong> {t('export.descSuffix')}
         </p>
         <div style={actionsStyle}>
           <button style={secondaryBtn} onClick={onClose} disabled={exporting || importing}>
-            Cancelar
+            {t('app.cancel')}
           </button>
           <button style={secondaryBtn} onClick={handleImport} disabled={importing || exporting}>
-            {importing ? 'Importando...' : 'Importar MD'}
+            {importing ? t('export.importing') : t('export.importMd')}
           </button>
           <button style={primaryBtn} onClick={handleExport} disabled={exporting || importing}>
-            {exporting ? 'Exportando...' : 'Exportar MD'}
+            {exporting ? t('export.exporting') : t('export.exportMd')}
           </button>
         </div>
       </div>

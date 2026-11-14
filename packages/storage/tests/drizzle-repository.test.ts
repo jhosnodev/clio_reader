@@ -459,6 +459,20 @@ describe('DrizzleRepository', () => {
       const settings = await repository.getUserSettings();
       expect(settings.paletteId).toBe('clio-5');
       expect(settings.mode).toBe('light');
+      expect(settings.locale).toBeUndefined();
+    });
+
+    it('should persist locale when provided', async () => {
+      await repository.saveUserSettings({ paletteId: 'clio-3', mode: 'dark', locale: 'en' });
+      const settings = await repository.getUserSettings();
+      expect(settings.locale).toBe('en');
+    });
+
+    it('should clear locale when saved without it', async () => {
+      await repository.saveUserSettings({ paletteId: 'clio-3', mode: 'dark', locale: 'en' });
+      await repository.saveUserSettings({ paletteId: 'clio-3', mode: 'dark' });
+      const settings = await repository.getUserSettings();
+      expect(settings.locale).toBeUndefined();
     });
   });
 

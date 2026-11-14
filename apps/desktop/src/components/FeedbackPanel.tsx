@@ -11,6 +11,8 @@ import {
 import { fetchAppInfo } from '../bridges/feedback-bridge';
 import { getInstallationId } from '../feedback/installation-id';
 import { getFeedbackService } from '../feedback/service';
+import { useT } from '../i18n';
+import type { MessageKey } from '@clio-reader/i18n';
 
 interface FeedbackPanelProps {
   readonly open: boolean;
@@ -20,19 +22,19 @@ interface FeedbackPanelProps {
   readonly onClose: () => void;
 }
 
-const REACTIONS: { id: FeedbackReaction; emoji: string; label: string }[] = [
-  { id: 'very_negative', emoji: '😞', label: 'Muy mala' },
-  { id: 'negative', emoji: '🙁', label: 'Mala' },
-  { id: 'neutral', emoji: '😐', label: 'Neutral' },
-  { id: 'positive', emoji: '🙂', label: 'Buena' },
-  { id: 'very_positive', emoji: '😍', label: 'Excelente' },
+const REACTIONS: { id: FeedbackReaction; emoji: string; labelKey: MessageKey }[] = [
+  { id: 'very_negative', emoji: '😞', labelKey: 'feedback.reaction.veryNegative' },
+  { id: 'negative', emoji: '🙁', labelKey: 'feedback.reaction.negative' },
+  { id: 'neutral', emoji: '😐', labelKey: 'feedback.reaction.neutral' },
+  { id: 'positive', emoji: '🙂', labelKey: 'feedback.reaction.positive' },
+  { id: 'very_positive', emoji: '😍', labelKey: 'feedback.reaction.veryPositive' },
 ];
 
-const CATEGORY_LABELS: Record<FeedbackCategory, string> = {
-  bug: 'Problema',
-  idea: 'Idea o mejora',
-  praise: 'Algo que me gusta',
-  general: 'Comentario general',
+const CATEGORY_LABEL_KEYS: Record<FeedbackCategory, MessageKey> = {
+  bug: 'feedback.category.bug',
+  idea: 'feedback.category.idea',
+  praise: 'feedback.category.praise',
+  general: 'feedback.category.general',
 };
 
 export function FeedbackPanel({
@@ -42,6 +44,7 @@ export function FeedbackPanel({
   documentFormat,
   onClose,
 }: FeedbackPanelProps): JSX.Element | null {
+  const { t, locale, tp } = useT();
   const [reaction, setReaction] = useState<FeedbackReaction | null>(null);
   const [category, setCategory] = useState<FeedbackCategory | null>(initialCategory ?? null);
   const [message, setMessage] = useState('');
@@ -75,7 +78,7 @@ export function FeedbackPanel({
         message: message.trim().length > 0 ? message.trim() : undefined,
         area,
         documentFormat,
-        locale: navigator.language,
+        locale,
       });
       setPendingCount(await service.getPendingCount());
       setReaction(null);
@@ -84,7 +87,7 @@ export function FeedbackPanel({
       setDone(true);
     } catch (err) {
       console.error('Error guardando feedback:', err);
-      setError('No se pudo guardar tu opinión. Inténtalo de nuevo.');
+      setError(t('feedback.saveFailed'));
     } finally {
       setSending(false);
     }
@@ -116,30 +119,25 @@ export function FeedbackPanel({
               <path d="m8.5 12.5 2.5 2.5 4.5-5" />
             </svg>
             <h2 id="feedback-title" style={titleStyle}>
-              ¡Gracias por ayudarnos a mejorar Clio!
+              {t('feedback.thanks')}
             </h2>
-            <p style={descStyle}>Tu opinión queda guardada para revisión.</p>
-            {pendingCount > 1 && (
-              <p style={pendingStyle}>Tienes {pendingCount} envíos guardados.</p>
-            )}
+            <p style={descStyle}>{t('feedback.saved')}</p>
+            {pendingCount > 1 && <p style={pendingStyle}>{tp('feedback.pending', pendingCount)}</p>}
             <div style={actionsStyle}>
               <button style={primaryBtn} onClick={handleClose}>
-                Cerrar
+                {t('app.close')}
               </button>
             </div>
           </div>
         ) : (
           <>
             <h2 id="feedback-title" style={titleStyle}>
-              Compartir feedback
+              {t('feedback.title')}
             </h2>
-            <p style={privacyStyle}>
-              Se envía tu comentario, la versión de Clio, el sistema operativo y el área. Nunca el
-              contenido de tus libros, títulos ni rutas.
-            </p>
+            <p style={privacyStyle}>{t('feedback.privacy')}</p>
 
             <fieldset style={fieldsetStyle}>
-              <legend style={legendStyle}>¿Cómo fue tu experiencia?</legend>
+              <legend style={legendStyle}>{t('feedback.experience')}</legend>
               <div style={reactionsStyle}>
                 {REACTIONS.map((r) => {
                   const selected = reaction === r.id;
@@ -153,12 +151,12 @@ export function FeedbackPanel({
                       }}
                       onClick={() => setReaction(selected ? null : r.id)}
                       aria-pressed={selected}
-                      title={r.label}
+                      title={t(r.labelKey)}
                     >
                       <span style={{ fontSize: 22 }} aria-hidden="true">
                         {r.emoji}
                       </span>
-                      <span style={reactionLabelStyle}>{r.label}</span>
+                      <span style={reactionLabelStyle}>{t(r.labelKey)}</span>
                     </button>
                   );
                 })}
@@ -166,7 +164,7 @@ export function FeedbackPanel({
             </fieldset>
 
             <fieldset style={fieldsetStyle}>
-              <legend style={legendStyle}>Categoría (opcional)</legend>
+              <legend style={legendStyle}>{t('feedback.categoryOptional')}</legend>
               <div style={chipsStyle}>
                 {FEEDBACK_CATEGORIES.map((c) => {
                   const selected = category === c;
@@ -181,7 +179,7 @@ export function FeedbackPanel({
                       onClick={() => setCategory(selected ? null : c)}
                       aria-pressed={selected}
                     >
-                      {CATEGORY_LABELS[c]}
+                      {t(CATEGORY_LABEL_KEYS[c])}
                     </button>
                   );
                 })}
@@ -189,14 +187,14 @@ export function FeedbackPanel({
             </fieldset>
 
             <label style={labelStyle} htmlFor="feedback-message">
-              Comentario (opcional)
+              {t('feedback.messageLabel')}
             </label>
             <textarea
               id="feedback-message"
               style={textareaStyle}
               value={message}
               maxLength={FEEDBACK_MESSAGE_MAX_LENGTH}
-              placeholder="Cuéntanos más…"
+              placeholder={t('feedback.messagePlaceholder')}
               rows={4}
               onChange={(e) => setMessage(e.target.value)}
             />
@@ -212,10 +210,10 @@ export function FeedbackPanel({
 
             <div style={actionsStyle}>
               <button style={secondaryBtn} onClick={handleClose} disabled={sending}>
-                Cancelar
+                {t('app.cancel')}
               </button>
               <button style={primaryBtn} onClick={handleSend} disabled={!canSubmit}>
-                {sending ? 'Enviando…' : 'Enviar'}
+                {sending ? t('feedback.sending') : t('feedback.send')}
               </button>
             </div>
           </>

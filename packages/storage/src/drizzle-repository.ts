@@ -423,6 +423,7 @@ export class DrizzleRepository {
     return {
       paletteId: result.paletteId,
       mode: result.mode as UserSettings['mode'],
+      locale: result.locale ?? undefined,
     };
   }
 
@@ -441,6 +442,7 @@ export class DrizzleRepository {
         .set({
           paletteId: settings.paletteId,
           mode: settings.mode,
+          locale: settings.locale ?? null,
           updatedAt: now,
         })
         .where(eq(userSettingsTable.id, 1))
@@ -452,6 +454,7 @@ export class DrizzleRepository {
           id: 1,
           paletteId: settings.paletteId,
           mode: settings.mode,
+          locale: settings.locale ?? null,
           updatedAt: now,
         })
         .run();
