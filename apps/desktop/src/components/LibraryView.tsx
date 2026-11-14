@@ -32,6 +32,14 @@ import type { ThemePalette } from '../themes';
 import { PALETTES } from '../themes';
 import { BrandIcon } from './BrandIcon';
 import type { ImportProgress } from '../App';
+import { useT } from '../i18n';
+import {
+  formatDate,
+  formatRelativeDate,
+  translate,
+  type MessageKey,
+  type Locale,
+} from '@clio-reader/i18n';
 
 /* ==========================================================================
    Paletas de portada
@@ -72,18 +80,11 @@ function getAuthorLast(author?: string): string {
    Fechas
    ========================================================================== */
 
-const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-function fmtDate(ts: number): string {
-  const d = new Date(ts);
-  return `${d.getDate()} ${MESES[d.getMonth()]} ${d.getFullYear()}`;
+function fmtDate(ts: number, locale: Locale): string {
+  return formatDate(ts, locale);
 }
-function relDate(ts: number): string {
-  const days = Math.round((Date.now() - ts) / 86400000);
-  if (days <= 0) return 'hoy';
-  if (days === 1) return 'ayer';
-  if (days < 7) return `hace ${days} días`;
-  if (days < 30) return `hace ${Math.round(days / 7)} sem.`;
-  return fmtDate(ts);
+function relDate(ts: number, locale: Locale): string {
+  return formatRelativeDate(ts, locale);
 }
 
 /* ==========================================================================
@@ -96,10 +97,16 @@ function getReadingStatus(book: Book): ReadingStatus {
   return 'unread';
 }
 
-const STATUS_CFG: Record<ReadingStatus, { label: string; dot: string }> = {
-  unread: { label: 'Sin leer', dot: 'var(--rose)' },
-  opened: { label: 'Abierto', dot: 'var(--gold)' },
-  reading: { label: 'Leyendo', dot: 'var(--verdigris)' },
+const STATUS_KEYS: Record<ReadingStatus, MessageKey> = {
+  unread: 'library.status.unread',
+  opened: 'library.status.opened',
+  reading: 'library.status.reading',
+};
+
+const STATUS_DOT: Record<ReadingStatus, string> = {
+  unread: 'var(--rose)',
+  opened: 'var(--gold)',
+  reading: 'var(--verdigris)',
 };
 
 /* ==========================================================================
@@ -115,8 +122,10 @@ interface LibraryViewProps {
   readonly palette: ThemePalette;
   readonly repository: LibraryRepository;
   readonly importProgress: ImportProgress | null;
+  readonly locale: Locale;
   readonly onToggleTheme: () => void;
   readonly onSetPalette: (id: string) => void;
+  readonly onSetLocale: (locale: Locale) => void;
   readonly onOpenBook: (book: Book, initialLocator?: string) => void;
   readonly onImportBook: () => void;
   readonly onImportFiles: () => void;
@@ -136,8 +145,10 @@ export function LibraryView({
   palette,
   repository,
   importProgress,
+  locale,
   onToggleTheme,
   onSetPalette,
+  onSetLocale,
   onOpenBook,
   onImportFiles,
   onImportFolder,
@@ -261,8 +272,10 @@ export function LibraryView({
         theme={theme}
         paletteId={paletteId}
         palette={palette}
+        locale={locale}
         onToggleTheme={onToggleTheme}
         onSetPalette={onSetPalette}
+        onSetLocale={onSetLocale}
         onOpenFeedback={() => setFeedbackOpen(true)}
       />
       <main style={S.stage}>
@@ -328,25 +341,31 @@ function Rail({
   theme,
   paletteId,
   palette,
+  locale,
   onToggleTheme,
   onSetPalette,
+  onSetLocale,
 }: {
   readonly active: ViewId;
   readonly onChange: (v: ViewId) => void;
   readonly theme: 'dark' | 'light';
   readonly paletteId: string;
   readonly palette: ThemePalette;
+  readonly locale: Locale;
   readonly onToggleTheme: () => void;
   readonly onSetPalette: (id: string) => void;
+  readonly onSetLocale: (locale: Locale) => void;
   readonly onOpenFeedback: () => void;
 }): JSX.Element {
+  const { t } = useT();
   const [hovered, setHovered] = useState<string | null>(null);
   const [showPalettePicker, setShowPalettePicker] = useState(false);
+  const [showLanguagePicker, setShowLanguagePicker] = useState(false);
 
-  const items: { id: ViewId; label: string; icon: JSX.Element }[] = [
+  const items: { id: ViewId; labelKey: MessageKey; icon: JSX.Element }[] = [
     {
       id: 'home',
-      label: 'Inicio',
+      labelKey: 'library.rail.home',
       icon: (
         <svg
           width="22"
@@ -366,7 +385,7 @@ function Rail({
     },
     {
       id: 'collection',
-      label: 'Colección',
+      labelKey: 'library.rail.collection',
       icon: (
         <svg
           width="22"
@@ -387,7 +406,7 @@ function Rail({
     /* TODO: marcadores no funcional — re-habilitar cuando el CRUD esté completo */
     // {
     //   id: 'bookmarks',
-    //   label: 'Marcadores',
+    //   labelKey: 'library.rail.bookmarks',
     //   icon: (
     //     <svg
     //       width="22"
@@ -405,7 +424,7 @@ function Rail({
     // },
     {
       id: 'notes',
-      label: 'Notas',
+      labelKey: 'library.rail.notes',
       icon: (
         <svg
           width="22"
@@ -444,12 +463,12 @@ function Rail({
                 onClick={() => onChange(it.id)}
                 onMouseEnter={() => setHovered(it.id)}
                 onMouseLeave={() => setHovered(null)}
-                aria-label={it.label}
+                aria-label={t(it.labelKey)}
               >
                 {it.icon}
               </button>
               {isActive && <div style={S.navIndicator} />}
-              {hovered === it.id && <span style={S.tooltip}>{it.label}</span>}
+              {hovered === it.id && <span style={S.tooltip}>{t(it.labelKey)}</span>}
             </div>
           );
         })}
@@ -466,7 +485,7 @@ function Rail({
           onClick={() => setShowPalettePicker(!showPalettePicker)}
           onMouseEnter={() => setHovered('palette')}
           onMouseLeave={() => setHovered(null)}
-          aria-label="Selector de tema"
+          aria-label={t('library.rail.themeSelect')}
         >
           <svg
             width="22"
@@ -482,10 +501,10 @@ function Rail({
             <circle cx="12" cy="12" r="4" />
           </svg>
         </button>
-        {hovered === 'palette' && <span style={S.tooltip}>Tema</span>}
+        {hovered === 'palette' && <span style={S.tooltip}>{t('library.rail.theme')}</span>}
         {showPalettePicker && (
           <div style={S.palettePopover}>
-            <div style={S.palettePopoverTitle}>Tema</div>
+            <div style={S.palettePopoverTitle}>{t('library.rail.theme')}</div>
             <div style={S.paletteGrid}>
               {PALETTES.map((p) => (
                 <button
@@ -545,7 +564,9 @@ function Rail({
         onClick={onToggleTheme}
         onMouseEnter={() => setHovered('theme')}
         onMouseLeave={() => setHovered(null)}
-        aria-label={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+        aria-label={
+          theme === 'dark' ? t('library.rail.themeToLight') : t('library.rail.themeToDark')
+        }
       >
         <svg
           className="i-sun"
@@ -575,9 +596,73 @@ function Rail({
           <path d="M20 14.5A8 8 0 1 1 9.5 4a6.3 6.3 0 0 0 10.5 10.5z" />
         </svg>
         {hovered === 'theme' && (
-          <span style={S.tooltip}>{theme === 'dark' ? 'Tema claro' : 'Tema oscuro'}</span>
+          <span style={S.tooltip}>
+            {theme === 'dark' ? t('library.rail.themeLight') : t('library.rail.themeDark')}
+          </span>
         )}
       </button>
+
+      {/* Language selector */}
+      <div style={{ position: 'relative' }}>
+        <button
+          style={{
+            ...S.navBtn,
+            color: theme === 'dark' ? palette.dark['gold-dim'] : palette.dark.gold,
+          }}
+          onClick={() => setShowLanguagePicker(!showLanguagePicker)}
+          onMouseEnter={() => setHovered('language')}
+          onMouseLeave={() => setHovered(null)}
+          aria-label={t('library.rail.languageSelect')}
+        >
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M2 12h20" />
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+          </svg>
+          {hovered === 'language' && <span style={S.tooltip}>{t('library.rail.language')}</span>}
+        </button>
+        {showLanguagePicker && (
+          <div style={S.palettePopover}>
+            <div style={S.palettePopoverTitle}>{t('library.rail.language')}</div>
+            <div style={S.paletteGrid}>
+              {(
+                [
+                  { id: 'es', label: 'Español' },
+                  { id: 'en', label: 'English' },
+                ] as const
+              ).map((option) => (
+                <button
+                  key={option.id}
+                  style={{
+                    ...S.paletteSwatch,
+                    background: palette.dark['ink-950'],
+                    borderColor: locale === option.id ? palette.dark.gold : 'transparent',
+                    color: palette.dark.gold,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    padding: '8px 10px',
+                  }}
+                  onClick={() => {
+                    onSetLocale(option.id);
+                    setShowLanguagePicker(false);
+                  }}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </aside>
   );
 }
@@ -617,9 +702,16 @@ function HomeView({
   onImportFolder: () => void;
   onSaveRank: (bookId: string, rank: Rank) => void;
 }): JSX.Element {
+  const { t, tp } = useT();
   const h = new Date().getHours();
-  const greeting =
-    h < 6 ? 'Buenas noches' : h < 13 ? 'Buenos días' : h < 20 ? 'Buenas tardes' : 'Buenas noches';
+  const greetingKey: MessageKey =
+    h < 6
+      ? 'library.greeting.evening'
+      : h < 13
+        ? 'library.greeting.morning'
+        : h < 20
+          ? 'library.greeting.afternoon'
+          : 'library.greeting.evening';
 
   const [showImportMenu, setShowImportMenu] = useState(false);
   const importMenuRef = useRef<HTMLDivElement>(null);
@@ -639,8 +731,8 @@ function HomeView({
       <div style={S.wrap}>
         <header style={S.topbar}>
           <div>
-            <h1 style={S.h1}>{greeting}</h1>
-            <div style={S.sub}>Tu biblioteca bajo la mirada de Clio</div>
+            <h1 style={S.h1}>{t(greetingKey)}</h1>
+            <div style={S.sub}>{t('library.tagline')}</div>
           </div>
         </header>
         <div style={S.meander} />
@@ -653,8 +745,8 @@ function HomeView({
     <div style={S.wrap}>
       <header style={S.topbar}>
         <div>
-          <h1 style={S.h1}>{greeting}</h1>
-          <div style={S.sub}>Tu biblioteca bajo la mirada de Clio</div>
+          <h1 style={S.h1}>{t(greetingKey)}</h1>
+          <div style={S.sub}>{t('library.tagline')}</div>
         </div>
         <div style={{ flex: 1 }} />
         <div style={{ position: 'relative' }} ref={importMenuRef}>
@@ -671,7 +763,7 @@ function HomeView({
             >
               <path d="M12 5v14M5 12h14" />
             </svg>
-            Importar
+            {t('library.import')}
           </button>
           {showImportMenu && (
             <div style={S.importMenu}>
@@ -695,7 +787,7 @@ function HomeView({
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                   <polyline points="14 2 14 8 20 8" />
                 </svg>
-                Importar archivo(s)
+                {t('library.import.files')}
               </button>
               <button
                 style={S.importMenuItem}
@@ -716,7 +808,7 @@ function HomeView({
                 >
                   <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                 </svg>
-                Importar carpeta
+                {t('library.import.folder')}
               </button>
             </div>
           )}
@@ -736,7 +828,7 @@ function HomeView({
           </svg>
           <input
             style={S.searchInput}
-            placeholder="Buscar en tu biblioteca…"
+            placeholder={t('library.search.placeholder')}
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
             onFocus={onSearchFocus}
@@ -754,11 +846,14 @@ function HomeView({
             />
           </div>
           <div style={S.importProgressText}>
-            Importando: {importProgress.current} ({importProgress.imported + importProgress.skipped}
-            /{importProgress.total})
+            {t('library.import.progress', {
+              current: importProgress.current,
+              done: importProgress.imported + importProgress.skipped,
+              total: importProgress.total,
+            })}
             {importProgress.skipped > 0 && (
               <span style={{ color: 'var(--gold)', marginLeft: 8 }}>
-                ({importProgress.skipped} omitidos)
+                {tp('library.import.skipped', importProgress.skipped)}
               </span>
             )}
           </div>
@@ -768,7 +863,10 @@ function HomeView({
 
       {recentBooks.length > 0 && (
         <section style={{ marginBottom: 44 }}>
-          <SectionHead title="Continuar leyendo" count={`${readingCount} en curso`} />
+          <SectionHead
+            title={t('library.section.continue')}
+            count={tp('library.section.inProgress', readingCount)}
+          />
           <div style={S.row}>
             {recentBooks.map((b) => (
               <BookCard
@@ -785,7 +883,7 @@ function HomeView({
       )}
 
       <section>
-        <SectionHead title="Añadidos recientemente" count="últimos 6" />
+        <SectionHead title={t('library.section.recent')} count={t('library.section.lastSix')} />
         <div style={S.row}>
           {addedBooks.map((b) => (
             <BookCard
@@ -807,26 +905,32 @@ function HomeView({
    Collection View
    ========================================================================== */
 
-const STATUS_FILTERS: { key: 'all' | ReadingStatus; label: string }[] = [
-  { key: 'all', label: 'Todos' },
-  { key: 'reading', label: 'Leyendo' },
-  { key: 'unread', label: 'Sin leer' },
-  { key: 'opened', label: 'Leídos' },
+type FilterOption = { key: string; labelKey: MessageKey } | { key: string; label: string };
+
+function filterLabel(option: FilterOption, t: (key: MessageKey) => string): string {
+  return 'labelKey' in option ? t(option.labelKey) : option.label;
+}
+
+const STATUS_FILTERS: { key: 'all' | ReadingStatus; labelKey: MessageKey }[] = [
+  { key: 'all', labelKey: 'library.filter.all' },
+  { key: 'reading', labelKey: 'library.status.reading' },
+  { key: 'unread', labelKey: 'library.status.unread' },
+  { key: 'opened', labelKey: 'library.filter.read' },
 ];
 
-const FORMAT_FILTERS: { key: string; label: string }[] = [
-  { key: 'all', label: 'Todos' },
+const FORMAT_FILTERS: FilterOption[] = [
+  { key: 'all', labelKey: 'library.filter.all' },
   { key: 'epub', label: 'EPUB' },
   { key: 'pdf', label: 'PDF' },
   { key: 'cbz', label: 'CBZ' },
   { key: 'md', label: 'MD' },
 ];
 
-const SORT_OPTIONS: { key: string; label: string }[] = [
-  { key: 'title', label: 'Título' },
-  { key: 'author', label: 'Autor' },
-  { key: 'language', label: 'Idioma' },
-  { key: 'status', label: 'Estado de lectura' },
+const SORT_OPTIONS: FilterOption[] = [
+  { key: 'title', labelKey: 'library.sort.title' },
+  { key: 'author', labelKey: 'library.sort.author' },
+  { key: 'language', labelKey: 'library.sort.language' },
+  { key: 'status', labelKey: 'library.sort.status' },
 ];
 
 function CollectionView({
@@ -868,13 +972,14 @@ function CollectionView({
   onRemove: (id: string, title: string) => void;
   onSaveRank: (bookId: string, rank: Rank) => void;
 }): JSX.Element {
+  const { t } = useT();
   return (
     <div style={S.wrap}>
       <header style={S.topbar}>
         <div>
-          <h1 style={S.h1}>Colección</h1>
+          <h1 style={S.h1}>{t('library.collection.title')}</h1>
           <div style={S.sub}>
-            {totalCount} documentos · {readingCount} en lectura
+            {t('library.collection.subtitle', { total: totalCount, reading: readingCount })}
           </div>
         </div>
         <div style={{ flex: 1 }} />
@@ -893,7 +998,7 @@ function CollectionView({
           </svg>
           <input
             style={S.searchInput}
-            placeholder="Buscar por título o autor…"
+            placeholder={t('library.collection.search')}
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
           />
@@ -908,7 +1013,7 @@ function CollectionView({
             style={{ ...S.chip, ...(statusFilter === f.key ? S.chipActive : {}) }}
             onClick={() => onStatusFilterChange(f.key)}
           >
-            {f.label}
+            {t(f.labelKey)}
           </button>
         ))}
       </div>
@@ -916,7 +1021,7 @@ function CollectionView({
       {/* Fila 2: filtros de formato + idioma + orden */}
       <div style={S.filterRow}>
         <div style={S.filterGroup}>
-          <span style={S.filterLabel}>Formato</span>
+          <span style={S.filterLabel}>{t('library.filter.format')}</span>
           <div style={S.chipsSmall}>
             {FORMAT_FILTERS.map((f) => (
               <button
@@ -924,7 +1029,7 @@ function CollectionView({
                 style={{ ...S.chipSm, ...(formatFilter === f.key ? S.chipSmActive : {}) }}
                 onClick={() => onFormatFilterChange(f.key)}
               >
-                {f.label}
+                {filterLabel(f, t)}
               </button>
             ))}
           </div>
@@ -932,13 +1037,13 @@ function CollectionView({
 
         {availableLanguages.length > 0 && (
           <div style={S.filterGroup}>
-            <span style={S.filterLabel}>Idioma</span>
+            <span style={S.filterLabel}>{t('library.filter.language')}</span>
             <select
               style={S.select}
               value={languageFilter}
               onChange={(e) => onLanguageFilterChange(e.target.value)}
             >
-              <option value="all">Todos</option>
+              <option value="all">{t('library.filter.all')}</option>
               {availableLanguages.map((lang) => (
                 <option key={lang} value={lang}>
                   {lang}
@@ -949,11 +1054,11 @@ function CollectionView({
         )}
 
         <div style={S.filterGroup}>
-          <span style={S.filterLabel}>Ordenar por</span>
+          <span style={S.filterLabel}>{t('library.filter.sortBy')}</span>
           <select style={S.select} value={sort} onChange={(e) => onSortChange(e.target.value)}>
             {SORT_OPTIONS.map((o) => (
               <option key={o.key} value={o.key}>
-                {o.label}
+                {filterLabel(o, t)}
               </option>
             ))}
           </select>
@@ -974,8 +1079,8 @@ function CollectionView({
             <rect x="4" y="4" width="16" height="16" rx="2" />
             <path d="M9 9l6 6M15 9l-6 6" />
           </svg>
-          <h3 style={S.emptyTitle}>Sin resultados</h3>
-          <p style={S.emptyHint}>Prueba con otro filtro o término de búsqueda.</p>
+          <h3 style={S.emptyTitle}>{t('library.empty.results')}</h3>
+          <p style={S.emptyHint}>{t('library.empty.resultsHint')}</p>
         </div>
       ) : (
         <div style={S.grid}>
@@ -1008,6 +1113,7 @@ function BookmarksView({
   repository: LibraryRepository;
   onOpen: (book: Book) => void;
 }): JSX.Element {
+  const { t, locale, tp } = useT();
   const [bookmarks, setBookmarks] = useState<(Bookmark & { bookTitle?: string })[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -1015,10 +1121,10 @@ function BookmarksView({
     const loadBookmarks = async () => {
       try {
         const allBookmarks = await repository.listAllBookmarks();
-        const bookmarksWithTitle = allBookmarks.map((b) => ({
-          ...b,
-          bookTitle: books.find((book) => book.id === b.bookId)?.title ?? 'Libro desconocido',
-        }));
+        const bookmarksWithTitle = allBookmarks.map((b) => {
+          const title = books.find((book) => book.id === b.bookId)?.title;
+          return { ...b, ...(title !== undefined ? { bookTitle: title } : {}) };
+        });
         setBookmarks(bookmarksWithTitle.sort((a, b) => b.createdAt - a.createdAt));
       } catch (err) {
         console.error('Error cargando marcadores:', err);
@@ -1054,14 +1160,14 @@ function BookmarksView({
       <div style={S.wrap}>
         <header style={S.topbar}>
           <div>
-            <h1 style={S.h1}>Marcadores</h1>
-            <div style={S.sub}>Páginas que guardaste para volver</div>
+            <h1 style={S.h1}>{t('library.bookmarks.title')}</h1>
+            <div style={S.sub}>{t('library.bookmarks.subtitle')}</div>
           </div>
         </header>
         <div style={S.meander} />
         <div style={S.emptyBookmarks}>
           <div style={{ ...S.spinner, width: 24, height: 24 }} aria-hidden="true" />
-          <p style={S.emptyHint}>Cargando marcadores…</p>
+          <p style={S.emptyHint}>{t('library.bookmarks.loading')}</p>
         </div>
       </div>
     );
@@ -1072,8 +1178,8 @@ function BookmarksView({
       <div style={S.wrap}>
         <header style={S.topbar}>
           <div>
-            <h1 style={S.h1}>Marcadores</h1>
-            <div style={S.sub}>Páginas que guardaste para volver</div>
+            <h1 style={S.h1}>{t('library.bookmarks.title')}</h1>
+            <div style={S.sub}>{t('library.bookmarks.subtitle')}</div>
           </div>
         </header>
         <div style={S.meander} />
@@ -1090,8 +1196,8 @@ function BookmarksView({
           >
             <path d="M6 4h12v16l-6-4-6 4z" />
           </svg>
-          <h3 style={S.emptyTitle}>Aún no hay marcadores</h3>
-          <p style={S.emptyHint}>Mientras lees, toca el marcador para guardar la página actual.</p>
+          <h3 style={S.emptyTitle}>{t('library.bookmarks.empty')}</h3>
+          <p style={S.emptyHint}>{t('library.bookmarks.emptyHint')}</p>
         </div>
       </div>
     );
@@ -1101,10 +1207,8 @@ function BookmarksView({
     <div style={S.wrap}>
       <header style={S.topbar}>
         <div>
-          <h1 style={S.h1}>Marcadores</h1>
-          <div style={S.sub}>
-            {bookmarks.length} marcador{bookmarks.length !== 1 ? 'es' : ''}
-          </div>
+          <h1 style={S.h1}>{t('library.bookmarks.title')}</h1>
+          <div style={S.sub}>{tp('library.bookmarks.count', bookmarks.length)}</div>
         </div>
       </header>
       <div style={S.meander} />
@@ -1139,14 +1243,16 @@ function BookmarksView({
                 <div style={S.bookmarkMeta}>
                   {bookmark.label && <span>{bookmark.label}</span>}
                   {bookmark.label && <span style={S.bookmarkDot}>·</span>}
-                  <span>{fmtDate(bookmark.createdAt)}</span>
+                  <span>{fmtDate(bookmark.createdAt, locale)}</span>
                 </div>
               </div>
             </div>
             <button
               style={S.bookmarkDelete}
               onClick={() => handleDelete(bookmark.id)}
-              aria-label={`Eliminar marcador de ${bookmark.bookTitle}`}
+              aria-label={t('library.bookmarks.delete', {
+                title: bookmark.bookTitle ?? t('library.unknownBook'),
+              })}
             >
               <svg
                 width="14"
@@ -1175,7 +1281,7 @@ function BookmarksView({
 
 type NotesSort = 'date-desc' | 'date-asc' | 'position';
 
-function fmtLocator(locator: ReaderLocator): string {
+function fmtLocator(locator: ReaderLocator, locale: Locale): string {
   switch (locator.format) {
     case 'epub':
       if (typeof locator.progression === 'number') {
@@ -1184,10 +1290,12 @@ function fmtLocator(locator: ReaderLocator): string {
       return locator.href || 'EPUB';
     case 'pdf':
     case 'cbz':
-      return `Pág. ${locator.page}`;
+      return translate(locale, 'library.locator.page', { page: locator.page ?? 0 });
     case 'md':
       if (locator.href) return locator.href;
-      if (typeof locator.offset === 'number') return `Offset ${locator.offset}`;
+      if (typeof locator.offset === 'number') {
+        return translate(locale, 'library.locator.offset', { offset: locator.offset });
+      }
       return 'Markdown';
   }
 }
@@ -1245,6 +1353,7 @@ function NotesView({
   repository: LibraryRepository;
   onOpen: (book: Book, initialLocator?: string) => void;
 }): JSX.Element {
+  const { t, locale, tp } = useT();
   const [selectedBookId, setSelectedBookId] = useState<string>('');
   const [sort, setSort] = useState<NotesSort>('date-desc');
   const [notes, setNotes] = useState<readonly Note[]>([]);
@@ -1257,8 +1366,8 @@ function NotesView({
   } | null>(null);
 
   const bookTitle = useCallback(
-    (bookId: string) => books.find((b) => b.id === bookId)?.title ?? 'Libro desconocido',
-    [books],
+    (bookId: string) => books.find((b) => b.id === bookId)?.title ?? t('library.unknownBook'),
+    [books, t],
   );
 
   // Libro por defecto: el primero con notas o resaltados, o el primero de la biblioteca
@@ -1340,20 +1449,23 @@ function NotesView({
         content: markdown,
       });
       if (savedPath) {
-        setNotice({ kind: 'success', message: `Anotaciones exportadas a ${savedPath}` });
+        setNotice({
+          kind: 'success',
+          message: t('library.export.success', { path: savedPath }),
+        });
       }
     } catch (err) {
       console.error('Error exportando anotaciones:', err);
-      setNotice({ kind: 'error', message: 'No se pudieron exportar las anotaciones.' });
+      setNotice({ kind: 'error', message: t('library.export.failed') });
     }
-  }, [books, repository, selectedBookId]);
+  }, [books, repository, selectedBookId, t]);
 
   const handleImportAnnotations = useCallback(async () => {
     try {
       const file = await bridgeExtras.openFile({
         filters: [
           { name: 'Markdown', extensions: ['md', 'markdown'] },
-          { name: 'Todos los archivos', extensions: ['*'] },
+          { name: t('library.import.allFiles'), extensions: ['*'] },
         ],
       });
       if (!file) return;
@@ -1363,7 +1475,7 @@ function NotesView({
       if (meta.version !== 1 && !hasClioBlocks) {
         setNotice({
           kind: 'error',
-          message: 'El archivo no es una exportación de anotaciones de Clio Reader.',
+          message: t('library.import.invalidFile'),
         });
         return;
       }
@@ -1402,26 +1514,26 @@ function NotesView({
       if (total === 0) {
         setNotice({
           kind: 'warn',
-          message: 'El archivo no contenía anotaciones nuevas para importar.',
+          message: t('library.import.emptyFile'),
         });
       } else if (fallback) {
         setNotice({
           kind: 'warn',
-          message: `El archivo pertenece a otro libro; se importaron ${total} anotación(es) en “${targetTitle}”.`,
+          message: tp('library.import.wrongBook', total, { title: targetTitle }),
         });
       } else if (targetBookId !== selectedBookId) {
         setNotice({
           kind: 'success',
-          message: `Importadas ${total} anotación(es) en “${targetTitle}”.`,
+          message: tp('library.import.toOtherBook', total, { title: targetTitle }),
         });
       } else {
-        setNotice({ kind: 'success', message: `Importadas ${total} anotación(es) en este libro.` });
+        setNotice({ kind: 'success', message: tp('library.import.toThisBook', total) });
       }
     } catch (err) {
       console.error('Error importando anotaciones:', err);
-      setNotice({ kind: 'error', message: 'No se pudo importar el archivo de anotaciones.' });
+      setNotice({ kind: 'error', message: t('library.import.failed') });
     }
-  }, [books, loadNotes, repository, selectedBookId]);
+  }, [books, loadNotes, repository, selectedBookId, t]);
 
   const items = useMemo<AnnotationItem[]>(() => {
     const noteItems: AnnotationItem[] = notes.map((n) => ({
@@ -1480,8 +1592,8 @@ function NotesView({
       <div style={S.wrap}>
         <header style={S.topbar}>
           <div>
-            <h1 style={S.h1}>Notas</h1>
-            <div style={S.sub}>Tus anotaciones, guardadas localmente</div>
+            <h1 style={S.h1}>{t('library.notes.title')}</h1>
+            <div style={S.sub}>{t('library.notes.subtitle')}</div>
           </div>
         </header>
         <div style={S.meander} />
@@ -1500,8 +1612,8 @@ function NotesView({
             <path d="M16 20v-4h4" />
             <path d="M8 9h8M8 13h5" />
           </svg>
-          <h3 style={S.emptyTitle}>No hay libros todavía</h3>
-          <p style={S.emptyHint}>Importa un libro para empezar a tomar notas.</p>
+          <h3 style={S.emptyTitle}>{t('library.notes.emptyBooks')}</h3>
+          <p style={S.emptyHint}>{t('library.notes.emptyBooksHint')}</p>
         </div>
       </div>
     );
@@ -1511,10 +1623,13 @@ function NotesView({
     <div style={S.wrap}>
       <header style={S.topbar}>
         <div>
-          <h1 style={S.h1}>Notas y resaltados</h1>
+          <h1 style={S.h1}>{t('library.notes.titleFull')}</h1>
           <div style={S.sub}>
-            {notes.length} nota{notes.length !== 1 ? 's' : ''} y {highlights.length} resaltado
-            {highlights.length !== 1 ? 's' : ''} en {bookTitle(selectedBookId)}
+            {t('library.notes.summary', {
+              notes: tp('library.notes.count', notes.length),
+              highlights: tp('library.highlights.count', highlights.length),
+              book: bookTitle(selectedBookId),
+            })}
           </div>
         </div>
       </header>
@@ -1525,7 +1640,7 @@ function NotesView({
           style={S.notesSelect}
           value={selectedBookId}
           onChange={(e) => setSelectedBookId(e.target.value)}
-          aria-label="Filtrar notas por libro"
+          aria-label={t('library.notes.filterByBook')}
         >
           {bookOptions.map((b) => (
             <option key={b.id} value={b.id}>
@@ -1537,17 +1652,17 @@ function NotesView({
           style={S.notesSelect}
           value={sort}
           onChange={(e) => setSort(e.target.value as NotesSort)}
-          aria-label="Ordenar notas"
+          aria-label={t('library.notes.sort')}
         >
-          <option value="date-desc">Más recientes</option>
-          <option value="date-asc">Más antiguas</option>
-          <option value="position">Por posición</option>
+          <option value="date-desc">{t('library.notes.sortNewest')}</option>
+          <option value="date-asc">{t('library.notes.sortOldest')}</option>
+          <option value="position">{t('library.notes.sortPosition')}</option>
         </select>
         <div style={{ flex: 1 }} />
         <button
           style={S.notesActionBtn}
           onClick={() => setShowExportDialog(true)}
-          aria-label="Exportar o importar anotaciones del libro"
+          aria-label={t('library.notes.exportImportAria')}
         >
           <svg
             width="15"
@@ -1563,7 +1678,7 @@ function NotesView({
             <path d="M7 10l5 5 5-5" />
             <path d="M5 21h14" />
           </svg>
-          Exportar / Importar
+          {t('library.notes.exportImport')}
         </button>
       </div>
 
@@ -1573,7 +1688,7 @@ function NotesView({
           <button
             style={S.notesNoticeClose}
             onClick={() => setNotice(null)}
-            aria-label="Cerrar aviso"
+            aria-label={t('library.notice.close')}
           >
             ×
           </button>
@@ -1583,7 +1698,7 @@ function NotesView({
       {loading ? (
         <div style={S.emptyBookmarks}>
           <div style={{ ...S.spinner, width: 24, height: 24 }} aria-hidden="true" />
-          <p style={S.emptyHint}>Cargando anotaciones…</p>
+          <p style={S.emptyHint}>{t('library.notes.loading')}</p>
         </div>
       ) : items.length === 0 ? (
         <div style={S.emptyBookmarks}>
@@ -1601,10 +1716,8 @@ function NotesView({
             <path d="M16 20v-4h4" />
             <path d="M8 9h8M8 13h5" />
           </svg>
-          <h3 style={S.emptyTitle}>Sin anotaciones en este libro</h3>
-          <p style={S.emptyHint}>
-            Selecciona otro libro o abre uno para escribir notas y resaltar texto.
-          </p>
+          <h3 style={S.emptyTitle}>{t('library.notes.empty')}</h3>
+          <p style={S.emptyHint}>{t('library.notes.emptyHint')}</p>
         </div>
       ) : (
         <div style={S.bookmarksList}>
@@ -1622,7 +1735,7 @@ function NotesView({
                 {item.kind === 'highlight' ? (
                   <div
                     style={{ ...S.highlightSwatch, background: item.color }}
-                    aria-label={`Resaltado en color ${item.color}`}
+                    aria-label={t('library.notes.highlightColor', { color: item.color ?? '' })}
                   />
                 ) : (
                   <div style={S.bookmarkIcon}>
@@ -1647,21 +1760,25 @@ function NotesView({
                   {item.kind === 'note' ? (
                     <div style={S.noteBody}>{item.body}</div>
                   ) : (
-                    <div style={S.highlightLabel}>Resaltado</div>
+                    <div style={S.highlightLabel}>{t('library.notes.highlightLabel')}</div>
                   )}
                   <div style={S.bookmarkMeta}>
                     <span>{bookTitle(item.bookId)}</span>
                     <span style={S.bookmarkDot}>·</span>
-                    <span>{fmtLocator(item.locator)}</span>
+                    <span>{fmtLocator(item.locator, locale)}</span>
                     <span style={S.bookmarkDot}>·</span>
-                    <span>{fmtDate(item.createdAt)}</span>
+                    <span>{fmtDate(item.createdAt, locale)}</span>
                   </div>
                 </div>
               </div>
               <button
                 style={S.bookmarkDelete}
                 onClick={() => handleDeleteItem(item)}
-                aria-label={item.kind === 'note' ? 'Eliminar nota' : 'Eliminar resaltado'}
+                aria-label={
+                  item.kind === 'note'
+                    ? t('library.notes.deleteNote')
+                    : t('library.notes.deleteHighlight')
+                }
               >
                 <svg
                   width="14"
@@ -1704,6 +1821,7 @@ function EmptyState({
   readonly onImportFiles: () => void;
   readonly onImportFolder: () => void;
 }): JSX.Element {
+  const { t } = useT();
   const [showImportMenu, setShowImportMenu] = useState(false);
   const importMenuRef = useRef<HTMLDivElement>(null);
 
@@ -1731,11 +1849,11 @@ function EmptyState({
       >
         <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
       </svg>
-      <h3 style={S.emptyTitle}>No hay libros importados</h3>
-      <p style={S.emptyHint}>Importa tu primer libro para comenzar a leer.</p>
+      <h3 style={S.emptyTitle}>{t('library.notes.emptyBooks')}</h3>
+      <p style={S.emptyHint}>{t('library.notes.emptyBooksHint')}</p>
       <div style={{ position: 'relative' }} ref={importMenuRef}>
         <button style={S.emptyBtn} onClick={() => setShowImportMenu(!showImportMenu)}>
-          Importar libro
+          {t('library.import.book')}
         </button>
         {showImportMenu && (
           <div style={S.importMenu}>
@@ -1759,7 +1877,7 @@ function EmptyState({
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                 <polyline points="14 2 14 8 20 8" />
               </svg>
-              Importar archivo(s)
+              {t('library.import.files')}
             </button>
             <button
               style={S.importMenuItem}
@@ -1780,7 +1898,7 @@ function EmptyState({
               >
                 <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
               </svg>
-              Importar carpeta
+              {t('library.import.folder')}
             </button>
           </div>
         )}
@@ -1818,11 +1936,13 @@ interface BookCardProps {
 }
 
 function BookCard({ book, progress, onOpen, onRemove, onSaveRank }: BookCardProps): JSX.Element {
+  const { t, locale, tp } = useT();
   const [hovered, setHovered] = useState(false);
   const [hoverRank, setHoverRank] = useState<number | null>(null);
   const isMissing = book.status === 'missing';
   const status = getReadingStatus(book);
-  const cfg = STATUS_CFG[status];
+  const statusLabel = t(STATUS_KEYS[status]);
+  const statusDot = STATUS_DOT[status];
   const [c1, c2] = getCoverColors(book.id);
   const glyph = getGlyph(book.id);
   const authorLast = getAuthorLast(book.author);
@@ -1891,7 +2011,7 @@ function BookCard({ book, progress, onOpen, onRemove, onSaveRank }: BookCardProp
       onMouseLeave={() => setHovered(false)}
       role="button"
       tabIndex={0}
-      aria-label={`Abrir ${book.title}`}
+      aria-label={t('library.card.open', { title: book.title })}
     >
       <div
         style={{
@@ -1927,7 +2047,7 @@ function BookCard({ book, progress, onOpen, onRemove, onSaveRank }: BookCardProp
           <span
             style={{
               ...S.dot,
-              backgroundColor: cfg.dot,
+              backgroundColor: statusDot,
               boxShadow:
                 status === 'reading'
                   ? '0 0 0 3px rgba(133,179,150,.25)'
@@ -1936,7 +2056,7 @@ function BookCard({ book, progress, onOpen, onRemove, onSaveRank }: BookCardProp
                     : 'none',
             }}
           />
-          {cfg.label}
+          {statusLabel}
         </span>
         {status === 'reading' && progressPercent > 0 && (
           <div style={S.coverProgress}>
@@ -1964,7 +2084,7 @@ function BookCard({ book, progress, onOpen, onRemove, onSaveRank }: BookCardProp
                 <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
                 <circle cx="12" cy="12" r="2.5" />
               </svg>
-              Visto {relDate(book.lastOpenedAt)}
+              {t('library.card.viewed', { when: relDate(book.lastOpenedAt, locale) })}
             </>
           ) : (
             <>
@@ -1984,12 +2104,12 @@ function BookCard({ book, progress, onOpen, onRemove, onSaveRank }: BookCardProp
                 <line x1="8" y1="2" x2="8" y2="6" />
                 <line x1="3" y1="10" x2="21" y2="10" />
               </svg>
-              Añadido {relDate(book.addedAt)}
+              {t('library.card.added', { when: relDate(book.addedAt, locale) })}
             </>
           )}
           {progressPercent > 0 && (
             <span style={{ marginLeft: 8, color: 'var(--verdigris)' }}>
-              {progressPercent}% leído
+              {t('library.card.progress', { percent: progressPercent })}
             </span>
           )}
         </div>
@@ -1997,7 +2117,7 @@ function BookCard({ book, progress, onOpen, onRemove, onSaveRank }: BookCardProp
           <div
             style={S.starRating}
             role="radiogroup"
-            aria-label={`Rating: ${currentRank} de 5 estrellas`}
+            aria-label={t('library.card.rating', { rank: currentRank })}
             onMouseLeave={() => setHoverRank(null)}
             onKeyDown={handleRankKeyDown}
             tabIndex={0}
@@ -2019,7 +2139,7 @@ function BookCard({ book, progress, onOpen, onRemove, onSaveRank }: BookCardProp
                   key={s}
                   role="radio"
                   aria-checked={isFull || isHalf}
-                  aria-label={`${s} estrella${s > 1 ? 's' : ''}`}
+                  aria-label={tp('library.card.star', s)}
                   style={S.starBtn}
                   onMouseMove={(e) => handleStarMouseMove(e, s)}
                   onClick={(e) => handleRankClick(e, isHalf ? s - 0.5 : s)}
@@ -2039,11 +2159,19 @@ function BookCard({ book, progress, onOpen, onRemove, onSaveRank }: BookCardProp
             {hoverRank !== null && <span style={S.rankTooltip}>{hoverRank}</span>}
           </div>
           {currentRank > 0 && (
-            <button style={S.clearRankBtn} onClick={handleClearRank} aria-label="Limpiar rating">
+            <button
+              style={S.clearRankBtn}
+              onClick={handleClearRank}
+              aria-label={t('library.card.clearRating')}
+            >
               ×
             </button>
           )}
-          <button style={S.removeBtn} onClick={handleRemove} aria-label={`Eliminar ${book.title}`}>
+          <button
+            style={S.removeBtn}
+            onClick={handleRemove}
+            aria-label={t('library.card.delete', { title: book.title })}
+          >
             <svg
               width="13"
               height="13"

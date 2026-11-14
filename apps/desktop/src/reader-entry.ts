@@ -41,6 +41,14 @@ import { createSelectionGate } from './reader-selection-gate';
 import type { SelectionGate } from './reader-selection-gate';
 import { scrollRatio, scrollTopForRatio } from './reader-progress-bar';
 import {
+  applyStaticTranslations,
+  coerceLocale,
+  detectLocale,
+  setLocale,
+  t,
+  tp,
+} from '@clio-reader/i18n';
+import {
   isSameDocumentPosition,
   parseLocator,
   withScrollRatio,
@@ -268,7 +276,7 @@ function parseQueryParams(): QueryParams {
   const hostParams = readHostParams();
   const uri = params.get('uri') ?? hostParams.uri;
   const format = (params.get('format') ?? hostParams.format)?.toLowerCase();
-  if (!uri) throw new ReaderError('Falta el parámetro "uri" en la URL');
+  if (!uri) throw new ReaderError(t('reader.error.missingUri'));
   if (!format || !isSupportedFormat(format))
     throw new ReaderError(`Formato no soportado: "${format ?? 'desconocido'}"`);
   return { uri, format };
@@ -418,11 +426,11 @@ async function renderFixedLayoutPage(
     fixedPageBlobUrls.push(blobUrl);
     const img = document.createElement('img');
     img.className = 'reader-fixed-image';
-    img.alt = 'Página';
+    img.alt = t('reader.pageAlt');
     img.src = blobUrl;
     contentEl.append(img);
   } else {
-    throw new ReaderError('El formato no soporta renderizado de contenido');
+    throw new ReaderError(t('reader.error.noRender'));
   }
 
   await updateChapterInfo(readerDoc);
@@ -547,12 +555,14 @@ function setupProgressBar(readerDoc: ReaderDocument, preferences: ReaderPreferen
   progressBar = createProgressBar({
     elements: { track, fill, label },
     getScrollRatio: readScrollRatio,
-    ...(fixedLayout
-      ? {
-          formatLabel: (pageIndex: number, totalPages: number, percent: number): string =>
-            `Pág. ${pageIndex + 1}/${totalPages} · ${Math.round(percent)}%`,
-        }
-      : {}),
+    formatLabel: (positionIndex: number, positionCount: number, percent: number): string => {
+      const rounded = Math.round(percent);
+      if (positionCount <= 0) return t('reader.progress.percentOnly', { percent: rounded });
+      const current = positionIndex + 1;
+      return fixedLayout
+        ? t('reader.progress.pages', { current, total: positionCount, percent: rounded })
+        : t('reader.progress.chapter', { current, total: positionCount, percent: rounded });
+    },
     onSeek: (idx) => {
       if (readerDoc.goToChapter) {
         void seekChapter(readerDoc, preferences, idx);
@@ -818,11 +828,11 @@ function setupDrawer(): void {
         return;
       }
       const titles: Record<string, string> = {
-        info: 'Información',
-        toc: 'Índice',
-        search: 'Buscar',
-        notes: 'Notas',
-        settings: 'Ajustes de lectura',
+        info: t('reader.panel.info'),
+        toc: t('reader.panel.toc'),
+        search: t('reader.panel.search'),
+        notes: t('reader.panel.notes'),
+        settings: t('reader.panel.settings'),
       };
       openDrawer(panelId, titles[panelId] ?? panelId);
     });
@@ -1002,8 +1012,7 @@ async function renderTOC(readerDoc: ReaderDocument): Promise<void> {
   const getTocFn = (doc.getToc ?? doc.getTOC) as (() => Promise<TocTree>) | undefined;
   if (!getTocFn) {
     console.log('[renderTOC] getTocFn undefined — mostrando "No hay índice disponible."');
-    tocPanel.innerHTML =
-      '<p style="color:var(--chrome-fg-lo);font-size:14px">No hay índice disponible.</p>';
+    tocPanel.innerHTML = `<p style="color:var(--chrome-fg-lo);font-size:14px">${t('reader.toc.empty')}</p>`;
     return;
   }
   const getToc = (): Promise<TocTree> => getTocFn.call(doc);
@@ -1018,8 +1027,7 @@ async function renderTOC(readerDoc: ReaderDocument): Promise<void> {
           : ` (epub sin nav/ncx → spine fallback)`),
     );
     if (!toc || toc.length === 0) {
-      tocPanel.innerHTML =
-        '<p style="color:var(--chrome-fg-lo);font-size:14px">No hay índice disponible.</p>';
+      tocPanel.innerHTML = `<p style="color:var(--chrome-fg-lo);font-size:14px">${t('reader.toc.empty')}</p>`;
       return;
     }
 
@@ -1072,7 +1080,7 @@ async function renderTOC(readerDoc: ReaderDocument): Promise<void> {
           closeDrawer();
         } catch (error) {
           console.error('[reader-entry] navegación por índice falló:', error);
-          showToast('No se pudo abrir ese capítulo');
+          showToast(t('reader.toc.openFailed'));
         }
       });
     });
@@ -1080,7 +1088,7 @@ async function renderTOC(readerDoc: ReaderDocument): Promise<void> {
     console.error('[reader-entry] renderTOC falló:', error);
     const message = error instanceof Error ? error.message : String(error);
     tocPanel.innerHTML =
-      `<p style="color:var(--chrome-fg-lo);font-size:14px">Error al cargar el índice.</p>` +
+      `<p style="color:var(--chrome-fg-lo);font-size:14px">${t('reader.toc.loadError')}</p>` +
       `<p style="color:var(--chrome-fg-lo);font-size:12px;opacity:0.7">${escapeHtml(message)}</p>`;
   }
 }
@@ -1148,7 +1156,7 @@ function setupBookmark(): void {
     markBtn.addEventListener('click', () => {
       markBtn.classList.toggle('on');
       const isOn = markBtn.classList.contains('on');
-      showToast(isOn ? 'Marcador añadido' : 'Marcador eliminado');
+      showToast(isOn ? t('reader.bookmark.added') : t('reader.bookmark.removed'));
     });
   }
 }
@@ -1209,6 +1217,7 @@ let activeNoteId: string | null = null;
 let lastInitData: HostInitData | null = null;
 
 interface HostInitData {
+  readonly locale?: string;
   readonly preferences: ReaderPreferences;
   readonly fileDataB64: string;
   readonly metadata: {
@@ -1316,7 +1325,7 @@ function renderInfoPanel(metadata: {
     <div class="info-content">
       ${
         metadata.coverImage
-          ? `<img src="${metadata.coverImage}" class="info-cover" alt="Portada" />`
+          ? `<img src="${metadata.coverImage}" class="info-cover" alt="${t('reader.info.cover')}" />`
           : `<div class="info-cover-placeholder" style="background:linear-gradient(150deg,${pc1},${pc2})">
             <div class="info-cover-author">${authorLast}</div>
             <div class="info-cover-title">${metadata.title}</div>
@@ -1325,7 +1334,7 @@ function renderInfoPanel(metadata: {
       }
       <h3 class="info-title">${metadata.title}</h3>
       ${metadata.author ? `<p class="info-author">${metadata.author}</p>` : ''}
-      <p class="info-format">Formato: ${metadata.format.toUpperCase()}</p>
+      <p class="info-format">${t('reader.info.format', { format: metadata.format.toUpperCase() })}</p>
       <div class="info-rating">
         <svg width="0" height="0" style="position:absolute">
           <defs>
@@ -1335,13 +1344,13 @@ function renderInfoPanel(metadata: {
             </linearGradient>
           </defs>
         </svg>
-        <div class="info-stars" role="radiogroup" aria-label="Rating del libro" data-rank="${rankValue}">
+        <div class="info-stars" role="radiogroup" aria-label="${t('reader.info.ratingAria')}" data-rank="${rankValue}">
           ${[1, 2, 3, 4, 5]
             .map((s) => {
               const isHalf = rankValue >= s - 0.5 && rankValue < s;
               const isFull = rankValue >= s;
               const fillClass = isFull ? 'star-full' : isHalf ? 'star-half' : 'star-empty';
-              return `<span class="star-btn ${fillClass}" data-star="${s}" role="radio" aria-checked="${isFull || isHalf}" aria-label="${s} estrella${s > 1 ? 's' : ''}">
+              return `<span class="star-btn ${fillClass}" data-star="${s}" role="radio" aria-checked="${isFull || isHalf}" aria-label="${tp('reader.info.star', s, { count: s })}">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="${isFull ? 'var(--gold)' : isHalf ? `url(#${gradId})` : 'var(--line)'}" stroke="none">
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
               </svg>
@@ -1435,7 +1444,7 @@ function renderNotesList(notes: readonly ReaderNoteView[]): void {
   // El locator lleva la posición vertical, así que comparamos por documento (capítulo).
   const activeLocator = parseLocator(currentLocator);
   if (!activeLocator) {
-    list.innerHTML = '<p class="notes-empty">No hay notas ni resaltados en esta página.</p>';
+    list.innerHTML = `<p class="notes-empty">${t('reader.notes.empty')}</p>`;
     return;
   }
 
@@ -1459,7 +1468,7 @@ function renderNotesList(notes: readonly ReaderNoteView[]): void {
   entries.sort((a, b) => a.anchorStart - b.anchorStart);
 
   if (entries.length === 0) {
-    list.innerHTML = '<p class="notes-empty">No hay notas ni resaltados en esta página.</p>';
+    list.innerHTML = `<p class="notes-empty">${t('reader.notes.empty')}</p>`;
     return;
   }
 
@@ -1472,10 +1481,10 @@ function renderNotesList(notes: readonly ReaderNoteView[]): void {
       ${n.selectedText ? `<div class="nquote">“${escapeHtml(n.selectedText)}”</div>` : ''}
       <div class="ntx">${escapeHtml(n.body)}</div>
       <div class="note-actions">
-        <button class="note-edit" data-note-id="${n.id}" data-note-body="${escapeHtml(n.body)}" title="Editar nota">
+        <button class="note-edit" data-note-id="${n.id}" data-note-body="${escapeHtml(n.body)}" title="${t('reader.note.edit')}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
-        <button class="note-delete" data-note-id="${n.id}" title="Eliminar nota">
+        <button class="note-delete" data-note-id="${n.id}" title="${t('reader.note.delete')}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
       </div>
@@ -1486,11 +1495,11 @@ function renderNotesList(notes: readonly ReaderNoteView[]): void {
       return `
     <div class="note hl" data-hl-id="${h.id}" style="--hl-color:${h.color}">
       <div class="hl-label">
-        <span class="hl-swatch" style="background:${h.color}"></span>Resaltado
+        <span class="hl-swatch" style="background:${h.color}"></span>${t('reader.highlight.label')}
       </div>
       ${h.selectedText ? `<div class="nquote">“${escapeHtml(h.selectedText)}”</div>` : ''}
       <div class="note-actions">
-        <button class="hl-delete" data-hl-id="${h.id}" title="Eliminar resaltado">
+        <button class="hl-delete" data-hl-id="${h.id}" title="${t('reader.highlight.delete')}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
       </div>
@@ -1529,7 +1538,7 @@ function renderNotesList(notes: readonly ReaderNoteView[]): void {
         const input = document.getElementById('note-input') as HTMLTextAreaElement | null;
         const saveBtn = document.getElementById('note-save');
         if (input) input.value = noteBody;
-        if (saveBtn) saveBtn.textContent = 'Actualizar';
+        if (saveBtn) saveBtn.textContent = t('reader.update');
         void jumpToNote(noteId);
       }
     });
@@ -1567,12 +1576,10 @@ function scrollToAnchorRange(range: Range, recovered: boolean, kind: 'nota' | 'r
   paintActiveNoteHighlight(range);
   if (recovered) {
     showToast(
-      kind === 'nota'
-        ? 'Nota reubicada: el texto se movió'
-        : 'Resaltado reubicado: el texto se movió',
+      kind === 'nota' ? t('reader.anchor.noteRelocated') : t('reader.anchor.highlightRelocated'),
     );
   } else {
-    showToast(kind === 'nota' ? 'Nota localizada' : 'Resaltado localizado');
+    showToast(kind === 'nota' ? t('reader.anchor.noteFound') : t('reader.anchor.highlightFound'));
   }
 }
 
@@ -1589,9 +1596,7 @@ function revealLocator(
   if (!found) {
     paintActiveNoteHighlight(null);
     showToast(
-      kind === 'nota'
-        ? 'No se encontró el texto de la nota'
-        : 'No se encontró el texto del resaltado',
+      kind === 'nota' ? t('reader.anchor.noteMissing') : t('reader.anchor.highlightMissing'),
     );
     return;
   }
@@ -1638,7 +1643,7 @@ async function jumpToNote(noteId: string): Promise<void> {
     }
   }
 
-  showToast('La nota está en otro capítulo no disponible');
+  showToast(t('reader.note.otherChapter'));
 }
 
 async function jumpToHighlight(highlightId: string): Promise<void> {
@@ -1668,7 +1673,7 @@ async function jumpToHighlight(highlightId: string): Promise<void> {
     }
   }
 
-  showToast('El resaltado está en otro capítulo no disponible');
+  showToast(t('reader.highlight.otherChapter'));
 }
 
 function deleteHighlightFromDrawer(highlightId: string): void {
@@ -1676,7 +1681,7 @@ function deleteHighlightFromDrawer(highlightId: string): void {
   currentHighlights = currentHighlights.filter((h) => h.id !== highlightId);
   refreshHighlightHighlights();
   renderNotesList(currentNotes);
-  showToast('Resaltado en cola para eliminar');
+  showToast(t('reader.highlight.queuedDelete'));
 }
 
 /** Resalta en el capítulo todas las notas ancladas a texto de esta página. */
@@ -1773,7 +1778,7 @@ function applyPendingSelection(content: HTMLElement): void {
     };
     editingNoteId = null;
     const saveBtn = document.getElementById('note-save');
-    if (saveBtn) saveBtn.textContent = 'Guardar nota';
+    if (saveBtn) saveBtn.textContent = t('reader.saveNote');
     renderSelectionPreview();
     if (currentPanel === 'notes') return;
     showSelectionWidget();
@@ -1897,7 +1902,7 @@ function createHighlightFromSelection(color: string): void {
     locator: JSON.stringify(pendingSelection.locator),
     selectedText: pendingSelection.quote,
   });
-  showToast(existing ? 'Resaltado actualizado en cola' : 'Resaltado en cola');
+  showToast(existing ? t('reader.highlight.queuedUpdate') : t('reader.highlight.queued'));
   clearSelection();
 }
 
@@ -1911,7 +1916,7 @@ function deleteHighlightFromSelection(): void {
   enqueueHighlightDelete(existing.id);
   currentHighlights = currentHighlights.filter((h) => h.id !== existing.id);
   refreshHighlightHighlights();
-  showToast('Resaltado eliminado en cola');
+  showToast(t('reader.highlight.deletedQueued'));
   clearSelection();
 }
 
@@ -1953,7 +1958,7 @@ function renderSelectionPreview(): void {
 
   preview.innerHTML = `
     <span class="nquote-text">“${escapeHtml(pendingSelection.quote)}”</span>
-    <button class="nquote-clear" id="note-quote-clear" title="Quitar texto seleccionado">×</button>
+    <button class="nquote-clear" id="note-quote-clear" title="${t('reader.note.quoteClear')}">×</button>
   `;
   preview.classList.add('show');
 
@@ -2016,18 +2021,18 @@ function setupNotes(): void {
       if (editingNoteId) {
         enqueueNoteUpdate({ noteId: editingNoteId, body });
         editingNoteId = null;
-        saveBtn.textContent = 'Guardar nota';
-        showToast('Actualización en cola');
+        saveBtn.textContent = t('reader.saveNote');
+        showToast(t('reader.note.updateQueued'));
       } else if (pendingSelection) {
         enqueueNote({
           body,
           locator: JSON.stringify(pendingSelection.locator),
           selectedText: pendingSelection.quote,
         });
-        showToast('Nota anclada al texto en cola');
+        showToast(t('reader.note.queuedAnchored'));
       } else {
         enqueueNote({ body, locator: currentLocator });
-        showToast('Nota en cola');
+        showToast(t('reader.note.queued'));
       }
       input.value = '';
       clearSelection();
@@ -2047,6 +2052,8 @@ function setupNotes(): void {
 }
 
 async function main(): Promise<void> {
+  setLocale(detectLocale(navigator.language));
+  applyStaticTranslations(document);
   setUIState({ type: 'loading' });
 
   try {
@@ -2054,6 +2061,11 @@ async function main(): Promise<void> {
 
     (window as unknown as Record<string, unknown>).__initFromHost = async (data: HostInitData) => {
       lastInitData = data;
+      const hostLocale = coerceLocale(data.locale);
+      if (hostLocale) {
+        setLocale(hostLocale);
+        applyStaticTranslations(document);
+      }
       try {
         const binary = atob(data.fileDataB64);
         const bytes = new Uint8Array(binary.length);
@@ -2096,7 +2108,7 @@ async function main(): Promise<void> {
         setupSelectionWidget();
         setupNotes();
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Error al abrir el libro';
+        const message = error instanceof Error ? error.message : t('reader.error.open');
         setUIState({ type: 'error', message });
       }
     };
@@ -2157,7 +2169,7 @@ async function main(): Promise<void> {
 
     /* --- Notes save/error feedback from host --- */
     window.__noteSaved = () => {
-      showToast('Nota guardada');
+      showToast(t('reader.note.saved'));
     };
     window.__noteError = (message: string) => {
       showToast(message);
@@ -2165,7 +2177,7 @@ async function main(): Promise<void> {
 
     /* --- Highlights save/error feedback from host --- */
     window.__highlightSaved = () => {
-      showToast('Resaltado guardado');
+      showToast(t('reader.highlight.saved'));
     };
     window.__highlightError = (message: string) => {
       showToast(message);
@@ -2198,7 +2210,7 @@ async function main(): Promise<void> {
       return currentLocator || undefined;
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Error desconocido al abrir el libro';
+    const message = error instanceof Error ? error.message : t('reader.error.openUnknown');
     setUIState({ type: 'error', message });
   }
 }

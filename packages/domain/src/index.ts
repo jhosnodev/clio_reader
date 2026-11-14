@@ -147,6 +147,7 @@ export type PaletteMode = 'dark' | 'light';
 export interface UserSettings {
   readonly paletteId: string;
   readonly mode: PaletteMode;
+  readonly locale?: string | undefined;
 }
 
 // ==================== FEEDBACK ====================

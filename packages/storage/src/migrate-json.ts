@@ -92,6 +92,10 @@ function parseJsonState(jsonPath: string): PersistenceState | null {
               (candidate.userSettings as Record<string, unknown>).mode === 'light'
                 ? ((candidate.userSettings as Record<string, unknown>).mode as 'dark' | 'light')
                 : 'dark',
+            ...(typeof (candidate.userSettings as Record<string, unknown>).locale === 'string' &&
+              ((candidate.userSettings as Record<string, unknown>).locale as string).length > 0 && {
+                locale: (candidate.userSettings as Record<string, unknown>).locale as string,
+              }),
           }
         : { paletteId: 'clio-3', mode: 'dark' as const },
     };
@@ -241,6 +245,7 @@ export async function migrateJsonToSqlite(
         id: 1,
         paletteId: state.userSettings.paletteId,
         mode: state.userSettings.mode,
+        locale: state.userSettings.locale ?? null,
         updatedAt: now,
       })
       .run();

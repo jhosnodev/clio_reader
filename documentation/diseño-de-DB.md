@@ -125,6 +125,7 @@ Dentro de ese directorio se guardan `clio-reader.state.json` (blob principal), `
 │ PK id=1        INT   │ (singleton)
 │    palette_id  TEXT   │
 │    mode        TEXT   │
+│    locale      TEXT   │
 │    updated_at  INT    │
 └──────────────────────┘
 ```
@@ -285,6 +286,7 @@ CREATE TABLE user_settings (
   id INTEGER PRIMARY KEY DEFAULT 1 CHECK(id = 1),
   palette_id TEXT NOT NULL DEFAULT 'clio-3',
   mode TEXT NOT NULL DEFAULT 'dark' CHECK(mode IN ('dark','light')),
+  locale TEXT,
   updated_at INTEGER NOT NULL DEFAULT (unixepoch())
 );
 ```
@@ -413,6 +415,7 @@ La tabla `user_settings` almacena la configuración global de la aplicación (si
 
 - `palette_id`: ID del tema de color (ej: 'clio-3', 'clio-5')
 - `mode`: Modo del tema ('dark' o 'light')
+- `locale`: Idioma de la UI ('en' o 'es'; opcional — si falta, se detecta de `navigator.language`/`app.getLocale()`)
 
 **Migración desde localStorage:**
 

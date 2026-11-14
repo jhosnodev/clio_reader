@@ -23,6 +23,7 @@ import type { FeedbackDocumentFormat, ReaderLocator, ReaderPreferences } from '@
 import { createDefaultPreferences } from '@clio-reader/domain';
 import { getPalette, LIGHT_DEFAULTS } from '../themes';
 import { FeedbackPanel } from './FeedbackPanel';
+import { useT } from '../i18n';
 import {
   getResumePositionOrder,
   getResumeScrollRatio,
@@ -119,6 +120,7 @@ export function ReaderView({
   onClose,
   onSaveRank,
 }: ReaderViewProps): JSX.Element {
+  const { t, locale } = useT();
   const [fileStatus, setFileStatus] = useState<FileStatus>('checking');
   const [isRelocating, setIsRelocating] = useState(false);
   const [webviewLoaded, setWebviewLoaded] = useState(false);
@@ -226,6 +228,7 @@ export function ReaderView({
         }));
 
         const initData = {
+          locale,
           preferences,
           fileDataB64: b64,
           metadata: {
@@ -275,7 +278,7 @@ export function ReaderView({
         (webviewRef.current as HTMLElement | null)?.focus();
       } catch (err) {
         console.error('[reader] error inyectando datos en webview:', err);
-        setLoadError('No se pudo cargar el contenido del libro.');
+        setLoadError(t('reader.loadContentFailed'));
       }
     };
   }, [
@@ -291,6 +294,8 @@ export function ReaderView({
     format,
     repository,
     initialLocator,
+    locale,
+    t,
   ]);
 
   /* ----- Cleanup del listener en unmount ----- */
@@ -388,7 +393,7 @@ export function ReaderView({
               });
               await wv.executeJavaScript('window.__noteSaved && window.__noteSaved()');
             } catch (err) {
-              const message = err instanceof Error ? err.message : 'No se pudo guardar la nota';
+              const message = err instanceof Error ? err.message : t('reader.noteSaveFailed');
               console.error('[reader] error guardando nota:', err);
               await wv.executeJavaScript(
                 `window.__noteError && window.__noteError(${JSON.stringify(message)})`,
@@ -410,7 +415,7 @@ export function ReaderView({
               await updateNoteManaged(repository, item.noteId, bookId, item.body);
               await wv.executeJavaScript('window.__noteSaved && window.__noteSaved()');
             } catch (err) {
-              const message = err instanceof Error ? err.message : 'No se pudo actualizar la nota';
+              const message = err instanceof Error ? err.message : t('reader.noteUpdateFailed');
               console.error('[reader] error actualizando nota:', err);
               await wv.executeJavaScript(
                 `window.__noteError && window.__noteError(${JSON.stringify(message)})`,
@@ -451,8 +456,7 @@ export function ReaderView({
               });
               await wv.executeJavaScript('window.__highlightSaved && window.__highlightSaved()');
             } catch (err) {
-              const message =
-                err instanceof Error ? err.message : 'No se pudo guardar el resaltado';
+              const message = err instanceof Error ? err.message : t('reader.highlightSaveFailed');
               console.error('[reader] error guardando resaltado:', err);
               await wv.executeJavaScript(
                 `window.__highlightError && window.__highlightError(${JSON.stringify(message)})`,
@@ -474,7 +478,7 @@ export function ReaderView({
       drainPromiseRef.current = null;
     });
     return run;
-  }, [repository, bookId, pushNotesToWebview, pushHighlightsToWebview]);
+  }, [repository, bookId, pushNotesToWebview, pushHighlightsToWebview, t]);
 
   /* ----- Polling: drenar cola de notas pendientes del webview ----- */
   useEffect(() => {
@@ -662,7 +666,7 @@ export function ReaderView({
       if (fail.errorCode === -3) return;
       if (fail.isMainFrame === false) return;
       console.error('[reader] did-fail-load:', fail.errorCode, fail.errorDescription);
-      setLoadError(fail.errorDescription || 'No se pudo cargar el lector.');
+      setLoadError(fail.errorDescription || t('reader.loadFailed'));
     };
 
     webview.addEventListener('console-message', handleConsoleMessage);
@@ -684,6 +688,7 @@ export function ReaderView({
     fileStatus,
     repository,
     loadKey,
+    t,
   ]);
 
   /* ----- Guardar progreso al cerrar la ventana ----- */
@@ -769,10 +774,10 @@ export function ReaderView({
                 style={styles.loadingOverlay}
                 role="status"
                 aria-busy="true"
-                aria-label="Abriendo libro"
+                aria-label={t('reader.openingAria')}
               >
                 <div style={styles.spinner} aria-hidden="true" />
-                <p style={styles.loadingText}>Abriendo libro…</p>
+                <p style={styles.loadingText}>{t('reader.opening')}</p>
               </div>
             )
           )}
@@ -800,10 +805,11 @@ function toFeedbackDocumentFormat(format: string): FeedbackDocumentFormat | unde
    ========================================================================== */
 
 function LoadingState(): JSX.Element {
+  const { t } = useT();
   return (
     <div style={styles.loadingOverlay}>
       <div style={styles.spinner} aria-hidden="true" />
-      <p style={styles.loadingText}>Verificando archivo…</p>
+      <p style={styles.loadingText}>{t('reader.checking')}</p>
     </div>
   );
 }
@@ -819,6 +825,7 @@ function FileNotFoundState({
   onRelocate,
   isRelocating,
 }: FileNotFoundStateProps): JSX.Element {
+  const { t } = useT();
   return (
     <div style={styles.stateContainer}>
       <svg
@@ -833,17 +840,17 @@ function FileNotFoundState({
         <circle cx="12" cy="12" r="9" />
         <path d="M12 8v4M12 16h.01" />
       </svg>
-      <p style={styles.errorTitle}>Archivo no encontrado</p>
-      <p style={styles.errorDetail}>El archivo no se encuentra en la ubicación original:</p>
+      <p style={styles.errorTitle}>{t('reader.fileNotFound')}</p>
+      <p style={styles.errorDetail}>{t('reader.fileNotFoundDetail')}</p>
       <p style={styles.errorPath}>{fileUri}</p>
-      <p style={styles.errorHint}>Es posible que el archivo haya sido movido o eliminado.</p>
+      <p style={styles.errorHint}>{t('reader.fileNotFoundHint')}</p>
       <button
         style={styles.relocateButton}
         onClick={onRelocate}
         disabled={isRelocating}
-        aria-label="Localizar archivo en otra ubicación"
+        aria-label={t('reader.relocateAria')}
       >
-        {isRelocating ? 'Buscando…' : 'Localizar archivo'}
+        {isRelocating ? t('reader.relocating') : t('reader.relocate')}
       </button>
     </div>
   );
@@ -857,6 +864,7 @@ interface LoadErrorStateProps {
 }
 
 function LoadErrorState({ message, onRetry, onClose, onReport }: LoadErrorStateProps): JSX.Element {
+  const { t } = useT();
   return (
     <div style={styles.stateContainer} role="alert">
       <svg
@@ -871,17 +879,17 @@ function LoadErrorState({ message, onRetry, onClose, onReport }: LoadErrorStateP
         <circle cx="12" cy="12" r="9" />
         <path d="M12 8v4M12 16h.01" />
       </svg>
-      <p style={styles.errorTitle}>No se pudo abrir el libro</p>
+      <p style={styles.errorTitle}>{t('reader.errorTitle')}</p>
       <p style={styles.errorDetail}>{message}</p>
       <div style={styles.errorActions}>
         <button style={styles.relocateButton} onClick={onRetry}>
-          Reintentar
+          {t('reader.retry')}
         </button>
         <button style={styles.secondaryButton} onClick={onClose}>
-          Volver a la biblioteca
+          {t('reader.backToLibrary')}
         </button>
         <button style={styles.secondaryButton} onClick={onReport}>
-          Reportar problema
+          {t('reader.reportProblem')}
         </button>
       </div>
     </div>

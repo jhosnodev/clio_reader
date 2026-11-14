@@ -22,7 +22,8 @@
       "@clio-reader/storage": ["../../packages/storage/src"],
       "@clio-reader/library": ["../../packages/library/src"],
       "@clio-reader/annotations": ["../../packages/annotations/src"],
-      "@clio-reader/feedback": ["../../packages/feedback/src"]
+      "@clio-reader/feedback": ["../../packages/feedback/src"],
+      "@clio-reader/i18n": ["../../packages/i18n/src"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],

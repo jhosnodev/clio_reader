@@ -102,6 +102,7 @@ export default defineConfig({
       '@clio-reader/storage': resolve(__dirname, '../../packages/storage/src'),
       '@clio-reader/library': resolve(__dirname, '../../packages/library/src'),
       '@clio-reader/annotations': resolve(__dirname, '../../packages/annotations/src'),
+      '@clio-reader/i18n': resolve(__dirname, '../../packages/i18n/src'),
     },
   },
 });

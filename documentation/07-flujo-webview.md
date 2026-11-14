@@ -65,7 +65,7 @@ El adaptador concreto se elige dentro del webview con `ReaderFactory.create(sour
 
 1. Se leen `uri` y `format` de los query params (o de `window.__clioHostParams` en mobile)
 2. Se valida que el formato sea soportado
-3. El **host** (`ReaderView`) lee el archivo con `bridge.readFile`, lo pasa en base64 y llama a `window.__initFromHost({ fileDataB64, preferences, metadata, notes, highlights, savedProgress })` vía `executeJavaScript`
+3. El **host** (`ReaderView`) lee el archivo con `bridge.readFile`, lo pasa en base64 y llama a `window.__initFromHost({ locale, fileDataB64, preferences, metadata, notes, highlights, savedProgress })` vía `executeJavaScript`
 4. El reader crea el adaptador correspondiente con `ReaderFactory.create(...)` y llama a `document.open(bytes)`
 5. Se renderiza la primera página/capítulo/imagen, se aplican estilos del tema y se configuran los controles
 6. El host inyecta la paleta activa con `window.__applyPalette(cssVars)`
@@ -76,15 +76,15 @@ La comunicación **no usa `postMessage`**. Hay dos canales:
 
 #### Shell → WebView: `executeJavaScript`
 
-| Llamada                                                                   | Descripción                                                         |
-| ------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `window.__initFromHost(initData)`                                         | Arranque: bytes del archivo, prefs, metadata, anotaciones, progreso |
-| `window.__applyPalette(cssVars)`                                          | Aplica la paleta activa de la app al reader                         |
-| `window.__updateRank(rank)`                                               | Empuja un cambio de rating sin reinicializar                        |
-| `window.__getCurrentLocator()`                                            | Lee el locator actual (retorno como string JSON)                    |
-| `window.__pendingNotes` / `__pendingNoteUpdates` / `__pendingNoteDeletes` | Colas de notas a persistir (el host hace el drain)                  |
-| `window.__pendingHighlights` / `__pendingHighlightDeletes`                | Colas de resaltados a persistir                                     |
-| `window.__noteSaved()` / `__noteError()`                                  | Acks de confirmación/error de cada operación                        |
+| Llamada                                                                   | Descripción                                                                 |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `window.__initFromHost(initData)`                                         | Arranque: locale, bytes del archivo, prefs, metadata, anotaciones, progreso |
+| `window.__applyPalette(cssVars)`                                          | Aplica la paleta activa de la app al reader                                 |
+| `window.__updateRank(rank)`                                               | Empuja un cambio de rating sin reinicializar                                |
+| `window.__getCurrentLocator()`                                            | Lee el locator actual (retorno como string JSON)                            |
+| `window.__pendingNotes` / `__pendingNoteUpdates` / `__pendingNoteDeletes` | Colas de notas a persistir (el host hace el drain)                          |
+| `window.__pendingHighlights` / `__pendingHighlightDeletes`                | Colas de resaltados a persistir                                             |
+| `window.__noteSaved()` / `__noteError()`                                  | Acks de confirmación/error de cada operación                                |
 
 #### WebView → Shell: sentinelas por `console.log` + evento `console-message`
 

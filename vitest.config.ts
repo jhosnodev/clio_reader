@@ -23,6 +23,7 @@ export default defineConfig({
       '@clio-reader/reader-md': resolve(repositoryRoot, 'packages/reader-md/src/index.ts'),
       '@clio-reader/annotations': resolve(repositoryRoot, 'packages/annotations/src/index.ts'),
       '@clio-reader/feedback': resolve(repositoryRoot, 'packages/feedback/src/index.ts'),
+      '@clio-reader/i18n': resolve(repositoryRoot, 'packages/i18n/src/index.ts'),
       '@clio-reader/reader-session': resolve(
         repositoryRoot,
         'packages/reader-session/src/index.ts',

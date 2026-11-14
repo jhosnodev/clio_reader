@@ -25,6 +25,7 @@
   "dependencies": {
     "@clio-reader/domain": "workspace:*",
     "@clio-reader/feedback": "workspace:*",
+    "@clio-reader/i18n": "workspace:*",
     "@clio-reader/library": "workspace:*",
     "@clio-reader/reader-core": "workspace:*",
     "@clio-reader/reader-cbz": "workspace:*",

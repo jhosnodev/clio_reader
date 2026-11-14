@@ -138,6 +138,7 @@ export const userSettings = sqliteTable('user_settings', {
   id: integer('id').primaryKey().default(1),
   paletteId: text('palette_id').notNull().default('clio-3'),
   mode: text('mode').notNull().default('dark'), // 'dark' | 'light'
+  locale: text('locale'),
   updatedAt: integer('updated_at')
     .notNull()
     .default(sql`(unixepoch())`),
