@@ -2,7 +2,7 @@
 
 ## Plan de producto e implementación
 
-**Estado:** Roadmap aprobado — **Fase 1 (local, desktop) implementada**
+**Estado:** Roadmap aprobado — **Fase 1 desktop cerrada (1b) · Fase 2 código listo, falta despliegue**
 **Producto:** Clio Reader
 **Alcance:** Desktop (Electron + React) y Mobile (React Native)
 **Destino de gestión:** GitHub Issues + GitHub Projects
@@ -10,18 +10,48 @@
 
 ### Estado por fase
 
-| Fase | Descripción                  | Estado                                                                                                                                |
-| ---- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| 0    | Definición y decisiones      | ✅ Parcial: reacciones, categorías, metadatos y áreas aprobados; pendientes: retención, almacenamiento backend, límites de frecuencia |
-| 1    | Feedback Core local          | ✅ **Desktop**: UI, contrato, servicio, cola local SQLite. ⬜ Mobile                                                                  |
-| 2    | API y recepción centralizada | ⬜ Pendiente                                                                                                                          |
-| 3    | Consola interna y GitHub     | ⬜ Pendiente                                                                                                                          |
-| 4    | Inteligencia de producto     | ⬜ Pendiente                                                                                                                          |
+| Fase | Descripción                  | Estado                                                                                                                                 |
+| ---- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 0    | Definición y decisiones      | ✅ Parcial → **defaults propuestos** (ver §0.1); aprobados en plan de trabajo                                                          |
+| 1    | Feedback Core local          | ✅ **Desktop** (UI, contrato, servicio, cola SQLite, i18n, Rail). ⬜ Mobile                                                            |
+| 2    | API y recepción centralizada | 🔧 **Código listo**: Worker + D1, validación/idempotencia/rate-limit, sync cliente. ⬜ Falta desplegar y fijar `VITE_FEEDBACK_API_URL` |
+| 3    | Consola interna y GitHub     | ⬜ Pendiente                                                                                                                           |
+| 4    | Inteligencia de producto     | ⬜ Pendiente                                                                                                                           |
 
-### Implementación de Fase 1 (desktop)
+### 0.1 Defaults aprobados (decisiones de §13)
+
+| #   | Decisión                   | Default aprobado                                                                                    |
+| --- | -------------------------- | --------------------------------------------------------------------------------------------------- |
+| 1   | Almacenamiento central     | **Cloudflare Worker + D1** (misma propuesta que §5.3)                                               |
+| 2   | Installation ID            | **Persistente** (`localStorage` desktop / `KeyValueStore` mobile); no se deriva de datos personales |
+| 3   | Retención                  | **180 días** el feedback crudo; agregados pueden persistir más; borrado a solicitud del usuario     |
+| 4   | Adjuntos (logs/capturas)   | **Fuera de v1**; se pospone a una fase posterior con consentimiento explícito y redacción           |
+| 5   | Revisor de Issues          | **Maintainer manual** del repo; nunca auto-creación de Issues                                       |
+| 6   | Comunicación de resolución | **Fuera de v1**; solo se persiste `followUpConsent` para uso futuro                                 |
+
+Límites v1: `message` ≤ 2000 chars; rate limit por `installationId` (10 envíos / 10 min);
+payload ≤ 8 KB; sin autenticación de usuario.
+
+### 0.2 Plan de trabajo aprobado (orden de ejecución)
+
+1. **Docs**: actualizar esta spec con estado real + defaults; `AGENTS.md` §20; tabla `feedback` en `diseño-de-DB.md`. ✅
+2. **Fase 1b — cerrar desktop**:
+   - Reactivar botón "Compartir feedback" del Rail (`LibraryView`) con claves i18n (sin strings hardcodeados). ✅
+   - Entry point en Ajustes (sección feedback/privacidad) si aplica en la UI actual. → N/A hasta existir pantalla de Ajustes.
+   - Tests de lógica de `FeedbackPanel` (`panel-model`) y del bridge de feedback. ✅
+   - Documentar `feedback` en el diseño de DB. ✅
+3. **Fase 2 — API + sync**:
+   - `apps/worker`: Cloudflare Worker + D1 → `POST /feedback` (esquema, idempotencia por UUID, rate limit, límites). ✅
+   - Cliente: `FeedbackTransport` + worker de sincronización con backoff exponencial y jitter; `received → sent` / `closed`; configuración de endpoint. ✅
+   - Tests: validación servidor, idempotencia, rate limit, offline/reintentos. ✅
+   - **Pendiente:** desplegar Worker + D1 y fijar `VITE_FEEDBACK_API_URL`.
+4. **Pendientes registrados** (no en este ciclo): Mobile Fase 1, Fases 3–4, adjuntos, notificaciones.
+
+### Implementación de Fase 1 (desktop) — estado real
 
 - **Contrato y entidad**: `packages/domain/src/index.ts` (tipos `Feedback*`,
-  `createFeedback` con validación, `FEEDBACK_MESSAGE_MAX_LENGTH = 2000`).
+  `createFeedback` con validación, `FEEDBACK_MESSAGE_MAX_LENGTH = 2000`,
+  estados `received | queued | sent | reviewed | linked | closed`).
 - **Servicio**: `packages/feedback` (`FeedbackService`, `collectFeedbackContext`,
   interfaz `FeedbackRepository`).
 - **Persistencia**: tabla `feedback` en SQLite (Drizzle). El SQL idempotente vive en
@@ -32,21 +62,53 @@
   preload (`preload.cjs`/`preload.ts`), `env.d.ts` y `src/bridges/feedback-bridge.ts`.
 - **UI**: `src/components/FeedbackPanel.tsx` (reacciones, categoría opcional, comentario
   opcional, aviso de privacidad, confirmación con contador de pendientes).
-  Entradas: botón "Compartir feedback" en el Rail (`LibraryView`) y
-  "Reportar problema" en `LoadErrorState` (`ReaderView`).
-- **Identificador de instalación**: UUID aleatorio en `localStorage`
+  - Entrada activa: **"Reportar problema"** en `LoadErrorState` (`ReaderView`).
+  - Entrada activa: **Rail** de `LibraryView` (`t('feedback.title')`).
+  - Entrada pendiente: sección de feedback en **Ajustes** (cuando exista la pantalla).
+- **i18n**: namespace `feedback.*` completo en `packages/i18n` (`en.ts` / `es.ts`, 23 claves);
+  paridad garantizada por `completeness.test.ts`. Toda UI nueva usa `t()`.
+- **Identificador de instalación**: UUID aleatorio persistente en `localStorage`
   (`src/feedback/installation-id.ts`), no derivado de datos personales.
-- **Fase 1 no envía nada a red**: los envíos quedan en SQLite con estado `received`
-  a la espera de la Fase 2.
+- **Consentimientos**: campos `diagnosticsConsent` / `followUpConsent` en dominio y SQLite
+  (default `false`); **sin toggles en UI v1** (adjuntos fuera de alcance; follow-up fuera de v1).
+- **Lógica testeable**: `src/feedback/panel-model.ts` (`canSubmitFeedback`,
+  `buildSubmissionFields`) + tests del bridge.
 
-### Pendientes decididos (no bloquean Fase 1)
+### Implementación de Fase 2 — estado real
 
-1. Proveedor de almacenamiento central.
-2. Persistencia del identificador de instalación (hoy `localStorage`).
-3. Periodo de retención/eliminación del feedback.
-4. Diagnóstico avanzado (logs/capturas) en la primera versión con backend.
-5. Quién revisa y aprueba la creación de Issues.
-6. Comunicación de resolución al usuario.
+- **Worker** (`apps/worker`): `POST /feedback` con validación de esquema (enums y
+  límites del dominio), idempotencia por UUID (201 created / 200 duplicate),
+  rate limit por `installationId` (default 10 / 10 min), CORS, payload ≤ 8 KB.
+  Esquema D1 en `apps/worker/schema.sql`. Despliegue: `wrangler deploy`.
+- **Cliente** (`packages/feedback`):
+  - `HttpFeedbackTransport` → `FeedbackWireSubmission` (JSON, `createdAt` ISO).
+  - `FeedbackSyncService`: `received` → `sent` (2xx/200) o `closed` (4xx permanente /
+    reintentos agotados); backoff exponencial con jitter (`computeBackoffMs`).
+- **Desktop**: `src/feedback/sync.ts` dispara sync tras enviar y al arranque
+  (solo si `VITE_FEEDBACK_API_URL` está definida; sin endpoint, solo cola local).
+- **Tests**: `apps/worker/tests/*`, `packages/feedback/tests/{sync,transport}.test.ts`.
+
+### Pendientes ya resueltos por los defaults de §0.1
+
+Los puntos 1–6 de "Decisiones que deben cerrarse antes de producción" (§13) tienen default
+aprobado en §0.1; se revisan solo si el costo o el volumen real lo exigen.
+
+### Qué falta explícito (no bloquea el commit)
+
+**Cobertura de tests actual (70 en verde):** dominio, servicio, contexto, sync,
+transporte, worker (handler/validate), lógica del panel y bridge desktop.
+
+| Pendiente                                 | Tipo        | Notas                                                                                      |
+| ----------------------------------------- | ----------- | ------------------------------------------------------------------------------------------ |
+| Tests de render de `FeedbackPanel`        | UI          | No hay `@testing-library/react` en el repo; la lógica vive en `panel-model` y está testada |
+| E2E offline → sync contra endpoint real   | Integración | Hoy solo mocks de `fetch` en unit tests                                                    |
+| Desplegar Worker + D1 (`wrangler deploy`) | Infra       | Falta crear la DB y fijar `database_id` en `wrangler.toml`                                 |
+| `VITE_FEEDBACK_API_URL` en build desktop  | Config      | Sin endpoint, el sync es no-op (solo cola local)                                           |
+| Fase 1 Mobile (UI + `LocalRepository`)    | Feature     | Fuera de este ciclo                                                                        |
+| Entry point en Ajustes                    | UI          | N/A hasta existir pantalla de Ajustes                                                      |
+| Fase 3 (GitHub) y Fase 4 (dashboards)     | Feature     | Futuras                                                                                    |
+| Diagnóstico avanzado / adjuntos           | Feature     | Fuera de v1 (§0.1)                                                                         |
+| Notificaciones de resolución              | Feature     | Fuera de v1 (§0.1)                                                                         |
 
 ---
 
@@ -596,51 +658,63 @@ Clio debe permitir registrar feedback aunque no haya conexión.
 
 Tareas:
 
-- [ ] Confirmar áreas de Clio que ofrecerán feedback.
-- [ ] Definir las cinco reacciones y categorías opcionales.
-- [ ] Aprobar los metadatos permitidos.
-- [ ] Definir política de privacidad y retención.
-- [ ] Elegir almacenamiento backend.
-- [ ] Definir límites de tamaño y frecuencia.
-- [ ] Definir estados de la cola local.
-- [ ] Crear repositorio o módulo interno de documentación.
+- [x] Confirmar áreas de Clio que ofrecerán feedback (`reader`, `library`, `annotations`, `settings`).
+- [x] Definir las cinco reacciones y categorías opcionales.
+- [x] Aprobar los metadatos permitidos.
+- [x] Definir política de privacidad y retención → **180 días** (§0.1).
+- [x] Elegir almacenamiento backend → **Cloudflare Worker + D1** (§0.1).
+- [x] Definir límites de tamaño y frecuencia → 2000 chars, 10/10 min, 8 KB (§0.1).
+- [x] Definir estados de la cola local (`received` → `sent` / `closed` según sync).
+- [x] Crear módulo de documentación → `documentation/features/16-clio-feedback-core.md`.
 
 **Entregable:** especificación funcional y contrato de datos aprobados.
 
 ### Fase 1 --- Feedback Core local
 
-**Objetivo:** construir una experiencia usable sin depender todavía de
-GitHub.
+**Objetivo:** construir una experiencia usable sin depender todavía de GitHub.
 
-Tareas:
+Tareas desktop (core):
 
-- [ ] Implementar Feedback UI en Desktop.
+- [x] Implementar Feedback UI en Desktop (`FeedbackPanel.tsx`).
+- [x] Crear el contrato compartido (`packages/domain` `Feedback*`).
+- [x] Implementar Feedback Service (`packages/feedback`).
+- [x] Capturar contexto permitido (`collectFeedbackContext`).
+- [x] Implementar validación local (`createFeedback`, `DomainValidationError`).
+- [x] Persistir envíos pendientes en SQLite (tabla `feedback` + Drizzle).
+- [x] Implementar estados y confirmaciones (contador de pendientes, `tp('feedback.pending')`).
+- [x] i18n `feedback.*` EN/ES.
+- [x] Entrada "Reportar problema" (`LoadErrorState`).
+- [x] **1b:** Reactivar Rail en `LibraryView` con claves i18n.
+- [ ] **1b:** Entry point en Ajustes — _N/A hasta existir pantalla de Ajustes_.
+- [x] **1b:** Pruebas de lógica del panel y del bridge.
+
+Tareas mobile:
+
 - [ ] Implementar Feedback UI en Mobile.
-- [ ] Crear el contrato compartido.
-- [ ] Implementar Feedback Service.
-- [ ] Capturar contexto permitido.
-- [ ] Implementar validación local.
-- [ ] Persistir envíos pendientes en SQLite.
-- [ ] Implementar estados y confirmaciones.
-- [ ] Añadir pruebas unitarias y de interfaz.
+- [ ] Persistir envíos pendientes en `LocalRepository` / `KeyValueStore`.
 
-**Entregable:** feedback funcional en ambas plataformas, inicialmente
-con almacenamiento local o un adaptador de desarrollo.
+**Entregable 1b:** feedback alcanzable desde Library y con tests de lógica/bridge.
+**Entregable Fase 1 completa:** mismo flujo en ambas plataformas con almacenamiento local.
 
 ### Fase 2 --- API y recepción centralizada
 
-**Objetivo:** recibir feedback de forma segura.
+**Objetivo:** recibir feedback de forma segura y vaciar la cola local.
 
 Tareas:
 
-- [ ] Implementar endpoint de recepción.
-- [ ] Validar esquema en servidor.
-- [ ] Implementar idempotencia.
-- [ ] Añadir rate limiting.
-- [ ] Guardar registros en almacenamiento central.
-- [ ] Implementar sincronización y reintentos.
-- [ ] Implementar observabilidad sin registrar contenido sensible.
-- [ ] Probar pérdida de conexión, reintentos y duplicados.
+- [x] Crear `apps/worker` (Cloudflare Worker + D1) en el monorepo.
+- [x] Implementar endpoint `POST /feedback`.
+- [x] Validar esquema en servidor (mismos enums/límites que dominio).
+- [x] Implementar idempotencia (UUID upsert; reintentos no duplican).
+- [x] Añadir rate limiting por `installationId` (ventana configurable).
+- [x] Esquema D1 (`apps/worker/schema.sql`) espejo de la cola local.
+- [x] Interfaz `FeedbackTransport` + `HttpFeedbackTransport` en cliente.
+- [x] `FeedbackSyncService`: backoff exponencial con jitter, límite de intentos.
+- [x] Transición local `received` → `sent` tras 2xx; `closed` en fallo permanente.
+- [x] No borrar el registro local antes de la confirmación del servidor.
+- [x] Observabilidad sin payloads sensibles (errores solo con metadatos).
+- [x] Probar validación, idempotencia, rate limit y reintentos (unit tests).
+- [ ] Desplegar Worker + D1 y configurar `VITE_FEEDBACK_API_URL` en desktop.
 
 **Entregable:** feedback centralizado y sincronización confiable.
 
@@ -655,7 +729,7 @@ Tareas:
 - [ ] Implementar revisión y clasificación.
 - [ ] Crear agrupación conservadora y deduplicación.
 - [ ] Permitir vincular un grupo con un Issue existente.
-- [ ] Crear Issues desde grupos aprobados.
+- [ ] Crear Issues desde grupos aprobados (solo revisor manual).
 - [ ] Añadir labels y metadatos.
 - [ ] Registrar la URL y el número del Issue.
 - [ ] Sincronizar el estado interno con el Issue cuando corresponda.
@@ -673,8 +747,8 @@ Tareas:
 - [ ] Frecuencia de problemas agrupados.
 - [ ] Solicitudes de funcionalidades recurrentes.
 - [ ] Seguimiento de grupos resueltos.
-- [ ] Notificaciones de novedades con consentimiento.
-- [ ] Exportación y eliminación de registros según política.
+- [ ] Notificaciones de novedades con consentimiento (fuera de v1).
+- [ ] Exportación y eliminación de registros según política (180 días).
 
 **Entregable:** visión agregada de satisfacción y necesidades del
 producto.
@@ -758,15 +832,14 @@ sobredimensionar
 Expectativas de respuesta No prometer respuesta individual
 -----------------------------------------------------------------------
 
-### Decisiones que deben cerrarse antes de producción
+### Decisiones cerradas con default (§0.1)
 
-1.  ¿Qué proveedor de almacenamiento central se utilizará?
-2.  ¿El identificador aleatorio de instalación será persistente o
-    rotatorio?
-3.  ¿Qué periodo de retención tendrá el feedback?
-4.  ¿Se admitirán capturas y logs en la primera versión o se pospondrán?
-5.  ¿Quién revisará y aprobará la creación de Issues?
-6.  ¿Cómo se comunicará al usuario la resolución de una solicitud?
+1.  Almacenamiento central: **Cloudflare Worker + D1**.
+2.  Installation ID: **persistente** (no rotatorio).
+3.  Retención: **180 días** feedback crudo.
+4.  Capturas y logs: **fuera de v1**.
+5.  Revisión de Issues: **maintainer manual**.
+6.  Comunicación de resolución: **fuera de v1** (solo `followUpConsent`).
 
 ---
 

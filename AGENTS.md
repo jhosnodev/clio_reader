@@ -74,6 +74,7 @@ Electron/Windows o Expo/Android
 apps/
   desktop/          # Electron + React (Windows/Linux)
   mobile/           # Expo + React Native (Android/iOS)
+  worker/           # Cloudflare Worker: API de feedback (D1)
 packages/
   domain/           # Entidades y reglas puras (Book, Bookmark, Note, etc.)
   reader-core/      # Contratos abstractos, ReaderAdapter, ReaderFactory, eventos
@@ -85,7 +86,7 @@ packages/
   storage/          # Repositorios locales y migraciones
   library/          # Casos de uso de biblioteca
   annotations/      # Gestión de anotaciones
-  feedback/         # Clio Feedback Core (contrato, servicio, contexto)
+  feedback/         # Clio Feedback Core (servicio, contexto, transporte, sync)
   i18n/             # Localización EN/ES (diccionarios, store, fechas, data-i18n)
 ```
 
@@ -756,19 +757,31 @@ Spec: `documentation/features/14-lector-mobile-android.md`
 ### Clio Feedback Core (Fase 10)
 
 Spec: `documentation/features/16-clio-feedback-core.md`
+Defaults aprobados: Worker+D1, installation ID persistente, retención 180 días,
+sin adjuntos v1, revisor manual, sin notificaciones v1 (spec §0.1).
 
 - [x] Contrato y validación en `packages/domain` (`Feedback*`, `createFeedback`)
 - [x] Servicio y contexto en `packages/feedback` (`FeedbackService`, `collectFeedbackContext`)
 - [x] Cola local SQLite: tabla `feedback` + métodos en `DrizzleRepository`
 - [x] Bridge desktop (IPC `repo:*-feedback`, `get-app-info`, preload, `feedback-bridge.ts`)
 - [x] UI `FeedbackPanel` (reacciones, categoría, comentario, aviso de privacidad)
-- [x] Entradas: Rail "Compartir feedback" + "Reportar problema" en `LoadErrorState`
+- [x] i18n `feedback.*` EN/ES
+- [x] Entrada "Reportar problema" en `LoadErrorState`
 - [x] Identificador de instalación aleatorio (`localStorage`)
+- [x] **1b:** Reactivar Rail "Compartir feedback" en `LibraryView` con i18n
+- [ ] **1b:** Entry point en Ajustes — _N/A: no existe pantalla de Ajustes; pendiente cuando se cree_
+- [x] **1b:** Tests de lógica del panel (`panel-model`) y bridge
+- [ ] **Tests UI render** `FeedbackPanel` (no hay testing-library; lógica ya testada)
+- [ ] **E2E offline→sync** con endpoint real
 - [ ] Fase 1 en Mobile (UI + `LocalRepository`)
-- [ ] Fase 2: API de recepción + sincronización de la cola
+- [x] Fase 2: Worker `apps/worker` (POST /feedback, D1, idempotencia, rate limit)
+- [x] Fase 2: transporte + sync cliente (`received` → `sent` / `closed`, backoff)
+- [ ] Fase 2: endpoint real desplegado (Wrangler + D1) y `VITE_FEEDBACK_API_URL`
 - [ ] Fase 3: revisión/grupos + GitHub Issues
 - [ ] Fase 4: dashboards y notificaciones de seguimiento
-- [ ] Decisiones pendientes: retención, backend, límites de frecuencia
+
+> Tests actuales (70): dominio, servicio, contexto, sync, transporte, worker,
+> `panel-model`, bridge. Detalle en spec §"Qué falta explícito".
 
 ### Features futuras (fuera del MVP)
 

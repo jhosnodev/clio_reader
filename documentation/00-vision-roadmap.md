@@ -138,13 +138,13 @@ secuencia es:
 
 ### Etapa 1 — Desktop
 
-| Fuente                      | Contenido                                                  |
-| --------------------------- | ---------------------------------------------------------- |
-| `05-plan-implementacion.md` | Fases 0–8 ✅ (en beta), Fase 10 (UX), Fase 11 (Release)    |
-| `04-features-futuros.md`    | F-001 (export JSON), F-006 (UI preferencias), F-008 ✅     |
-| `features/16`               | Feedback Core (Fase 1 desktop ✅)                          |
-| `features/17`               | Continuous Release                                         |
-| **Criterio de salida**      | Instalar → importar → leer → anotar → exportar → recuperar |
+| Fuente                      | Contenido                                                                  |
+| --------------------------- | -------------------------------------------------------------------------- |
+| `05-plan-implementacion.md` | Fases 0–8 ✅ (en beta), Fase 10 (UX), Fase 11 (Release)                    |
+| `04-features-futuros.md`    | F-001 (export JSON), F-006 (UI preferencias), F-008 ✅                     |
+| `features/16`               | Feedback Core (Fase 1 desktop ✅ · Fase 2 código ✅, despliegue pendiente) |
+| `features/17`               | Continuous Release                                                         |
+| **Criterio de salida**      | Instalar → importar → leer → anotar → exportar → recuperar                 |
 
 ### Etapa 2 — Obsidian
 

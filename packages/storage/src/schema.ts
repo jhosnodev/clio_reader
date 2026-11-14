@@ -160,7 +160,7 @@ export const feedback = sqliteTable('feedback', {
   locale: text('locale'),
   diagnosticsConsent: integer('diagnostics_consent', { mode: 'boolean' }).notNull().default(false),
   followUpConsent: integer('follow_up_consent', { mode: 'boolean' }).notNull().default(false),
-  status: text('status').notNull().default('received'),
+  status: text('status').notNull().default('received'), // 'received' | 'queued' | 'sent' | 'reviewed' | 'linked' | 'closed'
   githubIssueUrl: text('github_issue_url'),
   createdAt: integer('created_at')
     .notNull()

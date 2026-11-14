@@ -291,6 +291,53 @@ CREATE TABLE user_settings (
 );
 ```
 
+### feedback
+
+Cola local de Clio Feedback Core (Fase 1). Los envíos se guardan aquí al
+confirmar el panel; la Fase 2 los sincroniza con el backend
+(`received` → confirmación del servidor). Espejo de la tabla canónica
+del Worker/D1. Spec: `documentation/features/16-clio-feedback-core.md`.
+
+```sql
+CREATE TABLE feedback (
+  id TEXT PRIMARY KEY,
+  installation_id TEXT,
+  reaction TEXT CHECK(reaction IN (
+    'very_negative','negative','neutral','positive','very_positive'
+  )),
+  category TEXT CHECK(category IN ('bug','idea','praise','general')),
+  message TEXT,
+  app_version TEXT NOT NULL,
+  platform TEXT NOT NULL CHECK(platform IN (
+    'windows','linux','macos','android','ios'
+  )),
+  os_version TEXT,
+  area TEXT CHECK(area IN ('reader','library','annotations','settings')),
+  document_format TEXT CHECK(document_format IN ('epub','pdf','markdown','cbz')),
+  event_name TEXT,
+  locale TEXT,
+  diagnostics_consent INTEGER NOT NULL DEFAULT 0,
+  follow_up_consent INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'received' CHECK(status IN (
+    'received','queued','sent','reviewed','linked','closed'
+  )),
+  github_issue_url TEXT,
+  created_at INTEGER NOT NULL DEFAULT (unixepoch())
+);
+
+CREATE INDEX idx_feedback_status ON feedback(status, created_at);
+```
+
+Notas:
+
+- `id` es UUID generado en el cliente (idempotencia en reintentos de sync).
+- `message` máximo 2000 caracteres (validado en dominio).
+- Estados locales de cola: `received` (pendiente de envío) → `sent`
+  (confirmado por el servidor) o `closed` (error permanente / reintentos agotados).
+- Nunca se almacena contenido de documentos, títulos ni rutas locales.
+- Retención propuesta: 180 días en el backend; la cola local se limpia
+  tras confirmar el envío.
+
 ### notes_fts
 
 ```sql
